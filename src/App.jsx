@@ -259,6 +259,11 @@ function maskCEP(v) {
   if (d.length <= 5) return d;
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
+function maskCpfCnpj(v) {
+  const d = v.replace(/\D/g, "").slice(0, 14);
+  if (d.length <= 11) return maskCPF(d);
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
 function computeBoletoStatus(b) {
   if (b.dataPagamento) return "Pago";
   if (!b.dataVencimento) return "Em aberto";
@@ -268,6 +273,25 @@ function computeBoletoStatus(b) {
   if (diffDays < 0) return "Vencido";
   if (diffDays <= 7) return "A vencer";
   return "Em aberto";
+}
+
+function exportarCSV(nomeArquivo, colunas, linhas) {
+  const escapar = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const cabecalho = colunas.map((c) => escapar(c.titulo)).join(";");
+  const corpo = linhas.map((linha) => colunas.map((c) => escapar(c.valor(linha))).join(";")).join("\n");
+  const csv = "\uFEFF" + cabecalho + "\n" + corpo;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const STATUS_META = {
@@ -369,7 +393,10 @@ function Kpi({ icon, label, value, tone }) {
 
 function ClienteForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState(
-    initial || { nome: "", nascimento: "", cpf: "", telefone: "", whatsapp: "", email: "", cep: "", endereco: "", status: "Ativo" }
+    initial || {
+      nome: "", nascimento: "", sexo: "", cpf: "", cnhNumero: "", cnhEmissao: "", cnhValidade: "",
+      telefone: "", whatsapp: "", email: "", cep: "", endereco: "", status: "Ativo",
+    }
   );
   const [errors, setErrors] = useState({});
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -427,7 +454,7 @@ function ClienteForm({ initial, onSave, onCancel }) {
   function submit() {
     const errs = {};
     if (!f.nome.trim()) errs.nome = "Informe o nome completo.";
-    if (!f.cpf.trim()) errs.cpf = "Informe o CPF.";
+    if (!f.cpf.trim()) errs.cpf = "Informe o CPF ou CNPJ.";
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
   }
@@ -441,26 +468,45 @@ function ClienteForm({ initial, onSave, onCancel }) {
         <Field label="Data de nascimento">
           <input type="date" className="nexo-input" value={f.nascimento} onChange={set("nascimento")} />
         </Field>
-        <Field label="CPF *" error={errors.cpf}>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input
-              className="nexo-input mono"
-              value={f.cpf}
-              onChange={(e) => setF({ ...f, cpf: maskCPF(e.target.value) })}
-              onBlur={() => f.cpf.replace(/\D/g, "").length === 11 && buscarCpf()}
-              placeholder="000.000.000-00"
-            />
-            <button type="button" className="nexo-btn nexo-btn-sm" disabled={buscandoCpf || !f.cpf.trim()} onClick={buscarCpf}>
-              {buscandoCpf ? "Buscando…" : "Buscar dados"}
-            </button>
-          </div>
+        <Field label="Sexo">
+          <select className="nexo-select" value={f.sexo} onChange={set("sexo")}>
+            <option value="">Não informado</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Outro">Outro</option>
+          </select>
         </Field>
       </div>
+      <Field label="CPF ou CNPJ *" error={errors.cpf}>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input
+            className="nexo-input mono"
+            value={f.cpf}
+            onChange={(e) => setF({ ...f, cpf: maskCpfCnpj(e.target.value) })}
+            onBlur={() => f.cpf.replace(/\D/g, "").length === 11 && buscarCpf()}
+            placeholder="000.000.000-00 ou 00.000.000/0000-00"
+          />
+          <button type="button" className="nexo-btn nexo-btn-sm" disabled={buscandoCpf || !f.cpf.trim()} onClick={buscarCpf}>
+            {buscandoCpf ? "Buscando…" : "Buscar dados"}
+          </button>
+        </div>
+      </Field>
       {cpfMsg && (
         <div style={{ fontSize: 12, color: cpfMsg.includes("preenchidos") ? "var(--success)" : "var(--warning)", marginTop: -8 }}>
           {cpfMsg}
         </div>
       )}
+      <div className="nexo-field-row3">
+        <Field label="CNH (número)">
+          <input className="nexo-input mono" value={f.cnhNumero} onChange={set("cnhNumero")} placeholder="Número da CNH" />
+        </Field>
+        <Field label="CNH - emissão">
+          <input type="date" className="nexo-input" value={f.cnhEmissao} onChange={set("cnhEmissao")} />
+        </Field>
+        <Field label="CNH - validade">
+          <input type="date" className="nexo-input" value={f.cnhValidade} onChange={set("cnhValidade")} />
+        </Field>
+      </div>
       <div className="nexo-field-row">
         <Field label="Telefone">
           <input className="nexo-input mono" value={f.telefone} onChange={(e) => setF({ ...f, telefone: maskPhone(e.target.value) })} placeholder="(00) 0000-0000" />
@@ -512,7 +558,7 @@ function ClienteForm({ initial, onSave, onCancel }) {
 function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) {
   const [f, setF] = useState(
     initial || {
-      clienteId: defaultClienteId || "", marca: "", modelo: "", ano: "", placa: "", chassi: "",
+      clienteId: defaultClienteId || "", marca: "", modelo: "", ano: "", anoFabricacao: "", placa: "", renavam: "", chassi: "", cor: "",
       valorVeiculo: "", valorMensal: "", dataCadastro: todayISO(), status: "Ativo",
       codigoFipe: "", valorFipe: "",
     }
@@ -575,10 +621,18 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
           <input className="nexo-input" value={f.modelo} onChange={set("modelo")} placeholder="Ex.: Argo" />
         </Field>
       </div>
-      <div className="nexo-field-row">
-        <Field label="Ano">
+      <div className="nexo-field-row3">
+        <Field label="Ano fabricação">
+          <input className="nexo-input mono" value={f.anoFabricacao} onChange={set("anoFabricacao")} placeholder="2021" maxLength={4} />
+        </Field>
+        <Field label="Ano modelo">
           <input className="nexo-input mono" value={f.ano} onChange={set("ano")} placeholder="2022" maxLength={4} />
         </Field>
+        <Field label="Cor">
+          <input className="nexo-input" value={f.cor} onChange={set("cor")} placeholder="Ex.: Prata" />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
         <Field label="Placa *" error={errors.placa}>
           <div style={{ display: "flex", gap: 6 }}>
             <input
@@ -593,6 +647,9 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
               {buscando ? "Buscando…" : "Buscar dados"}
             </button>
           </div>
+        </Field>
+        <Field label="Renavam">
+          <input className="nexo-input mono" value={f.renavam} onChange={set("renavam")} placeholder="Número do Renavam" />
         </Field>
       </div>
       <Field label="Chassi">
@@ -868,7 +925,31 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail }) {
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
+        <div className="nexo-topbar-actions">
+          <button
+            className="nexo-btn"
+            onClick={() =>
+              exportarCSV(
+                "clientes.csv",
+                [
+                  { titulo: "Nome", valor: (c) => c.nome },
+                  { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
+                  { titulo: "Nascimento", valor: (c) => c.nascimento },
+                  { titulo: "Sexo", valor: (c) => c.sexo },
+                  { titulo: "Telefone", valor: (c) => c.telefone },
+                  { titulo: "WhatsApp", valor: (c) => c.whatsapp },
+                  { titulo: "E-mail", valor: (c) => c.email },
+                  { titulo: "Endereço", valor: (c) => c.endereco },
+                  { titulo: "Status", valor: (c) => c.status },
+                ],
+                filtered
+              )
+            }
+          >
+            Exportar CSV
+          </button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
+        </div>
       </div>
 
       <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
@@ -942,7 +1023,35 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
+        <div className="nexo-topbar-actions">
+          <button
+            className="nexo-btn"
+            onClick={() =>
+              exportarCSV(
+                "veiculos.csv",
+                [
+                  { titulo: "Cliente", valor: (v) => (getCliente(v.clienteId) ? getCliente(v.clienteId).nome : "") },
+                  { titulo: "Marca", valor: (v) => v.marca },
+                  { titulo: "Modelo", valor: (v) => v.modelo },
+                  { titulo: "Ano fabricação", valor: (v) => v.anoFabricacao },
+                  { titulo: "Ano modelo", valor: (v) => v.ano },
+                  { titulo: "Cor", valor: (v) => v.cor },
+                  { titulo: "Placa", valor: (v) => v.placa },
+                  { titulo: "Renavam", valor: (v) => v.renavam },
+                  { titulo: "Chassi", valor: (v) => v.chassi },
+                  { titulo: "Código Fipe", valor: (v) => v.codigoFipe },
+                  { titulo: "Valor Fipe", valor: (v) => v.valorFipe },
+                  { titulo: "Valor mensal", valor: (v) => v.valorMensal },
+                  { titulo: "Status", valor: (v) => v.status },
+                ],
+                filtered
+              )
+            }
+          >
+            Exportar CSV
+          </button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
+        </div>
       </div>
 
       <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
@@ -971,7 +1080,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
                       <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
                       <td>{v.marca} {v.modelo}</td>
                       <td className="mono nexo-cell-muted">{v.placa}</td>
-                      <td className="nexo-cell-muted">{v.ano || "—"}</td>
+                      <td className="nexo-cell-muted">{v.anoFabricacao || v.ano ? `${v.anoFabricacao || "—"}/${v.ano || "—"}` : "—"}</td>
                       <td className="mono">{formatBRL(v.valorMensal)}</td>
                       <td className="nexo-cell-muted">{v.codigoFipe ? `${v.codigoFipe} · ${formatBRL(v.valorFipe)}` : "—"}</td>
                       <td><AtivoInativoBadge ativo={v.status} /></td>
@@ -1171,7 +1280,13 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             </div>
           </div>
           <div className="nexo-info-row"><CreditCard size={14} /> <span className="mono">{cliente.cpf || "CPF não informado"}</span></div>
-          <div className="nexo-info-row"><Calendar size={14} /> {cliente.nascimento ? formatDateBR(cliente.nascimento) : "Nascimento não informado"}</div>
+          <div className="nexo-info-row"><Calendar size={14} /> {cliente.nascimento ? formatDateBR(cliente.nascimento) : "Nascimento não informado"}{cliente.sexo ? ` · ${cliente.sexo}` : ""}</div>
+          {cliente.cnhNumero && (
+            <div className="nexo-info-row">
+              <FileText size={14} /> CNH {cliente.cnhNumero}
+              {cliente.cnhValidade ? ` · válida até ${formatDateBR(cliente.cnhValidade)}` : ""}
+            </div>
+          )}
           <div className="nexo-info-row"><Phone size={14} /> {cliente.telefone || "—"}</div>
           <div className="nexo-info-row"><MessageCircle size={14} /> {cliente.whatsapp || "—"}</div>
           <div className="nexo-info-row"><Mail size={14} /> {cliente.email || "—"}</div>
@@ -1253,6 +1368,102 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
 }
 
 /* ------------------------------------------------------------------ */
+/* Relatórios                                                           */
+/* ------------------------------------------------------------------ */
+
+function RelatoriosView({ db }) {
+  const boletosComStatus = db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) }));
+  const pagos = boletosComStatus.filter((b) => b.status === "Pago");
+  const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
+  const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
+
+  const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+  const placaVeiculo = (id) => db.veiculos.find((v) => v.id === id)?.placa || "—";
+
+  const colunasBoleto = [
+    { titulo: "Cliente", valor: (b) => nomeCliente(b.clienteId) },
+    { titulo: "Placa", valor: (b) => placaVeiculo(b.veiculoId) },
+    { titulo: "Número", valor: (b) => b.numero },
+    { titulo: "Vencimento", valor: (b) => formatDateBR(b.dataVencimento) },
+    { titulo: "Valor", valor: (b) => b.valor },
+    { titulo: "Status", valor: (b) => b.status },
+    { titulo: "Data de pagamento", valor: (b) => formatDateBR(b.dataPagamento) },
+  ];
+
+  const relatorios = [
+    {
+      titulo: "Clientes cadastrados",
+      total: db.clientes.length,
+      arquivo: "relatorio-clientes.csv",
+      colunas: [
+        { titulo: "Nome", valor: (c) => c.nome },
+        { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
+        { titulo: "Telefone", valor: (c) => c.telefone },
+        { titulo: "E-mail", valor: (c) => c.email },
+        { titulo: "Status", valor: (c) => c.status },
+      ],
+      linhas: db.clientes,
+      tone: "accent",
+    },
+    {
+      titulo: "Boletos pagos",
+      total: pagos.length,
+      valor: formatBRL(sum(pagos.map((b) => b.valor))),
+      arquivo: "relatorio-boletos-pagos.csv",
+      colunas: colunasBoleto,
+      linhas: pagos,
+      tone: "success",
+    },
+    {
+      titulo: "Boletos em aberto",
+      total: emAberto.length,
+      valor: formatBRL(sum(emAberto.map((b) => b.valor))),
+      arquivo: "relatorio-boletos-em-aberto.csv",
+      colunas: colunasBoleto,
+      linhas: emAberto,
+      tone: "info",
+    },
+    {
+      titulo: "Boletos a vencer",
+      total: aVencer.length,
+      valor: formatBRL(sum(aVencer.map((b) => b.valor))),
+      arquivo: "relatorio-boletos-a-vencer.csv",
+      colunas: colunasBoleto,
+      linhas: aVencer,
+      tone: "warning",
+    },
+  ];
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Relatórios</div>
+      </div>
+      <div className="nexo-kpi-grid">
+        {relatorios.map((r) => (
+          <div key={r.titulo} className="nexo-card">
+            <div className="nexo-chart-title">{r.titulo}</div>
+            <div className="nexo-kpi-value" style={{ marginTop: 6 }}>{r.total}</div>
+            {r.valor && <div className="nexo-cell-muted" style={{ marginBottom: 10 }}>{r.valor}</div>}
+            <button
+              className="nexo-btn nexo-btn-sm"
+              style={{ marginTop: 10 }}
+              disabled={r.linhas.length === 0}
+              onClick={() => exportarCSV(r.arquivo, r.colunas, r.linhas)}
+            >
+              Exportar CSV
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="nexo-empty-sub" style={{ marginTop: 4 }}>
+        Os arquivos exportados abrem direto no Excel, Google Sheets ou qualquer editor de planilhas.
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* App shell                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -1261,29 +1472,35 @@ const NAV_ITEMS = [
   { key: "clientes", label: "Clientes", Icon: Users },
   { key: "veiculos", label: "Veículos", Icon: Car },
   { key: "financeiro", label: "Financeiro", Icon: Receipt },
+  { key: "relatorios", label: "Relatórios", Icon: FileText },
 ];
 
 const EMPTY_DB = { clientes: [], veiculos: [], boletos: [] };
 
 /* Mapeamento entre o formato usado no app (camelCase) e as colunas do Supabase (snake_case) */
 const rowToCliente = (r) => ({
-  id: r.id, nome: r.nome || "", nascimento: r.nascimento || "", cpf: r.cpf || "",
+  id: r.id, nome: r.nome || "", nascimento: r.nascimento || "", sexo: r.sexo || "", cpf: r.cpf || "",
+  cnhNumero: r.cnh_numero || "", cnhEmissao: r.cnh_emissao || "", cnhValidade: r.cnh_validade || "",
   telefone: r.telefone || "", whatsapp: r.whatsapp || "", email: r.email || "",
   cep: r.cep || "", endereco: r.endereco || "", status: r.status || "Ativo",
 });
 const clienteToRow = (c) => ({
-  nome: c.nome, nascimento: c.nascimento || null, cpf: c.cpf || null, telefone: c.telefone || null,
-  whatsapp: c.whatsapp || null, email: c.email || null, cep: c.cep || null, endereco: c.endereco || null, status: c.status || "Ativo",
+  nome: c.nome, nascimento: c.nascimento || null, sexo: c.sexo || null, cpf: c.cpf || null,
+  cnh_numero: c.cnhNumero || null, cnh_emissao: c.cnhEmissao || null, cnh_validade: c.cnhValidade || null,
+  telefone: c.telefone || null, whatsapp: c.whatsapp || null, email: c.email || null,
+  cep: c.cep || null, endereco: c.endereco || null, status: c.status || "Ativo",
 });
 const rowToVeiculo = (r) => ({
   id: r.id, clienteId: r.cliente_id, marca: r.marca || "", modelo: r.modelo || "", ano: r.ano || "",
-  placa: r.placa || "", chassi: r.chassi || "", valorVeiculo: r.valor_veiculo ?? "", valorMensal: r.valor_mensal ?? "",
+  anoFabricacao: r.ano_fabricacao || "", placa: r.placa || "", renavam: r.renavam || "", chassi: r.chassi || "", cor: r.cor || "",
+  valorVeiculo: r.valor_veiculo ?? "", valorMensal: r.valor_mensal ?? "",
   dataCadastro: r.data_cadastro || "", status: r.status || "Ativo",
   codigoFipe: r.codigo_fipe || "", valorFipe: r.valor_fipe ?? "",
 });
 const veiculoToRow = (v) => ({
-  cliente_id: v.clienteId, marca: v.marca, modelo: v.modelo, ano: v.ano || null, placa: v.placa,
-  chassi: v.chassi || null, valor_veiculo: v.valorVeiculo === "" ? null : Number(v.valorVeiculo),
+  cliente_id: v.clienteId, marca: v.marca, modelo: v.modelo, ano: v.ano || null, ano_fabricacao: v.anoFabricacao || null,
+  placa: v.placa, renavam: v.renavam || null, chassi: v.chassi || null, cor: v.cor || null,
+  valor_veiculo: v.valorVeiculo === "" ? null : Number(v.valorVeiculo),
   valor_mensal: v.valorMensal === "" ? null : Number(v.valorMensal), data_cadastro: v.dataCadastro || null,
   status: v.status || "Ativo",
   codigo_fipe: v.codigoFipe || null, valor_fipe: v.valorFipe === "" || v.valorFipe == null ? null : Number(v.valorFipe),
@@ -1448,7 +1665,7 @@ export default function App() {
 
   const goTo = (v) => { setView(v); setSidebarOpen(false); };
 
-  const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", clienteDetail: "Detalhes do cliente" };
+  const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios", clienteDetail: "Detalhes do cliente" };
 
   return (
     <div className="nexo">
@@ -1470,9 +1687,9 @@ export default function App() {
           <div className={`nexo-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""}`}>
             <div className="nexo-brand">
-              <div className="nexo-brand-mark">NX</div>
+              <div className="nexo-brand-mark">SS</div>
               <div>
-                <div className="nexo-brand-name">Nexo Gestão</div>
+                <div className="nexo-brand-name">Seu Seguro Corretora</div>
                 <div className="nexo-brand-tag">Clientes · Veículos · Financeiro</div>
               </div>
             </div>
@@ -1514,6 +1731,7 @@ export default function App() {
               {view === "financeiro" && (
                 <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} />
               )}
+              {view === "relatorios" && <RelatoriosView db={db} />}
               {view === "clienteDetail" && (
                 <ClienteDetailView
                   db={db}
