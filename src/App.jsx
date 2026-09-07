@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "./supabaseClient";
+import jsPDF from "jspdf";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -8,7 +9,7 @@ import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
-  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye
+  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -275,6 +276,88 @@ function computeBoletoStatus(b) {
   return "Em aberto";
 }
 
+function normalizarTexto(s) {
+  return (s || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function normalizarCabecalho(s) {
+  return normalizarTexto(s).replace(/[^a-z0-9]/g, "");
+}
+
+/** Converte dd/mm/aaaa (ou aaaa-mm-dd já pronto) para o formato aaaa-mm-dd usado nos inputs de data. */
+function paraDataISO(v) {
+  const s = (v || "").toString().trim();
+  if (!s) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  return "";
+}
+
+function paraNumero(v) {
+  if (v == null || v === "") return "";
+  const s = String(v).trim().replace(/[^\d,.-]/g, "");
+  if (!s) return "";
+  const normalizado = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s;
+  const n = Number(normalizado);
+  return isNaN(n) ? "" : n;
+}
+
+/** Parser simples de CSV, com suporte a ; ou , como separador e campos entre aspas. */
+function parseCSVTexto(texto) {
+  const linhaLimpa = texto.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").trim();
+  if (!linhaLimpa) return { cabecalhos: [], linhas: [] };
+  const primeiraLinha = linhaLimpa.split("\n")[0];
+  const separador = (primeiraLinha.match(/;/g) || []).length >= (primeiraLinha.match(/,/g) || []).length ? ";" : ",";
+
+  function parseLinha(linha) {
+    const campos = [];
+    let atual = "";
+    let dentroAspas = false;
+    for (let i = 0; i < linha.length; i++) {
+      const ch = linha[i];
+      if (ch === '"') {
+        if (dentroAspas && linha[i + 1] === '"') { atual += '"'; i++; }
+        else dentroAspas = !dentroAspas;
+      } else if (ch === separador && !dentroAspas) {
+        campos.push(atual);
+        atual = "";
+      } else {
+        atual += ch;
+      }
+    }
+    campos.push(atual);
+    return campos.map((c) => c.trim());
+  }
+
+  const todasLinhas = linhaLimpa.split("\n").filter((l) => l.trim() !== "");
+  const cabecalhos = parseLinha(todasLinhas[0]).map(normalizarCabecalho);
+  const linhas = todasLinhas.slice(1).map(parseLinha);
+  return { cabecalhos, linhas };
+}
+
+function valorDaColuna(cabecalhos, linha, candidatos) {
+  for (const cand of candidatos) {
+    const idx = cabecalhos.indexOf(cand);
+    if (idx !== -1 && linha[idx] !== undefined) return linha[idx];
+  }
+  return "";
+}
+
+function lerArquivoTexto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsText(file, "utf-8");
+  });
+}
+
 function exportarCSV(nomeArquivo, colunas, linhas) {
   const escapar = (v) => {
     const s = v == null ? "" : String(v);
@@ -353,6 +436,28 @@ function Modal({ title, onClose, children, wide, footer }) {
         {footer && <div className="nexo-modal-foot">{footer}</div>}
       </div>
     </div>
+  );
+}
+
+function ImportCSVButton({ label, onArquivoSelecionado, disabled }) {
+  const inputRef = React.useRef(null);
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,text/csv"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onArquivoSelecionado(file);
+          e.target.value = "";
+        }}
+      />
+      <button type="button" className="nexo-btn" disabled={disabled} onClick={() => inputRef.current?.click()}>
+        <Upload size={14} /> {label}
+      </button>
+    </>
   );
 }
 
@@ -909,8 +1014,10 @@ function Dashboard({ db, onOpenModal }) {
 /* Clientes                                                             */
 /* ------------------------------------------------------------------ */
 
-function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail }) {
+function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImportarClientes }) {
   const [query, setQuery] = useState("");
+  const [importando, setImportando] = useState(false);
+  const fileInputRef = useRef(null);
 
   const filtered = db.clientes.filter((c) => {
     if (!query) return true;
@@ -921,11 +1028,67 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail }) {
     return nomeMatch || cpfMatch || placaMatch;
   });
 
+  async function handleArquivoSelecionado(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    setImportando(true);
+    try {
+      const texto = await lerArquivoTexto(arquivo);
+      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const clientesNovos = linhas
+        .map((linha) => ({
+          nome: valorDaColuna(cabecalhos, linha, ["nome", "nomecompleto"]),
+          cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
+          nascimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["nascimento", "datadenascimento"])),
+          sexo: valorDaColuna(cabecalhos, linha, ["sexo"]),
+          telefone: valorDaColuna(cabecalhos, linha, ["telefone"]),
+          whatsapp: valorDaColuna(cabecalhos, linha, ["whatsapp"]),
+          email: valorDaColuna(cabecalhos, linha, ["email", "e-mail"]),
+          cep: valorDaColuna(cabecalhos, linha, ["cep"]),
+          endereco: valorDaColuna(cabecalhos, linha, ["endereco"]),
+          status: valorDaColuna(cabecalhos, linha, ["status"]) || "Ativo",
+        }))
+        .filter((c) => c.nome && c.cpf);
+      if (clientesNovos.length === 0) {
+        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
+      } else {
+        await onImportarClientes(clientesNovos);
+      }
+    } catch (err) {
+      alert("Não foi possível ler o arquivo: " + err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
+
   return (
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
         <div className="nexo-topbar-actions">
+          <button
+            className="nexo-btn"
+            onClick={() =>
+              exportarCSV(
+                "modelo-clientes.csv",
+                [
+                  { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
+                  { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
+                  { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
+                  { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
+                  { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
+                ],
+                [{}]
+              )
+            }
+          >
+            Baixar modelo
+          </button>
+          <button className="nexo-btn" disabled={importando} onClick={() => fileInputRef.current?.click()}>
+            {importando ? "Importando…" : "Importar CSV"}
+          </button>
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
           <button
             className="nexo-btn"
             onClick={() =>
@@ -1464,6 +1627,386 @@ function RelatoriosView({ db }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Cotação de seguros (seguradoras, planos e cotações)                  */
+/* ------------------------------------------------------------------ */
+
+function PlanoForm({ initial, seguradoras, defaultSeguradoraId, onSave, onCancel }) {
+  const [f, setF] = useState(
+    initial || { seguradoraId: defaultSeguradoraId || "", nome: "", valorMensal: "", valorFranquia: "", beneficios: "" }
+  );
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function submit() {
+    const errs = {};
+    if (!f.seguradoraId) errs.seguradoraId = "Selecione a seguradora.";
+    if (!f.nome.trim()) errs.nome = "Informe o nome do plano.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <Field label="Seguradora *" error={errors.seguradoraId}>
+        <select className="nexo-select" value={f.seguradoraId} onChange={set("seguradoraId")}>
+          <option value="">Selecione</option>
+          {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+        </select>
+      </Field>
+      <Field label="Nome do plano *" error={errors.nome}>
+        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: Completo, Básico, Terceiros" />
+      </Field>
+      <div className="nexo-field-row">
+        <Field label="Valor mensal">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorMensal} onChange={set("valorMensal")} placeholder="0,00" />
+        </Field>
+        <Field label="Valor da franquia">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorFranquia} onChange={set("valorFranquia")} placeholder="0,00" />
+        </Field>
+      </div>
+      <Field label="Benefícios">
+        <textarea className="nexo-textarea" value={f.beneficios} onChange={set("beneficios")} placeholder="Ex.: Assistência 24h, carro reserva, guincho ilimitado…" />
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar plano</button>
+      </div>
+    </>
+  );
+}
+
+function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, defaultClienteId, onSave, onCancel }) {
+  const [f, setF] = useState(
+    initial || {
+      clienteId: defaultClienteId || "", veiculoId: "", seguradoraId: "", planoId: "",
+      valor: "", dataCotacao: todayISO(), observacoes: "",
+    }
+  );
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const veiculosDoCliente = veiculos.filter((v) => v.clienteId === f.clienteId);
+  const planosDaSeguradora = planos.filter((p) => p.seguradoraId === f.seguradoraId);
+
+  function selecionarPlano(planoId) {
+    const plano = planos.find((p) => p.id === planoId);
+    setF({ ...f, planoId, valor: plano?.valorMensal ?? f.valor });
+  }
+
+  function submit() {
+    const errs = {};
+    if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
+    if (!f.seguradoraId) errs.seguradoraId = "Selecione a seguradora.";
+    if (!f.planoId) errs.planoId = "Selecione o plano.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Cliente *" error={errors.clienteId}>
+          <select className="nexo-select" value={f.clienteId} onChange={(e) => setF({ ...f, clienteId: e.target.value, veiculoId: "" })}>
+            <option value="">Selecione</option>
+            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+        <Field label="Veículo">
+          <select className="nexo-select" value={f.veiculoId} onChange={set("veiculoId")} disabled={!f.clienteId}>
+            <option value="">{f.clienteId ? "Sem veículo específico" : "Escolha o cliente primeiro"}</option>
+            {veiculosDoCliente.map((v) => <option key={v.id} value={v.id}>{v.marca} {v.modelo} · {v.placa}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Seguradora *" error={errors.seguradoraId}>
+          <select className="nexo-select" value={f.seguradoraId} onChange={(e) => setF({ ...f, seguradoraId: e.target.value, planoId: "" })}>
+            <option value="">Selecione</option>
+            {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
+        </Field>
+        <Field label="Plano *" error={errors.planoId}>
+          <select className="nexo-select" value={f.planoId} onChange={(e) => selecionarPlano(e.target.value)} disabled={!f.seguradoraId}>
+            <option value="">{f.seguradoraId ? "Selecione" : "Escolha a seguradora primeiro"}</option>
+            {planosDaSeguradora.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Valor da cotação">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valor} onChange={set("valor")} placeholder="0,00" />
+        </Field>
+        <Field label="Data da cotação">
+          <input type="date" className="nexo-input" value={f.dataCotacao} onChange={set("dataCotacao")} />
+        </Field>
+      </div>
+      <Field label="Observações">
+        <textarea className="nexo-textarea" value={f.observacoes} onChange={set("observacoes")} placeholder="Notas internas sobre esta cotação" />
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar cotação</button>
+      </div>
+    </>
+  );
+}
+
+function gerarPdfCotacao(cotacao, db) {
+  const cliente = db.clientes.find((c) => c.id === cotacao.clienteId);
+  const veiculo = db.veiculos.find((v) => v.id === cotacao.veiculoId);
+  const seguradora = db.seguradoras.find((s) => s.id === cotacao.seguradoraId);
+  const plano = db.planos.find((p) => p.id === cotacao.planoId);
+
+  const doc = new jsPDF();
+  let y = 20;
+
+  doc.setFontSize(16);
+  doc.text("Seu Seguro Corretora", 14, y);
+  doc.setFontSize(11);
+  y += 8;
+  doc.text("Cotação de Seguro Automotivo", 14, y);
+  y += 10;
+  doc.setDrawColor(200);
+  doc.line(14, y, 196, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text("Cliente", 14, y);
+  doc.setFontSize(10);
+  y += 6;
+  doc.text(`Nome: ${cliente?.nome || "—"}`, 14, y);
+  y += 6;
+  doc.text(`CPF/CNPJ: ${cliente?.cpf || "—"}`, 14, y);
+  y += 10;
+
+  if (veiculo) {
+    doc.setFontSize(12);
+    doc.text("Veículo", 14, y);
+    doc.setFontSize(10);
+    y += 6;
+    doc.text(`${veiculo.marca} ${veiculo.modelo} — ${veiculo.anoFabricacao || "—"}/${veiculo.ano || "—"}`, 14, y);
+    y += 6;
+    doc.text(`Placa: ${veiculo.placa || "—"}   Cor: ${veiculo.cor || "—"}`, 14, y);
+    y += 10;
+  }
+
+  doc.setFontSize(12);
+  doc.text("Plano cotado", 14, y);
+  doc.setFontSize(10);
+  y += 6;
+  doc.text(`Seguradora: ${seguradora?.nome || "—"}`, 14, y);
+  y += 6;
+  doc.text(`Plano: ${plano?.nome || "—"}`, 14, y);
+  y += 6;
+  doc.setFontSize(13);
+  doc.text(`Valor: ${formatBRL(cotacao.valor)}`, 14, y);
+  y += 8;
+
+  if (plano?.beneficios) {
+    doc.setFontSize(12);
+    doc.text("Benefícios inclusos", 14, y);
+    doc.setFontSize(10);
+    y += 6;
+    const linhas = doc.splitTextToSize(plano.beneficios, 180);
+    doc.text(linhas, 14, y);
+    y += linhas.length * 5 + 4;
+  }
+
+  if (cotacao.observacoes) {
+    doc.setFontSize(12);
+    doc.text("Observações", 14, y);
+    doc.setFontSize(10);
+    y += 6;
+    const linhas = doc.splitTextToSize(cotacao.observacoes, 180);
+    doc.text(linhas, 14, y);
+    y += linhas.length * 5 + 4;
+  }
+
+  doc.setFontSize(9);
+  doc.setTextColor(130);
+  doc.text(`Cotação gerada em ${formatDateBR(cotacao.dataCotacao || todayISO())}`, 14, 285);
+
+  doc.save(`cotacao-${(cliente?.nome || "cliente").replace(/\s+/g, "-").toLowerCase()}.pdf`);
+}
+
+function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos }) {
+  const [nomeSeguradora, setNomeSeguradora] = useState("");
+  const [importando, setImportando] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+  const nomeVeiculo = (id) => {
+    const v = db.veiculos.find((v) => v.id === id);
+    return v ? `${v.marca} ${v.modelo} · ${v.placa}` : "—";
+  };
+  const nomeSeguradoraPorId = (id) => db.seguradoras.find((s) => s.id === id)?.nome || "—";
+  const nomePlanoPorId = (id) => db.planos.find((p) => p.id === id)?.nome || "—";
+
+  async function adicionarSeguradora() {
+    if (!nomeSeguradora.trim()) return;
+    await onSaveSeguradora(nomeSeguradora.trim());
+    setNomeSeguradora("");
+  }
+
+  async function handleArquivoSelecionado(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    setImportando(true);
+    try {
+      const texto = await lerArquivoTexto(arquivo);
+      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const planosNovos = linhas
+        .map((linha) => ({
+          seguradoraNome: valorDaColuna(cabecalhos, linha, ["seguradora"]),
+          planoNome: valorDaColuna(cabecalhos, linha, ["plano"]),
+          valorMensal: paraNumero(valorDaColuna(cabecalhos, linha, ["valormensal", "valor"])),
+          valorFranquia: paraNumero(valorDaColuna(cabecalhos, linha, ["franquia", "valorfranquia"])),
+          beneficios: valorDaColuna(cabecalhos, linha, ["beneficios"]),
+        }))
+        .filter((p) => p.seguradoraNome && p.planoNome);
+      if (planosNovos.length === 0) {
+        alert("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.");
+      } else {
+        await onImportarPlanos(planosNovos);
+      }
+    } catch (err) {
+      alert("Não foi possível ler o arquivo: " + err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Cotação de seguros</div>
+      </div>
+
+      <div className="nexo-card" style={{ marginBottom: 16 }}>
+        <div className="nexo-section-head" style={{ marginBottom: 12 }}>
+          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Seguradoras e tabela de preços</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              className="nexo-btn nexo-btn-sm"
+              onClick={() =>
+                exportarCSV(
+                  "modelo-planos.csv",
+                  [
+                    { titulo: "Seguradora", valor: () => "" }, { titulo: "Plano", valor: () => "" },
+                    { titulo: "Valor Mensal", valor: () => "" }, { titulo: "Franquia", valor: () => "" },
+                    { titulo: "Beneficios", valor: () => "" },
+                  ],
+                  [{}]
+                )
+              }
+            >
+              Baixar modelo
+            </button>
+            <button className="nexo-btn nexo-btn-sm" disabled={importando} onClick={() => fileInputRef.current?.click()}>
+              {importando ? "Importando…" : "Importar tabela (CSV)"}
+            </button>
+            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+          <input
+            className="nexo-input"
+            style={{ maxWidth: 280 }}
+            placeholder="Nome da nova seguradora"
+            value={nomeSeguradora}
+            onChange={(e) => setNomeSeguradora(e.target.value)}
+          />
+          <button className="nexo-btn nexo-btn-sm" onClick={adicionarSeguradora}>Adicionar seguradora</button>
+        </div>
+
+        {db.seguradoras.length === 0 ? (
+          <div className="nexo-empty-sub">Nenhuma seguradora cadastrada ainda. Adicione uma acima ou importe sua tabela em CSV.</div>
+        ) : (
+          db.seguradoras.map((s) => {
+            const planosDaSeguradora = db.planos.filter((p) => p.seguradoraId === s.id);
+            return (
+              <div key={s.id} className="nexo-veiculo-card">
+                <div className="nexo-veiculo-card-head">
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{s.nome}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("plano", null, null, null, s.id)}>
+                      <Plus size={12} /> Novo plano
+                    </button>
+                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteSeguradora(s.id)}>
+                      <Trash2 size={12} /> Excluir
+                    </button>
+                  </div>
+                </div>
+                {planosDaSeguradora.length === 0 ? (
+                  <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>Nenhum plano cadastrado para esta seguradora.</div>
+                ) : (
+                  planosDaSeguradora.map((p) => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border-soft)" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
+                        <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                          Mensal: {formatBRL(p.valorMensal)} · Franquia: {formatBRL(p.valorFranquia)}
+                          {p.beneficios ? ` · ${p.beneficios}` : ""}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
+                        <button className="nexo-icon-btn" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="nexo-card">
+        <div className="nexo-section-head" style={{ marginBottom: 12 }}>
+          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações realizadas</div>
+          <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => onOpenModal("cotacao")}>
+            <Plus size={13} /> Nova cotação
+          </button>
+        </div>
+        {db.cotacoes.length === 0 ? (
+          <EmptyState icon={FileText} title="Nenhuma cotação registrada" sub="Clique em “Nova cotação” para gerar a primeira." />
+        ) : (
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th></th></tr></thead>
+              <tbody>
+                {db.cotacoes
+                  .slice()
+                  .sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || ""))
+                  .map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 600 }}>{nomeCliente(c.clienteId)}</td>
+                      <td className="nexo-cell-muted">{c.veiculoId ? nomeVeiculo(c.veiculoId) : "—"}</td>
+                      <td>{nomeSeguradoraPorId(c.seguradoraId)}</td>
+                      <td>{nomePlanoPorId(c.planoId)}</td>
+                      <td className="mono">{formatBRL(c.valor)}</td>
+                      <td>{formatDateBR(c.dataCotacao)}</td>
+                      <td>
+                        <div className="nexo-actions-cell">
+                          <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}>Gerar PDF</button>
+                          <button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", c)}><Pencil size={13} /></button>
+                          <button className="nexo-icon-btn" onClick={() => onDeleteCotacao(c.id)}><Trash2 size={13} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* App shell                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -1473,9 +2016,34 @@ const NAV_ITEMS = [
   { key: "veiculos", label: "Veículos", Icon: Car },
   { key: "financeiro", label: "Financeiro", Icon: Receipt },
   { key: "relatorios", label: "Relatórios", Icon: FileText },
+  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [] };
+
+const rowToSeguradora = (r) => ({ id: r.id, nome: r.nome || "" });
+const seguradoraToRow = (s) => ({ nome: s.nome });
+
+const rowToPlano = (r) => ({
+  id: r.id, seguradoraId: r.seguradora_id, nome: r.nome || "",
+  valorMensal: r.valor_mensal ?? "", valorFranquia: r.valor_franquia ?? "", beneficios: r.beneficios || "",
+});
+const planoToRow = (p) => ({
+  seguradora_id: p.seguradoraId, nome: p.nome,
+  valor_mensal: p.valorMensal === "" || p.valorMensal == null ? null : Number(p.valorMensal),
+  valor_franquia: p.valorFranquia === "" || p.valorFranquia == null ? null : Number(p.valorFranquia),
+  beneficios: p.beneficios || null,
+});
+
+const rowToCotacao = (r) => ({
+  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id, seguradoraId: r.seguradora_id, planoId: r.plano_id,
+  valor: r.valor ?? "", dataCotacao: r.data_cotacao || "", observacoes: r.observacoes || "",
+});
+const cotacaoToRow = (c) => ({
+  cliente_id: c.clienteId, veiculo_id: c.veiculoId || null, seguradora_id: c.seguradoraId, plano_id: c.planoId,
+  valor: c.valor === "" || c.valor == null ? null : Number(c.valor), data_cotacao: c.dataCotacao || null,
+  observacoes: c.observacoes || null,
+});
 
 /* Mapeamento entre o formato usado no app (camelCase) e as colunas do Supabase (snake_case) */
 const rowToCliente = (r) => ({
@@ -1528,18 +2096,27 @@ export default function App() {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
+        supabase.from("seguradoras").select("*").order("nome"),
+        supabase.from("planos").select("*"),
+        supabase.from("cotacoes").select("*"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
       if (boletosRes.error) throw boletosRes.error;
+      if (seguradorasRes.error) throw seguradorasRes.error;
+      if (planosRes.error) throw planosRes.error;
+      if (cotacoesRes.error) throw cotacoesRes.error;
       setDb({
         clientes: (clientesRes.data || []).map(rowToCliente),
         veiculos: (veiculosRes.data || []).map(rowToVeiculo),
         boletos: (boletosRes.data || []).map(rowToBoleto),
+        seguradoras: (seguradorasRes.data || []).map(rowToSeguradora),
+        planos: (planosRes.data || []).map(rowToPlano),
+        cotacoes: (cotacoesRes.data || []).map(rowToCotacao),
       });
     } catch (e) {
       console.error(e);
@@ -1552,8 +2129,8 @@ export default function App() {
   useEffect(() => { carregarTudo(); }, [carregarTudo]);
 
   const closeModal = () => setModal(null);
-  const openModal = (type, data = null, defaultClienteId = null, defaultVeiculoId = null) =>
-    setModal({ type, data, defaultClienteId, defaultVeiculoId });
+  const openModal = (type, data = null, defaultClienteId = null, defaultVeiculoId = null, defaultSeguradoraId = null) =>
+    setModal({ type, data, defaultClienteId, defaultVeiculoId, defaultSeguradoraId });
 
   const saveCliente = async (cliente) => {
     try {
@@ -1663,9 +2240,143 @@ export default function App() {
 
   const openDetail = (clienteId) => { setSelectedClienteId(clienteId); setView("clienteDetail"); };
 
+  // --- Seguradoras, planos e cotações ---
+  const saveSeguradora = async (nome) => {
+    try {
+      const { data, error } = await supabase.from("seguradoras").insert({ nome }).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, seguradoras: [...prev.seguradoras, rowToSeguradora(data)] }));
+      return data.id;
+    } catch (e) {
+      alert("Não foi possível salvar a seguradora: " + e.message);
+      return null;
+    }
+  };
+
+  const deleteSeguradora = async (id) => {
+    if (!window.confirm("Excluir esta seguradora? Os planos vinculados também serão removidos.")) return;
+    try {
+      const { error } = await supabase.from("seguradoras").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({
+        ...prev,
+        seguradoras: prev.seguradoras.filter((s) => s.id !== id),
+        planos: prev.planos.filter((p) => p.seguradoraId !== id),
+      }));
+    } catch (e) {
+      alert("Não foi possível excluir a seguradora: " + e.message);
+    }
+  };
+
+  const savePlano = async (plano) => {
+    try {
+      if (plano.id) {
+        const { data, error } = await supabase.from("planos").update(planoToRow(plano)).eq("id", plano.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, planos: prev.planos.map((p) => (p.id === data.id ? rowToPlano(data) : p)) }));
+      } else {
+        const { data, error } = await supabase.from("planos").insert(planoToRow(plano)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, planos: [...prev.planos, rowToPlano(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar o plano: " + e.message);
+    }
+  };
+
+  const deletePlano = async (id) => {
+    if (!window.confirm("Excluir este plano?")) return;
+    try {
+      const { error } = await supabase.from("planos").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, planos: prev.planos.filter((p) => p.id !== id) }));
+    } catch (e) {
+      alert("Não foi possível excluir o plano: " + e.message);
+    }
+  };
+
+  const saveCotacao = async (cotacao) => {
+    try {
+      if (cotacao.id) {
+        const { data, error } = await supabase.from("cotacoes").update(cotacaoToRow(cotacao)).eq("id", cotacao.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.map((c) => (c.id === data.id ? rowToCotacao(data) : c)) }));
+      } else {
+        const { data, error } = await supabase.from("cotacoes").insert(cotacaoToRow(cotacao)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, cotacoes: [...prev.cotacoes, rowToCotacao(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar a cotação: " + e.message);
+    }
+  };
+
+  const deleteCotacao = async (id) => {
+    if (!window.confirm("Excluir esta cotação?")) return;
+    try {
+      const { error } = await supabase.from("cotacoes").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.filter((c) => c.id !== id) }));
+    } catch (e) {
+      alert("Não foi possível excluir a cotação: " + e.message);
+    }
+  };
+
+  // --- Importação em massa (CSV) ---
+  const importarClientesCSV = async (linhas) => {
+    if (linhas.length === 0) return;
+    try {
+      const payload = linhas.map((l) => clienteToRow({ ...l, status: l.status || "Ativo" }));
+      const { data, error } = await supabase.from("clientes").insert(payload).select();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
+      alert(`${data?.length || 0} cliente(s) importado(s) com sucesso.`);
+    } catch (e) {
+      alert("Não foi possível importar os clientes: " + e.message);
+    }
+  };
+
+  const importarPlanosCSV = async (linhas) => {
+    if (linhas.length === 0) return;
+    try {
+      const nomesExistentes = new Map(db.seguradoras.map((s) => [normalizarTexto(s.nome), s.id]));
+      const nomesNovos = [...new Set(linhas.map((l) => l.seguradoraNome).filter((n) => n && !nomesExistentes.has(normalizarTexto(n))))];
+      let seguradorasNovasCriadas = [];
+      if (nomesNovos.length > 0) {
+        const { data, error } = await supabase.from("seguradoras").insert(nomesNovos.map((nome) => ({ nome }))).select();
+        if (error) throw error;
+        seguradorasNovasCriadas = data || [];
+        seguradorasNovasCriadas.forEach((s) => nomesExistentes.set(normalizarTexto(s.nome), s.id));
+      }
+      const payloadPlanos = linhas
+        .filter((l) => l.seguradoraNome)
+        .map((l) =>
+          planoToRow({
+            seguradoraId: nomesExistentes.get(normalizarTexto(l.seguradoraNome)),
+            nome: l.planoNome,
+            valorMensal: l.valorMensal,
+            valorFranquia: l.valorFranquia,
+            beneficios: l.beneficios,
+          })
+        );
+      const { data: planosData, error: planosError } = await supabase.from("planos").insert(payloadPlanos).select();
+      if (planosError) throw planosError;
+      setDb((prev) => ({
+        ...prev,
+        seguradoras: [...prev.seguradoras, ...seguradorasNovasCriadas.map(rowToSeguradora)],
+        planos: [...prev.planos, ...(planosData || []).map(rowToPlano)],
+      }));
+      alert(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`);
+    } catch (e) {
+      alert("Não foi possível importar a tabela de preços: " + e.message);
+    }
+  };
+
   const goTo = (v) => { setView(v); setSidebarOpen(false); };
 
-  const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios", clienteDetail: "Detalhes do cliente" };
+  const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios", cotacoes: "Cotação de seguros", clienteDetail: "Detalhes do cliente" };
 
   return (
     <div className="nexo">
@@ -1723,7 +2434,7 @@ export default function App() {
             <main className="nexo-content">
               {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} />}
               {view === "clientes" && (
-                <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} />
+                <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
               )}
               {view === "veiculos" && (
                 <VeiculosView db={db} onOpenModal={openModal} onDeleteVeiculo={deleteVeiculo} onOpenDetail={openDetail} />
@@ -1732,6 +2443,17 @@ export default function App() {
                 <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} />
               )}
               {view === "relatorios" && <RelatoriosView db={db} />}
+              {view === "cotacoes" && (
+                <CotacoesView
+                  db={db}
+                  onOpenModal={openModal}
+                  onSaveSeguradora={saveSeguradora}
+                  onDeleteSeguradora={deleteSeguradora}
+                  onDeletePlano={deletePlano}
+                  onDeleteCotacao={deleteCotacao}
+                  onImportarPlanos={importarPlanosCSV}
+                />
+              )}
               {view === "clienteDetail" && (
                 <ClienteDetailView
                   db={db}
@@ -1770,6 +2492,32 @@ export default function App() {
           />
         </Modal>
       )}
+      {modal && modal.type === "plano" && (
+        <Modal title={modal.data ? "Editar plano" : "Novo plano"} onClose={closeModal} wide>
+          <PlanoForm
+            initial={modal.data}
+            seguradoras={db.seguradoras}
+            defaultSeguradoraId={modal.defaultSeguradoraId}
+            onSave={savePlano}
+            onCancel={closeModal}
+          />
+        </Modal>
+      )}
+      {modal && modal.type === "cotacao" && (
+        <Modal title={modal.data ? "Editar cotação" : "Nova cotação"} onClose={closeModal} wide>
+          <CotacaoForm
+            initial={modal.data}
+            clientes={db.clientes}
+            veiculos={db.veiculos}
+            seguradoras={db.seguradoras}
+            planos={db.planos}
+            defaultClienteId={modal.defaultClienteId}
+            onSave={saveCotacao}
+            onCancel={closeModal}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
+
