@@ -10,7 +10,11 @@ create table if not exists clientes (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
   nascimento date,
+  sexo text,
   cpf text,
+  cnh_numero text,
+  cnh_emissao date,
+  cnh_validade date,
   telefone text,
   whatsapp text,
   email text,
@@ -29,8 +33,11 @@ create table if not exists veiculos (
   marca text not null,
   modelo text not null,
   ano text,
+  ano_fabricacao text,
   placa text not null,
+  renavam text,
   chassi text,
+  cor text,
   valor_veiculo numeric(12,2),
   valor_mensal numeric(12,2),
   data_cadastro date,
@@ -89,6 +96,59 @@ create policy "acesso total boletos" on boletos for all using (true) with check 
 -- perder os dados que já existem. Se está criando o banco pela
 -- primeira vez, pode ignorar — as colunas já vêm na tabela acima.
 -- ------------------------------------------------------------------
+-- ------------------------------------------------------------------
+-- Tabela: seguradoras
+-- ------------------------------------------------------------------
+create table if not exists seguradoras (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  created_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------------
+-- Tabela: planos (tabela de preços/benefícios de cada seguradora)
+-- ------------------------------------------------------------------
+create table if not exists planos (
+  id uuid primary key default gen_random_uuid(),
+  seguradora_id uuid not null references seguradoras(id) on delete cascade,
+  nome text not null,
+  valor_mensal numeric(12,2),
+  valor_franquia numeric(12,2),
+  beneficios text,
+  created_at timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------------
+-- Tabela: cotacoes (cotação gerada para um cliente/veículo)
+-- ------------------------------------------------------------------
+create table if not exists cotacoes (
+  id uuid primary key default gen_random_uuid(),
+  cliente_id uuid not null references clientes(id) on delete cascade,
+  veiculo_id uuid references veiculos(id) on delete set null,
+  seguradora_id uuid references seguradoras(id) on delete set null,
+  plano_id uuid references planos(id) on delete set null,
+  valor numeric(12,2),
+  observacoes text,
+  data_cotacao date,
+  created_at timestamptz not null default now()
+);
+
+alter table seguradoras enable row level security;
+alter table planos enable row level security;
+alter table cotacoes enable row level security;
+create policy "acesso total seguradoras" on seguradoras for all using (true) with check (true);
+create policy "acesso total planos" on planos for all using (true) with check (true);
+create policy "acesso total cotacoes" on cotacoes for all using (true) with check (true);
+
 alter table veiculos add column if not exists codigo_fipe text;
 alter table veiculos add column if not exists valor_fipe numeric(12,2);
 alter table clientes add column if not exists cep text;
+
+-- Migração: campos adicionados para CNH, sexo, Renavam, ano de fabricação e cor.
+alter table clientes add column if not exists sexo text;
+alter table clientes add column if not exists cnh_numero text;
+alter table clientes add column if not exists cnh_emissao date;
+alter table clientes add column if not exists cnh_validade date;
+alter table veiculos add column if not exists ano_fabricacao text;
+alter table veiculos add column if not exists renavam text;
+alter table veiculos add column if not exists cor text;
