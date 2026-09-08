@@ -2007,6 +2007,78 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
 }
 
 /* ------------------------------------------------------------------ */
+/* Login                                                                */
+/* ------------------------------------------------------------------ */
+
+function LoginScreen({ onEntrar }) {
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function handleSubmit() {
+    if (!email.trim() || !senha.trim()) {
+      setErro("Preencha e-mail e senha.");
+      return;
+    }
+    setCarregando(true);
+    setErro("");
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
+    if (error) {
+      setErro("E-mail ou senha incorretos.");
+      setCarregando(false);
+      return;
+    }
+    onEntrar();
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+      <div className="nexo-card" style={{ maxWidth: 360, width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div className="nexo-brand-mark">SS</div>
+          <div>
+            <div className="nexo-brand-name">Seu Seguro Corretora</div>
+            <div className="nexo-brand-tag">Acesso restrito</div>
+          </div>
+        </div>
+        <Field label="E-mail">
+          <input
+            type="email"
+            className="nexo-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="seu@email.com"
+            autoFocus
+          />
+        </Field>
+        <div style={{ height: 12 }} />
+        <Field label="Senha">
+          <input
+            type="password"
+            className="nexo-input"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="••••••••"
+          />
+        </Field>
+        {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
+        <button
+          className="nexo-btn nexo-btn-primary"
+          style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+          disabled={carregando}
+          onClick={handleSubmit}
+        >
+          {carregando ? "Entrando…" : "Entrar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* App shell                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -2084,6 +2156,7 @@ const boletoToRow = (b) => ({
 });
 
 export default function App() {
+  const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = sem sessão, objeto = logado
   const [db, setDb] = useState(EMPTY_DB);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -2091,6 +2164,12 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSessao(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setSessao(session));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const carregarTudo = useCallback(async () => {
     setLoading(true);
@@ -2126,7 +2205,9 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => { carregarTudo(); }, [carregarTudo]);
+  useEffect(() => {
+    if (sessao) carregarTudo();
+  }, [carregarTudo, sessao]);
 
   const closeModal = () => setModal(null);
   const openModal = (type, data = null, defaultClienteId = null, defaultVeiculoId = null, defaultSeguradoraId = null) =>
@@ -2378,6 +2459,26 @@ export default function App() {
 
   const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios", cotacoes: "Cotação de seguros", clienteDetail: "Detalhes do cliente" };
 
+  if (sessao === undefined) {
+    return (
+      <div className="nexo">
+        <style>{STYLE}</style>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13 }}>
+          Verificando acesso…
+        </div>
+      </div>
+    );
+  }
+
+  if (!sessao) {
+    return (
+      <div className="nexo">
+        <style>{STYLE}</style>
+        <LoginScreen onEntrar={() => {}} />
+      </div>
+    );
+  }
+
   return (
     <div className="nexo">
       <style>{STYLE}</style>
@@ -2415,7 +2516,12 @@ export default function App() {
                 </div>
               ))}
             </nav>
-            <div className="nexo-sidebar-foot">Dados salvos automaticamente neste navegador.</div>
+            <div className="nexo-sidebar-foot">
+              <div style={{ marginBottom: 8, wordBreak: "break-all" }}>{sessao?.user?.email}</div>
+              <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
+                Sair
+              </button>
+            </div>
           </aside>
 
           <div className="nexo-main">
