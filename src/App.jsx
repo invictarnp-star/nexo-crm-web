@@ -1016,7 +1016,7 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
   const [f, setF] = useState(
     initial || {
       clienteId: defaultClienteId || "", veiculoId: defaultVeiculoId || "", numero: "",
-      dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "",
+      dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "", parcelas: 1,
     }
   );
   const [errors, setErrors] = useState({});
@@ -1026,12 +1026,11 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
   function submit() {
     const errs = {};
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
-    if (!f.veiculoId) errs.veiculoId = "Selecione o veículo.";
     if (!f.numero.trim()) errs.numero = "Informe o número do boleto.";
     if (!f.dataVencimento) errs.dataVencimento = "Informe o vencimento.";
     if (!f.valor || Number(f.valor) <= 0) errs.valor = "Informe um valor válido.";
     if (Object.keys(errs).length) return setErrors(errs);
-    onSave({ ...f, id: initial?.id });
+    onSave({ ...f, id: initial?.id, parcelas: initial ? 1 : Number(f.parcelas) || 1 });
   }
 
   return (
@@ -1043,9 +1042,9 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
-        <Field label="Veículo *" error={errors.veiculoId}>
+        <Field label="Veículo (opcional)">
           <select className="nexo-select" value={f.veiculoId} onChange={set("veiculoId")} disabled={!f.clienteId}>
-            <option value="">{f.clienteId ? "Selecione" : "Escolha o cliente primeiro"}</option>
+            <option value="">{f.clienteId ? "Nenhum (boleto direto no cliente)" : "Escolha o cliente primeiro"}</option>
             {veiculosDoCliente.map((v) => <option key={v.id} value={v.id}>{v.marca} {v.modelo} · {v.placa}</option>)}
           </select>
         </Field>
@@ -1057,19 +1056,28 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
         <Field label="Data de emissão">
           <input type="date" className="nexo-input" value={f.dataEmissao} onChange={set("dataEmissao")} />
         </Field>
-        <Field label="Vencimento *" error={errors.dataVencimento}>
+        <Field label="1º vencimento *" error={errors.dataVencimento}>
           <input type="date" className="nexo-input" value={f.dataVencimento} onChange={set("dataVencimento")} />
         </Field>
-        <Field label="Valor (R$) *" error={errors.valor}>
+        <Field label="Valor de cada parcela (R$) *" error={errors.valor}>
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valor} onChange={set("valor")} placeholder="0,00" />
         </Field>
       </div>
+      {!initial && (
+        <Field label="Quantidade de boletos (parcelas mensais)">
+          <select className="nexo-select" value={f.parcelas} onChange={set("parcelas")}>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>{n}x {n > 1 ? `(gera ${n} boletos mensais, um por mês, a partir do vencimento acima)` : ""}</option>
+            ))}
+          </select>
+        </Field>
+      )}
       <Field label="Data de pagamento (deixe em branco se ainda não pago)">
         <input type="date" className="nexo-input" value={f.dataPagamento} onChange={set("dataPagamento")} />
       </Field>
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar boleto</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar boleto{!initial && Number(f.parcelas) > 1 ? "s" : ""}</button>
       </div>
     </>
   );
@@ -2279,6 +2287,447 @@ function LoginScreen({ onEntrar }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Status genérico (Adesões / Comissões)                                */
+/* ------------------------------------------------------------------ */
+
+const STATUS_TONS = {
+  Recebida: "success", Pago: "success",
+  Pendente: "warning", "A pagar": "warning",
+  Cancelada: "danger", Cancelado: "danger",
+};
+function StatusPill({ status }) {
+  const tone = STATUS_TONS[status] || "info";
+  const cor = { success: "var(--success)", warning: "var(--warning)", danger: "var(--danger)", info: "var(--info)" }[tone];
+  const fundo = { success: "var(--success-soft)", warning: "var(--warning-soft)", danger: "var(--danger-soft)", info: "var(--info-soft)" }[tone];
+  return <span className="nexo-badge" style={{ color: cor, background: fundo }}>{status}</span>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Consultoras                                                          */
+/* ------------------------------------------------------------------ */
+
+function ConsultoraForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState(initial || { nome: "", telefone: "", email: "", status: "Ativa" });
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function submit() {
+    const errs = {};
+    if (!f.nome.trim()) errs.nome = "Informe o nome.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <Field label="Nome da consultora *" error={errors.nome}>
+        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Nome completo" />
+      </Field>
+      <div className="nexo-field-row">
+        <Field label="Telefone">
+          <input className="nexo-input mono" value={f.telefone} onChange={(e) => setF({ ...f, telefone: maskPhone(e.target.value) })} placeholder="(00) 00000-0000" />
+        </Field>
+        <Field label="E-mail">
+          <input type="email" className="nexo-input" value={f.email} onChange={set("email")} placeholder="nome@email.com" />
+        </Field>
+      </div>
+      <Field label="Status">
+        <select className="nexo-select" value={f.status} onChange={set("status")}>
+          <option>Ativa</option>
+          <option>Inativa</option>
+        </select>
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultora</button>
+      </div>
+    </>
+  );
+}
+
+function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
+      </div>
+
+      {db.consultoras.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
+      ) : (
+        <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+          {db.consultoras.map((c) => {
+            const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
+            const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
+            const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
+            const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
+            const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
+            return (
+              <div key={c.id} className="nexo-card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
+                    <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
+                  </div>
+                  <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
+                  <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
+                  <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
+                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Adesões                                                               */
+/* ------------------------------------------------------------------ */
+
+function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
+  const [f, setF] = useState(
+    initial || { clienteId: "", consultoraId: "", dataVenda: todayISO(), valorAdesao: "", valorRecebido: "", dataRecebimento: "", status: "Pendente" }
+  );
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function submit() {
+    const errs = {};
+    if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.valorAdesao || Number(f.valorAdesao) <= 0) errs.valorAdesao = "Informe um valor válido.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Cliente *" error={errors.clienteId}>
+          <select className="nexo-select" value={f.clienteId} onChange={set("clienteId")}>
+            <option value="">Selecione</option>
+            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+        <Field label="Consultora responsável *" error={errors.consultoraId}>
+          <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
+            <option value="">Selecione</option>
+            {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Data da venda">
+          <input type="date" className="nexo-input" value={f.dataVenda} onChange={set("dataVenda")} />
+        </Field>
+        <Field label="Valor da adesão *" error={errors.valorAdesao}>
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorAdesao} onChange={set("valorAdesao")} placeholder="0,00" />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Valor recebido">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorRecebido} onChange={set("valorRecebido")} placeholder="0,00" />
+        </Field>
+        <Field label="Data do recebimento">
+          <input type="date" className="nexo-input" value={f.dataRecebimento} onChange={set("dataRecebimento")} />
+        </Field>
+      </div>
+      <Field label="Status">
+        <select className="nexo-select" value={f.status} onChange={set("status")}>
+          <option>Pendente</option>
+          <option>Recebida</option>
+          <option>Cancelada</option>
+        </select>
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar adesão</button>
+      </div>
+    </>
+  );
+}
+
+function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+  const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
+
+  const recebidas = db.adesoes.filter((a) => a.status === "Recebida");
+  const pendentes = db.adesoes.filter((a) => a.status === "Pendente");
+  const canceladas = db.adesoes.filter((a) => a.status === "Cancelada");
+
+  const filtradas = filtroStatus === "Todos" ? db.adesoes : db.adesoes.filter((a) => a.status === filtroStatus);
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("adesao")}><Plus size={15} /> Nova adesão</button>
+      </div>
+
+      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <Kpi icon={CheckCircle2} label="Adesões recebidas" value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
+        <Kpi icon={Clock} label="Adesões pendentes" value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
+        <Kpi icon={XCircle} label="Adesões canceladas" value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
+      </div>
+
+      <div className="nexo-filters">
+        <div className="nexo-filter-field">
+          <label>Status</label>
+          <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+            <option>Todos</option><option>Pendente</option><option>Recebida</option><option>Cancelada</option>
+          </select>
+        </div>
+      </div>
+
+      {db.adesoes.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma adesão lançada" sub="Clique em “Nova adesão” para começar." /></div>
+      ) : (
+        <div className="nexo-table-wrap">
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Cliente</th><th>Consultora</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {filtradas.map((a) => (
+                  <tr key={a.id}>
+                    <td style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</td>
+                    <td className="nexo-cell-muted">{nomeConsultora(a.consultoraId)}</td>
+                    <td>{formatDateBR(a.dataVenda)}</td>
+                    <td className="mono">{formatBRL(a.valorAdesao)}</td>
+                    <td><StatusPill status={a.status} /></td>
+                    <td>
+                      <div className="nexo-actions-cell">
+                        {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
+                        <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
+                        <button className="nexo-icon-btn" onClick={() => onDeleteAdesao(a.id)}><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Comissões                                                             */
+/* ------------------------------------------------------------------ */
+
+function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
+  const [f, setF] = useState(
+    initial || {
+      consultoraId: "", clienteId: "", tipo: "Contrato/Mensalidade", referencia: "", dataVenda: todayISO(),
+      valorBase: "", percentual: "", valorComissao: "", dataPrevistaPagamento: "", dataEfetivaPagamento: "", status: "A pagar",
+    }
+  );
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function setEComputar(k) {
+    return (e) => {
+      const next = { ...f, [k]: e.target.value };
+      const base = Number(next.valorBase) || 0;
+      const pct = Number(next.percentual) || 0;
+      if (k === "valorBase" || k === "percentual") next.valorComissao = base && pct ? String(Math.round(base * (pct / 100) * 100) / 100) : next.valorComissao;
+      setF(next);
+    };
+  }
+
+  function submit() {
+    const errs = {};
+    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
+    if (!f.valorBase || Number(f.valorBase) <= 0) errs.valorBase = "Informe o valor do contrato/adesão.";
+    if (!f.percentual || Number(f.percentual) <= 0) errs.percentual = "Informe o percentual.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Consultora *" error={errors.consultoraId}>
+          <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
+            <option value="">Selecione</option>
+            {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+        <Field label="Cliente *" error={errors.clienteId}>
+          <select className="nexo-select" value={f.clienteId} onChange={set("clienteId")}>
+            <option value="">Selecione</option>
+            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Comissão sobre">
+          <select className="nexo-select" value={f.tipo} onChange={set("tipo")}>
+            <option>Contrato/Mensalidade</option>
+            <option>Adesão</option>
+          </select>
+        </Field>
+        <Field label="Contrato / referência">
+          <input className="nexo-input" value={f.referencia} onChange={set("referencia")} placeholder="Ex.: Contrato nº 123" />
+        </Field>
+      </div>
+      <Field label="Data da venda">
+        <input type="date" className="nexo-input" value={f.dataVenda} onChange={set("dataVenda")} />
+      </Field>
+      <div className="nexo-field-row3">
+        <Field label="Valor do contrato/adesão *" error={errors.valorBase}>
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorBase} onChange={setEComputar("valorBase")} placeholder="0,00" />
+        </Field>
+        <Field label="Percentual (%) *" error={errors.percentual}>
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentual} onChange={setEComputar("percentual")} placeholder="10" />
+        </Field>
+        <Field label="Valor da comissão">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorComissao} onChange={set("valorComissao")} placeholder="Calculado automaticamente" />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Data prevista de pagamento">
+          <input type="date" className="nexo-input" value={f.dataPrevistaPagamento} onChange={set("dataPrevistaPagamento")} />
+        </Field>
+        <Field label="Data efetiva do pagamento">
+          <input type="date" className="nexo-input" value={f.dataEfetivaPagamento} onChange={set("dataEfetivaPagamento")} />
+        </Field>
+      </div>
+      <Field label="Status">
+        <select className="nexo-select" value={f.status} onChange={set("status")}>
+          <option>A pagar</option>
+          <option>Pago</option>
+          <option>Cancelado</option>
+        </select>
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar comissão</button>
+      </div>
+    </>
+  );
+}
+
+function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao }) {
+  const [aba, setAba] = useState("lista"); // lista | fechamento
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+  const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
+
+  const aPagar = db.comissoes.filter((c) => c.status === "A pagar");
+  const pagas = db.comissoes.filter((c) => c.status === "Pago");
+  const filtradas = filtroStatus === "Todos" ? db.comissoes : db.comissoes.filter((c) => c.status === filtroStatus);
+
+  const fechamentoPorConsultora = db.consultoras.map((consultora) => {
+    const comissoesDaConsultora = db.comissoes.filter((c) => c.consultoraId === consultora.id);
+    return {
+      consultora,
+      totalContratos: comissoesDaConsultora.length,
+      totalComissao: sum(comissoesDaConsultora.map((c) => c.valorComissao)),
+      totalPago: sum(comissoesDaConsultora.filter((c) => c.status === "Pago").map((c) => c.valorComissao)),
+      totalAPagar: sum(comissoesDaConsultora.filter((c) => c.status === "A pagar").map((c) => c.valorComissao)),
+    };
+  }).filter((f) => f.totalContratos > 0);
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Nova comissão</button>
+      </div>
+
+      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <Kpi icon={Clock} label="Comissões a pagar" value={formatBRL(sum(aPagar.map((c) => c.valorComissao)))} tone="warning" />
+        <Kpi icon={CheckCircle2} label="Comissões pagas" value={formatBRL(sum(pagas.map((c) => c.valorComissao)))} tone="success" />
+      </div>
+
+      <div className="nexo-tabs">
+        <div className={`nexo-tab ${aba === "lista" ? "active" : ""}`} onClick={() => setAba("lista")}>Lançamentos</div>
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultora</div>
+      </div>
+
+      {aba === "lista" ? (
+        <>
+          <div className="nexo-filters">
+            <div className="nexo-filter-field">
+              <label>Status</label>
+              <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                <option>Todos</option><option>A pagar</option><option>Pago</option><option>Cancelado</option>
+              </select>
+            </div>
+          </div>
+          {db.comissoes.length === 0 ? (
+            <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma comissão lançada" sub="Clique em “Nova comissão” para começar." /></div>
+          ) : (
+            <div className="nexo-table-wrap">
+              <div className="nexo-table-scroll">
+                <table className="nexo-table">
+                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
+                  <tbody>
+                    {filtradas.map((c) => (
+                      <tr key={c.id}>
+                        <td style={{ fontWeight: 600 }}>{nomeConsultora(c.consultoraId)}</td>
+                        <td className="nexo-cell-muted">{nomeCliente(c.clienteId)}</td>
+                        <td className="nexo-cell-muted">{c.tipo}</td>
+                        <td className="mono">{formatBRL(c.valorBase)}</td>
+                        <td className="mono">{c.percentual}%</td>
+                        <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(c.valorComissao)}</td>
+                        <td><StatusPill status={c.status} /></td>
+                        <td>
+                          <div className="nexo-actions-cell">
+                            {c.status === "A pagar" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPagaComissao(c.id)}>Marcar pago</button>}
+                            <button className="nexo-icon-btn" onClick={() => onOpenModal("comissao", c)}><Pencil size={13} /></button>
+                            <button className="nexo-icon-btn" onClick={() => onDeleteComissao(c.id)}><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="nexo-table-wrap">
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Consultora</th><th>Total de contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th></tr></thead>
+              <tbody>
+                {fechamentoPorConsultora.length === 0 ? (
+                  <tr><td colSpan={5} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma comissão lançada ainda.</td></tr>
+                ) : fechamentoPorConsultora.map((f) => (
+                  <tr key={f.consultora.id}>
+                    <td style={{ fontWeight: 600 }}>{f.consultora.nome}</td>
+                    <td>{f.totalContratos}</td>
+                    <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(f.totalComissao)}</td>
+                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.totalPago)}</td>
+                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.totalAPagar)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* App shell                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -2289,9 +2738,40 @@ const NAV_ITEMS = [
   { key: "financeiro", label: "Financeiro", Icon: Receipt },
   { key: "relatorios", label: "Relatórios", Icon: FileText },
   { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet },
+  { key: "consultoras", label: "Consultoras", Icon: Users },
+  { key: "adesoes", label: "Adesões", Icon: FileDown },
+  { key: "comissoes", label: "Comissões", Icon: CreditCard },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [] };
+
+const rowToConsultora = (r) => ({ id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa" });
+const consultoraToRow = (c) => ({ nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa" });
+
+const rowToAdesao = (r) => ({
+  id: r.id, clienteId: r.cliente_id, consultoraId: r.consultora_id, dataVenda: r.data_venda || "",
+  valorAdesao: r.valor_adesao ?? "", valorRecebido: r.valor_recebido ?? "", dataRecebimento: r.data_recebimento || "", status: r.status || "Pendente",
+});
+const adesaoToRow = (a) => ({
+  cliente_id: a.clienteId, consultora_id: a.consultoraId, data_venda: a.dataVenda || null,
+  valor_adesao: a.valorAdesao === "" ? null : Number(a.valorAdesao),
+  valor_recebido: a.valorRecebido === "" || a.valorRecebido == null ? null : Number(a.valorRecebido),
+  data_recebimento: a.dataRecebimento || null, status: a.status || "Pendente",
+});
+
+const rowToComissao = (r) => ({
+  id: r.id, consultoraId: r.consultora_id, clienteId: r.cliente_id, tipo: r.tipo || "Contrato/Mensalidade",
+  referencia: r.referencia || "", dataVenda: r.data_venda || "", valorBase: r.valor_base ?? "",
+  percentual: r.percentual ?? "", valorComissao: r.valor_comissao ?? "",
+  dataPrevistaPagamento: r.data_prevista_pagamento || "", dataEfetivaPagamento: r.data_efetiva_pagamento || "", status: r.status || "A pagar",
+});
+const comissaoToRow = (c) => ({
+  consultora_id: c.consultoraId, cliente_id: c.clienteId, tipo: c.tipo || "Contrato/Mensalidade", referencia: c.referencia || null,
+  data_venda: c.dataVenda || null, valor_base: c.valorBase === "" ? null : Number(c.valorBase),
+  percentual: c.percentual === "" ? null : Number(c.percentual),
+  valor_comissao: c.valorComissao === "" || c.valorComissao == null ? null : Number(c.valorComissao),
+  data_prevista_pagamento: c.dataPrevistaPagamento || null, data_efetiva_pagamento: c.dataEfetivaPagamento || null, status: c.status || "A pagar",
+});
 
 const rowToSeguradora = (r) => ({ id: r.id, nome: r.nome || "" });
 const seguradoraToRow = (s) => ({ nome: s.nome });
@@ -2358,12 +2838,12 @@ const veiculoToRow = (v) => ({
   fipe_combustivel: v.fipeCombustivel || null, fipe_mes_referencia: v.fipeMesReferencia || null, fipe_ultima_consulta: v.fipeUltimaConsulta || null,
 });
 const rowToBoleto = (r) => ({
-  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id, numero: r.numero || "",
+  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "",
   dataEmissao: r.data_emissao || "", dataVencimento: r.data_vencimento || "", valor: r.valor ?? "",
   dataPagamento: r.data_pagamento || "",
 });
 const boletoToRow = (b) => ({
-  cliente_id: b.clienteId, veiculo_id: b.veiculoId, numero: b.numero, data_emissao: b.dataEmissao || null,
+  cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, data_emissao: b.dataEmissao || null,
   data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
 });
 
@@ -2387,13 +2867,16 @@ export default function App() {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
         supabase.from("seguradoras").select("*").order("nome"),
         supabase.from("planos").select("*"),
         supabase.from("cotacoes").select("*"),
+        supabase.from("consultoras").select("*").order("nome"),
+        supabase.from("adesoes").select("*"),
+        supabase.from("comissoes").select("*"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -2401,6 +2884,9 @@ export default function App() {
       if (seguradorasRes.error) throw seguradorasRes.error;
       if (planosRes.error) throw planosRes.error;
       if (cotacoesRes.error) throw cotacoesRes.error;
+      if (consultorasRes.error) throw consultorasRes.error;
+      if (adesoesRes.error) throw adesoesRes.error;
+      if (comissoesRes.error) throw comissoesRes.error;
       setDb({
         clientes: (clientesRes.data || []).map(rowToCliente),
         veiculos: (veiculosRes.data || []).map(rowToVeiculo),
@@ -2408,6 +2894,9 @@ export default function App() {
         seguradoras: (seguradorasRes.data || []).map(rowToSeguradora),
         planos: (planosRes.data || []).map(rowToPlano),
         cotacoes: (cotacoesRes.data || []).map(rowToCotacao),
+        consultoras: (consultorasRes.data || []).map(rowToConsultora),
+        adesoes: (adesoesRes.data || []).map(rowToAdesao),
+        comissoes: (comissoesRes.data || []).map(rowToComissao),
       });
     } catch (e) {
       console.error(e);
@@ -2480,6 +2969,12 @@ export default function App() {
     }
   };
 
+  function somarMeses(dataISO, meses) {
+    const [y, m, d] = dataISO.split("-").map(Number);
+    const dt = new Date(y, m - 1 + meses, d);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  }
+
   const saveBoleto = async (boleto) => {
     try {
       if (boleto.id) {
@@ -2487,9 +2982,20 @@ export default function App() {
         if (error) throw error;
         setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => (b.id === data.id ? rowToBoleto(data) : b)) }));
       } else {
-        const { data, error } = await supabase.from("boletos").insert(boletoToRow(boleto)).select().single();
+        const totalParcelas = Math.max(1, Math.min(12, Number(boleto.parcelas) || 1));
+        const linhas = Array.from({ length: totalParcelas }, (_, i) => {
+          const parcelado = totalParcelas > 1;
+          return boletoToRow({
+            ...boleto,
+            numero: parcelado ? `${boleto.numero}-${i + 1}/${totalParcelas}` : boleto.numero,
+            dataVencimento: somarMeses(boleto.dataVencimento, i),
+            // a data de pagamento (se informada) só se aplica à 1ª parcela; as seguintes começam em aberto
+            dataPagamento: i === 0 ? boleto.dataPagamento : "",
+          });
+        });
+        const { data, error } = await supabase.from("boletos").insert(linhas).select();
         if (error) throw error;
-        setDb((prev) => ({ ...prev, boletos: [...prev.boletos, rowToBoleto(data)] }));
+        setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
       }
       closeModal();
     } catch (e) {
@@ -2638,6 +3144,119 @@ export default function App() {
     }
   };
 
+  // --- Consultoras ---
+  const saveConsultora = async (consultora) => {
+    try {
+      if (consultora.id) {
+        const { data, error } = await supabase.from("consultoras").update(consultoraToRow(consultora)).eq("id", consultora.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, consultoras: prev.consultoras.map((c) => (c.id === data.id ? rowToConsultora(data) : c)) }));
+      } else {
+        const { data, error } = await supabase.from("consultoras").insert(consultoraToRow(consultora)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, consultoras: [...prev.consultoras, rowToConsultora(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar a consultora: " + e.message);
+    }
+  };
+  const deleteConsultora = async (id) => {
+    if (!window.confirm("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
+    try {
+      const { error } = await supabase.from("consultoras").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({
+        ...prev,
+        consultoras: prev.consultoras.filter((c) => c.id !== id),
+        adesoes: prev.adesoes.filter((a) => a.consultoraId !== id),
+        comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
+      }));
+    } catch (e) {
+      alert("Não foi possível excluir a consultora: " + e.message);
+    }
+  };
+
+  // --- Adesões ---
+  const saveAdesao = async (adesao) => {
+    try {
+      if (adesao.id) {
+        const { data, error } = await supabase.from("adesoes").update(adesaoToRow(adesao)).eq("id", adesao.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, adesoes: prev.adesoes.map((a) => (a.id === data.id ? rowToAdesao(data) : a)) }));
+      } else {
+        const { data, error } = await supabase.from("adesoes").insert(adesaoToRow(adesao)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, adesoes: [...prev.adesoes, rowToAdesao(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar a adesão: " + e.message);
+    }
+  };
+  const deleteAdesao = async (id) => {
+    if (!window.confirm("Excluir esta adesão?")) return;
+    try {
+      const { error } = await supabase.from("adesoes").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, adesoes: prev.adesoes.filter((a) => a.id !== id) }));
+    } catch (e) {
+      alert("Não foi possível excluir a adesão: " + e.message);
+    }
+  };
+  const marcarRecebidaAdesao = async (id) => {
+    try {
+      const adesao = db.adesoes.find((a) => a.id === id);
+      const { data, error } = await supabase
+        .from("adesoes")
+        .update({ status: "Recebida", data_recebimento: todayISO(), valor_recebido: adesao?.valorAdesao ?? null })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, adesoes: prev.adesoes.map((a) => (a.id === id ? rowToAdesao(data) : a)) }));
+    } catch (e) {
+      alert("Não foi possível atualizar a adesão: " + e.message);
+    }
+  };
+
+  // --- Comissões ---
+  const saveComissao = async (comissao) => {
+    try {
+      if (comissao.id) {
+        const { data, error } = await supabase.from("comissoes").update(comissaoToRow(comissao)).eq("id", comissao.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, comissoes: prev.comissoes.map((c) => (c.id === data.id ? rowToComissao(data) : c)) }));
+      } else {
+        const { data, error } = await supabase.from("comissoes").insert(comissaoToRow(comissao)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, comissoes: [...prev.comissoes, rowToComissao(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar a comissão: " + e.message);
+    }
+  };
+  const deleteComissao = async (id) => {
+    if (!window.confirm("Excluir esta comissão?")) return;
+    try {
+      const { error } = await supabase.from("comissoes").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, comissoes: prev.comissoes.filter((c) => c.id !== id) }));
+    } catch (e) {
+      alert("Não foi possível excluir a comissão: " + e.message);
+    }
+  };
+  const marcarPagaComissao = async (id) => {
+    try {
+      const { data, error } = await supabase.from("comissoes").update({ status: "Pago", data_efetiva_pagamento: todayISO() }).eq("id", id).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, comissoes: prev.comissoes.map((c) => (c.id === id ? rowToComissao(data) : c)) }));
+    } catch (e) {
+      alert("Não foi possível atualizar a comissão: " + e.message);
+    }
+  };
+
   // --- Importação em massa (CSV) ---
   const importarClientesCSV = async (linhas) => {
     if (linhas.length === 0) return;
@@ -2690,7 +3309,11 @@ export default function App() {
 
   const goTo = (v) => { setView(v); setSidebarOpen(false); };
 
-  const titleMap = { dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios", cotacoes: "Cotação de seguros", clienteDetail: "Detalhes do cliente" };
+  const titleMap = {
+    dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
+    cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões",
+    clienteDetail: "Detalhes do cliente",
+  };
 
   if (sessao === undefined) {
     return (
@@ -2793,6 +3416,11 @@ export default function App() {
                   onImportarPlanos={importarPlanosCSV}
                 />
               )}
+              {view === "consultoras" && <ConsultorasView db={db} onOpenModal={openModal} onDeleteConsultora={deleteConsultora} />}
+              {view === "adesoes" && <AdesoesView db={db} onOpenModal={openModal} onDeleteAdesao={deleteAdesao} onMarcarRecebida={marcarRecebidaAdesao} />}
+              {view === "comissoes" && (
+                <ComissoesView db={db} onOpenModal={openModal} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />
+              )}
               {view === "clienteDetail" && (
                 <ClienteDetailView
                   db={db}
@@ -2854,6 +3482,21 @@ export default function App() {
             onSave={saveCotacao}
             onCancel={closeModal}
           />
+        </Modal>
+      )}
+      {modal && modal.type === "consultora" && (
+        <Modal title={modal.data ? "Editar consultora" : "Nova consultora"} onClose={closeModal}>
+          <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "adesao" && (
+        <Modal title={modal.data ? "Editar adesão" : "Nova adesão"} onClose={closeModal} wide>
+          <AdesaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveAdesao} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "comissao" && (
+        <Modal title={modal.data ? "Editar comissão" : "Nova comissão"} onClose={closeModal} wide>
+          <ComissaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveComissao} onCancel={closeModal} />
         </Modal>
       )}
     </div>
