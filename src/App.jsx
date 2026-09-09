@@ -1087,6 +1087,8 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
 /* Dashboard                                                            */
 /* ------------------------------------------------------------------ */
 
+const COMISSAO_CORRETORA_PERCENTUAL = 10; // ajuste aqui se o percentual de recorrência mudar
+
 function Dashboard({ db, onOpenModal }) {
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
 
@@ -1099,10 +1101,16 @@ function Dashboard({ db, onOpenModal }) {
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
+  // Comissão recorrente da corretora: 10% sobre o valor de TODOS os boletos cadastrados
+  // (independente do status — pago, em aberto, vencido ou a vencer).
+  const valorTotalTodosBoletos = sum(boletosComStatus.map((b) => b.valor));
+  const comissaoCorretora = valorTotalTodosBoletos * (COMISSAO_CORRETORA_PERCENTUAL / 100);
+
   const valoresData = [
     { name: "Recebido", valor: valorRecebido, color: "var(--success)" },
     { name: "Em aberto", valor: valorEmAberto, color: "var(--info)" },
     { name: "A vencer", valor: valorAReceber, color: "var(--warning)" },
+    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: "#B08BF0" },
   ];
 
   const contagem = { Pago: 0, "Em aberto": 0, Vencido: 0, "A vencer": 0 };
@@ -1153,6 +1161,7 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}%)`} value={formatBRL(comissaoCorretora)} tone="accent" />
       </div>
 
       <div className="nexo-charts-grid">
