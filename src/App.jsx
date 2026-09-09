@@ -665,13 +665,84 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
     initial || {
       clienteId: defaultClienteId || "", marca: "", modelo: "", ano: "", anoFabricacao: "", placa: "", renavam: "", chassi: "", cor: "",
       valorVeiculo: "", valorMensal: "", dataCadastro: todayISO(), status: "Ativo",
-      codigoFipe: "", valorFipe: "",
+      codigoFipe: "", valorFipe: "", fipeCombustivel: "", fipeMesReferencia: "", fipeUltimaConsulta: "",
     }
   );
   const [errors, setErrors] = useState({});
   const [buscando, setBuscando] = useState(false);
   const [buscaMsg, setBuscaMsg] = useState("");
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  // --- Consulta Fipe por Marca → Modelo → Ano (sempre via /api/fipe, nunca direto do navegador) ---
+  const [fipeMarcas, setFipeMarcas] = useState([]);
+  const [fipeModelos, setFipeModelos] = useState([]);
+  const [fipeAnos, setFipeAnos] = useState([]);
+  const [fipeMarcaSel, setFipeMarcaSel] = useState("");
+  const [fipeModeloSel, setFipeModeloSel] = useState("");
+  const [fipeAnoSel, setFipeAnoSel] = useState("");
+  const [buscandoFipe, setBuscandoFipe] = useState(false);
+  const [fipeMsg, setFipeMsg] = useState("");
+  const ultimaConsultaFipeRef = useRef("");
+
+  useEffect(() => {
+    fetch("/api/fipe?action=marcas")
+      .then((r) => r.json())
+      .then((lista) => Array.isArray(lista) && setFipeMarcas(lista))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!fipeMarcaSel) { setFipeModelos([]); return; }
+    setFipeModeloSel("");
+    setFipeAnos([]);
+    setFipeAnoSel("");
+    fetch(`/api/fipe?action=modelos&marca=${fipeMarcaSel}`)
+      .then((r) => r.json())
+      .then((lista) => Array.isArray(lista) && setFipeModelos(lista))
+      .catch(() => {});
+  }, [fipeMarcaSel]);
+
+  useEffect(() => {
+    if (!fipeMarcaSel || !fipeModeloSel) { setFipeAnos([]); return; }
+    setFipeAnoSel("");
+    fetch(`/api/fipe?action=anos&marca=${fipeMarcaSel}&modelo=${fipeModeloSel}`)
+      .then((r) => r.json())
+      .then((lista) => Array.isArray(lista) && setFipeAnos(lista))
+      .catch(() => {});
+  }, [fipeModeloSel]);
+
+  async function consultarFipe() {
+    if (!fipeMarcaSel || !fipeModeloSel || !fipeAnoSel) return;
+    const chave = `${fipeMarcaSel}-${fipeModeloSel}-${fipeAnoSel}`;
+    if (chave === ultimaConsultaFipeRef.current && f.valorFipe) {
+      setFipeMsg("Esse veículo já foi consultado agora há pouco — usando o valor já carregado.");
+      return;
+    }
+    setBuscandoFipe(true);
+    setFipeMsg("");
+    try {
+      const resp = await fetch(`/api/fipe?action=valor&marca=${fipeMarcaSel}&modelo=${fipeModeloSel}&ano=${fipeAnoSel}`);
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível consultar a Tabela Fipe neste momento. Tente novamente.");
+      ultimaConsultaFipeRef.current = chave;
+      setF((prev) => ({
+        ...prev,
+        marca: data.marca || prev.marca,
+        modelo: data.modelo || prev.modelo,
+        ano: String(data.ano || prev.ano).slice(0, 4),
+        codigoFipe: data.codigoFipe || prev.codigoFipe,
+        valorFipe: data.valor != null ? data.valor : prev.valorFipe,
+        fipeCombustivel: data.combustivel || prev.fipeCombustivel,
+        fipeMesReferencia: data.mesReferencia || prev.fipeMesReferencia,
+        fipeUltimaConsulta: todayISO(),
+      }));
+      setFipeMsg(`Valor Fipe encontrado (referência: ${data.mesReferencia || "—"}).`);
+    } catch (e) {
+      setFipeMsg("Não foi possível consultar a Tabela Fipe neste momento. Tente novamente.");
+    } finally {
+      setBuscandoFipe(false);
+    }
+  }
 
   async function buscarDadosVeiculo(porChassi) {
     const termo = porChassi ? f.chassi.trim() : f.placa.trim();
@@ -770,12 +841,64 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
           {buscaMsg}
         </div>
       )}
-      <div className="nexo-field-row">
+
+      <div className="nexo-card" style={{ background: "var(--surface-2)", padding: 14 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 10, color: "var(--text-dim)" }}>
+          Consultar Tabela Fipe (Marca → Modelo → Ano)
+        </div>
+        <div className="nexo-field-row3">
+          <Field label="Marca (Fipe)">
+            <select className="nexo-select" value={fipeMarcaSel} onChange={(e) => setFipeMarcaSel(e.target.value)}>
+              <option value="">Selecione</option>
+              {fipeMarcas.map((m) => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}
+            </select>
+          </Field>
+          <Field label="Modelo (Fipe)">
+            <select className="nexo-select" value={fipeModeloSel} onChange={(e) => setFipeModeloSel(e.target.value)} disabled={!fipeMarcaSel}>
+              <option value="">{fipeMarcaSel ? "Selecione" : "Escolha a marca"}</option>
+              {fipeModelos.map((m) => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}
+            </select>
+          </Field>
+          <Field label="Ano (Fipe)">
+            <select className="nexo-select" value={fipeAnoSel} onChange={(e) => setFipeAnoSel(e.target.value)} disabled={!fipeModeloSel}>
+              <option value="">{fipeModeloSel ? "Selecione" : "Escolha o modelo"}</option>
+              {fipeAnos.map((a) => <option key={a.codigo} value={a.codigo}>{a.nome}</option>)}
+            </select>
+          </Field>
+        </div>
+        <button
+          type="button"
+          className="nexo-btn nexo-btn-sm"
+          style={{ marginTop: 10 }}
+          disabled={buscandoFipe || !fipeAnoSel}
+          onClick={consultarFipe}
+        >
+          {buscandoFipe ? "Consultando…" : "🔎 Consultar Fipe"}
+        </button>
+        {fipeMsg && (
+          <div style={{ fontSize: 12, marginTop: 8, color: fipeMsg.includes("encontrado") || fipeMsg.includes("carregado") ? "var(--success)" : "var(--warning)" }}>
+            {fipeMsg}
+          </div>
+        )}
+      </div>
+
+      <div className="nexo-field-row3">
         <Field label="Código Fipe">
           <input className="nexo-input mono" value={f.codigoFipe} readOnly placeholder="Preenchido pela busca" />
         </Field>
-        <Field label="Valor Fipe (referência)">
+        <Field label="Valor Fipe">
           <input className="nexo-input mono" value={f.valorFipe ? formatBRL(f.valorFipe) : ""} readOnly placeholder="Preenchido pela busca" />
+        </Field>
+        <Field label="Combustível (Fipe)">
+          <input className="nexo-input" value={f.fipeCombustivel} readOnly placeholder="Preenchido pela busca" />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Mês de referência">
+          <input className="nexo-input" value={f.fipeMesReferencia} readOnly placeholder="—" />
+        </Field>
+        <Field label="Última consulta">
+          <input className="nexo-input" value={f.fipeUltimaConsulta ? formatDateBR(f.fipeUltimaConsulta) : "—"} readOnly />
         </Field>
       </div>
       <div className="nexo-field-row">
@@ -2136,6 +2259,7 @@ const rowToVeiculo = (r) => ({
   valorVeiculo: r.valor_veiculo ?? "", valorMensal: r.valor_mensal ?? "",
   dataCadastro: r.data_cadastro || "", status: r.status || "Ativo",
   codigoFipe: r.codigo_fipe || "", valorFipe: r.valor_fipe ?? "",
+  fipeCombustivel: r.fipe_combustivel || "", fipeMesReferencia: r.fipe_mes_referencia || "", fipeUltimaConsulta: r.fipe_ultima_consulta || "",
 });
 const veiculoToRow = (v) => ({
   cliente_id: v.clienteId, marca: v.marca, modelo: v.modelo, ano: v.ano || null, ano_fabricacao: v.anoFabricacao || null,
@@ -2144,6 +2268,7 @@ const veiculoToRow = (v) => ({
   valor_mensal: v.valorMensal === "" ? null : Number(v.valorMensal), data_cadastro: v.dataCadastro || null,
   status: v.status || "Ativo",
   codigo_fipe: v.codigoFipe || null, valor_fipe: v.valorFipe === "" || v.valorFipe == null ? null : Number(v.valorFipe),
+  fipe_combustivel: v.fipeCombustivel || null, fipe_mes_referencia: v.fipeMesReferencia || null, fipe_ultima_consulta: v.fipeUltimaConsulta || null,
 });
 const rowToBoleto = (r) => ({
   id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id, numero: r.numero || "",
@@ -2233,13 +2358,34 @@ export default function App() {
   const saveVeiculo = async (veiculo) => {
     try {
       if (veiculo.id) {
+        const anterior = db.veiculos.find((v) => v.id === veiculo.id);
         const { data, error } = await supabase.from("veiculos").update(veiculoToRow(veiculo)).eq("id", veiculo.id).select().single();
         if (error) throw error;
         setDb((prev) => ({ ...prev, veiculos: prev.veiculos.map((v) => (v.id === data.id ? rowToVeiculo(data) : v)) }));
+        const valorAntigo = anterior ? Number(anterior.valorFipe) || null : null;
+        const valorNovo = Number(veiculo.valorFipe) || null;
+        if (veiculo.codigoFipe && valorNovo != null && valorNovo !== valorAntigo) {
+          await supabase.from("fipe_historico").insert({
+            veiculo_id: veiculo.id,
+            codigo_fipe: veiculo.codigoFipe,
+            valor_anterior: valorAntigo,
+            valor_novo: valorNovo,
+            referencia: veiculo.fipeMesReferencia || null,
+          });
+        }
       } else {
         const { data, error } = await supabase.from("veiculos").insert(veiculoToRow(veiculo)).select().single();
         if (error) throw error;
         setDb((prev) => ({ ...prev, veiculos: [...prev.veiculos, rowToVeiculo(data)] }));
+        if (data.codigo_fipe && data.valor_fipe != null) {
+          await supabase.from("fipe_historico").insert({
+            veiculo_id: data.id,
+            codigo_fipe: data.codigo_fipe,
+            valor_anterior: null,
+            valor_novo: data.valor_fipe,
+            referencia: data.fipe_mes_referencia || null,
+          });
+        }
       }
       closeModal();
     } catch (e) {
@@ -2626,4 +2772,3 @@ export default function App() {
     </div>
   );
 }
-
