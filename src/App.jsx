@@ -1101,16 +1101,20 @@ function Dashboard({ db, onOpenModal }) {
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
-  // Comissão recorrente da corretora: 10% sobre o valor de TODOS os boletos cadastrados
-  // (independente do status — pago, em aberto, vencido ou a vencer).
-  const valorTotalTodosBoletos = sum(boletosComStatus.map((b) => b.valor));
-  const comissaoCorretora = valorTotalTodosBoletos * (COMISSAO_CORRETORA_PERCENTUAL / 100);
+  // Comissão recorrente da corretora: 10% sobre os boletos que vencem
+  // (serão baixados) NO MÊS ATUAL — não sobre o total acumulado de todos
+  // os boletos já cadastrados, pra não misturar com os totais do Financeiro.
+  const hojeRef = new Date();
+  const chaveMesAtual = `${hojeRef.getFullYear()}-${String(hojeRef.getMonth() + 1).padStart(2, "0")}`;
+  const boletosDoMesAtual = boletosComStatus.filter((b) => (b.dataVencimento || "").slice(0, 7) === chaveMesAtual);
+  const valorBoletosDoMesAtual = sum(boletosDoMesAtual.map((b) => b.valor));
+  const comissaoCorretora = valorBoletosDoMesAtual * (COMISSAO_CORRETORA_PERCENTUAL / 100);
 
   const valoresData = [
     { name: "Recebido", valor: valorRecebido, color: "var(--success)" },
     { name: "Em aberto", valor: valorEmAberto, color: "var(--info)" },
     { name: "A vencer", valor: valorAReceber, color: "var(--warning)" },
-    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: "#B08BF0" },
+    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`, valor: comissaoCorretora, color: "#B08BF0" },
   ];
 
   const contagem = { Pago: 0, "Em aberto": 0, Vencido: 0, "A vencer": 0 };
@@ -1161,7 +1165,7 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}%)`} value={formatBRL(comissaoCorretora)} tone="accent" />
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`} value={formatBRL(comissaoCorretora)} tone="accent" />
       </div>
 
       <div className="nexo-charts-grid">
@@ -1205,6 +1209,47 @@ function Dashboard({ db, onOpenModal }) {
               </PieChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        <div className="nexo-card">
+          <div className="nexo-chart-title">Comissão da corretora</div>
+          <div className="nexo-chart-sub">{COMISSAO_CORRETORA_PERCENTUAL}% sobre os boletos que vencem neste mês (não é acumulado)</div>
+          <div style={{ height: 240, position: "relative" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, value: COMISSAO_CORRETORA_PERCENTUAL },
+                    { name: "Restante", value: 100 - COMISSAO_CORRETORA_PERCENTUAL },
+                  ]}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={62}
+                  outerRadius={82}
+                  startAngle={90}
+                  endAngle={-270}
+                  paddingAngle={0}
+                >
+                  <Cell fill="#B08BF0" stroke="none" />
+                  <Cell fill="#202B38" stroke="none" />
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }}
+                  formatter={(v, n) => [n.includes("Comissão") ? `${v}%` : `${v}%`, n]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div
+              style={{
+                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", pointerEvents: "none", paddingBottom: 24,
+              }}
+            >
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#B08BF0", lineHeight: 1 }}>{COMISSAO_CORRETORA_PERCENTUAL}%</div>
+              <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>recorrência mensal</div>
+            </div>
+          </div>
+          <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, marginTop: 4 }}>{formatBRL(comissaoCorretora)}</div>
         </div>
       </div>
 
