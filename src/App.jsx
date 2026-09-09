@@ -663,8 +663,10 @@ function ClienteForm({ initial, onSave, onCancel }) {
 function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) {
   const [f, setF] = useState(
     initial || {
-      clienteId: defaultClienteId || "", marca: "", modelo: "", ano: "", anoFabricacao: "", placa: "", renavam: "", chassi: "", cor: "",
-      valorVeiculo: "", valorMensal: "", dataCadastro: todayISO(), status: "Ativo",
+      clienteId: defaultClienteId || "", tipoVeiculo: "Carro ou utilitário", marca: "", modelo: "", ano: "", anoFabricacao: "",
+      placa: "", renavam: "", chassi: "", cor: "", cambio: "", combustivel: "", quilometragem: "", numeroMotor: "",
+      estadoCirculacao: "", cidadeCirculacao: "", veiculoTrabalho: false, diaVencimento: "", depreciacao: "",
+      valorVeiculo: "", valorCoberto: "", valorMensal: "", dataCadastro: todayISO(), status: "Ativo",
       codigoFipe: "", valorFipe: "", fipeCombustivel: "", fipeMesReferencia: "", fipeUltimaConsulta: "",
     }
   );
@@ -672,6 +674,7 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
   const [buscando, setBuscando] = useState(false);
   const [buscaMsg, setBuscaMsg] = useState("");
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const setBool = (k) => (e) => setF({ ...f, [k]: e.target.checked });
 
   // --- Consulta Fipe por Marca → Modelo → Ano (sempre via /api/fipe, nunca direto do navegador) ---
   const [fipeMarcas, setFipeMarcas] = useState([]);
@@ -789,26 +792,17 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
         </select>
       </Field>
-      <div className="nexo-field-row">
-        <Field label="Marca *" error={errors.marca}>
-          <input className="nexo-input" value={f.marca} onChange={set("marca")} placeholder="Ex.: Fiat" />
-        </Field>
-        <Field label="Modelo *" error={errors.modelo}>
-          <input className="nexo-input" value={f.modelo} onChange={set("modelo")} placeholder="Ex.: Argo" />
-        </Field>
-      </div>
+
       <div className="nexo-field-row3">
-        <Field label="Ano fabricação">
-          <input className="nexo-input mono" value={f.anoFabricacao} onChange={set("anoFabricacao")} placeholder="2021" maxLength={4} />
+        <Field label="Tipo de veículo">
+          <select className="nexo-select" value={f.tipoVeiculo} onChange={set("tipoVeiculo")}>
+            <option>Carro ou utilitário</option>
+            <option>Moto</option>
+            <option>Caminhão</option>
+            <option>Ônibus / Van</option>
+            <option>Outro</option>
+          </select>
         </Field>
-        <Field label="Ano modelo">
-          <input className="nexo-input mono" value={f.ano} onChange={set("ano")} placeholder="2022" maxLength={4} />
-        </Field>
-        <Field label="Cor">
-          <input className="nexo-input" value={f.cor} onChange={set("cor")} placeholder="Ex.: Prata" />
-        </Field>
-      </div>
-      <div className="nexo-field-row">
         <Field label="Placa *" error={errors.placa}>
           <div style={{ display: "flex", gap: 6 }}>
             <input
@@ -818,29 +812,47 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
               onBlur={() => f.placa.replace(/[^A-Z0-9]/g, "").length >= 7 && buscarDadosVeiculo(false)}
               placeholder="ABC1D23"
               maxLength={8}
+              style={{ flex: 1 }}
             />
-            <button type="button" className="nexo-btn nexo-btn-sm" disabled={buscando || !f.placa.trim()} onClick={() => buscarDadosVeiculo(false)}>
-              {buscando ? "Buscando…" : "Buscar dados"}
+            <button type="button" className="nexo-icon-btn" title="Consultar dados pela placa" disabled={buscando || !f.placa.trim()} onClick={() => buscarDadosVeiculo(false)}>
+              <Search size={14} />
             </button>
           </div>
         </Field>
-        <Field label="Renavam">
-          <input className="nexo-input mono" value={f.renavam} onChange={set("renavam")} placeholder="Número do Renavam" />
+        <Field label="Chassi">
+          <div style={{ display: "flex", gap: 6 }}>
+            <input className="nexo-input mono" value={f.chassi} onChange={set("chassi")} placeholder="Número do chassi" style={{ flex: 1 }} />
+            <button type="button" className="nexo-icon-btn" title="Buscar por chassi" disabled={buscando || !f.chassi.trim()} onClick={() => buscarDadosVeiculo(true)}>
+              <Search size={14} />
+            </button>
+          </div>
         </Field>
       </div>
-      <Field label="Chassi">
-        <div style={{ display: "flex", gap: 6 }}>
-          <input className="nexo-input mono" value={f.chassi} onChange={set("chassi")} placeholder="Número do chassi" style={{ flex: 1 }} />
-          <button type="button" className="nexo-btn nexo-btn-sm" disabled={buscando || !f.chassi.trim()} onClick={() => buscarDadosVeiculo(true)}>
-            {buscando ? "Buscando…" : "Buscar por chassi"}
-          </button>
-        </div>
-      </Field>
       {buscaMsg && (
         <div style={{ fontSize: 12, color: buscaMsg.includes("encontrado") ? "var(--success)" : "var(--warning)", marginTop: -6 }}>
           {buscaMsg}
         </div>
       )}
+
+      <div className="nexo-field-row3">
+        <Field label="Renavam">
+          <input className="nexo-input mono" value={f.renavam} onChange={set("renavam")} placeholder="Número do Renavam" />
+        </Field>
+        <Field label="Marca *" error={errors.marca}>
+          <input className="nexo-input" value={f.marca} onChange={set("marca")} placeholder="Ex.: Fiat" />
+        </Field>
+        <Field label="Ano modelo">
+          <input className="nexo-input mono" value={f.ano} onChange={set("ano")} placeholder="2022" maxLength={4} />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Modelo *" error={errors.modelo}>
+          <input className="nexo-input" value={f.modelo} onChange={set("modelo")} placeholder="Ex.: Argo" />
+        </Field>
+        <Field label="Ano fabricação">
+          <input className="nexo-input mono" value={f.anoFabricacao} onChange={set("anoFabricacao")} placeholder="2021" maxLength={4} />
+        </Field>
+      </div>
 
       <div className="nexo-card" style={{ background: "var(--surface-2)", padding: 14 }}>
         <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 10, color: "var(--text-dim)" }}>
@@ -887,30 +899,95 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
           <input className="nexo-input mono" value={f.codigoFipe} readOnly placeholder="Preenchido pela busca" />
         </Field>
         <Field label="Valor Fipe">
-          <input className="nexo-input mono" value={f.valorFipe ? formatBRL(f.valorFipe) : ""} readOnly placeholder="Preenchido pela busca" />
-        </Field>
-        <Field label="Combustível (Fipe)">
-          <input className="nexo-input" value={f.fipeCombustivel} readOnly placeholder="Preenchido pela busca" />
-        </Field>
-      </div>
-      <div className="nexo-field-row">
-        <Field label="Mês de referência">
-          <input className="nexo-input" value={f.fipeMesReferencia} readOnly placeholder="—" />
-        </Field>
-        <Field label="Última consulta">
-          <input className="nexo-input" value={f.fipeUltimaConsulta ? formatDateBR(f.fipeUltimaConsulta) : "—"} readOnly />
-        </Field>
-      </div>
-      <div className="nexo-field-row">
-        <Field label="Valor do veículo">
           <div style={{ display: "flex", gap: 6 }}>
-            <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorVeiculo} onChange={set("valorVeiculo")} placeholder="0,00" />
+            <input className="nexo-input mono" value={f.valorFipe ? formatBRL(f.valorFipe) : ""} readOnly placeholder="Preenchido pela busca" style={{ flex: 1 }} />
+          </div>
+        </Field>
+        <Field label="Valor Coberto">
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorCoberto} onChange={set("valorCoberto")} placeholder="0,00" />
             {f.valorFipe ? (
-              <button type="button" className="nexo-btn nexo-btn-sm" title="Usar valor Fipe" onClick={() => setF({ ...f, valorVeiculo: f.valorFipe })}>
+              <button type="button" className="nexo-btn nexo-btn-sm" title="Usar valor Fipe" onClick={() => setF({ ...f, valorCoberto: f.valorFipe })}>
                 Usar Fipe
               </button>
             ) : null}
           </div>
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Mês de referência (Fipe)">
+          <input className="nexo-input" value={f.fipeMesReferencia} readOnly placeholder="—" />
+        </Field>
+        <Field label="Última consulta Fipe">
+          <input className="nexo-input" value={f.fipeUltimaConsulta ? formatDateBR(f.fipeUltimaConsulta) : "—"} readOnly />
+        </Field>
+      </div>
+
+      <Field label="Depreciação">
+        <select className="nexo-select" value={f.depreciacao} onChange={set("depreciacao")}>
+          <option value="">Selecione</option>
+          <option value="Nenhuma">Nenhuma</option>
+          <option value="Linear mensal">Linear mensal</option>
+          <option value="Tabela seguradora">Conforme tabela da seguradora</option>
+        </select>
+      </Field>
+
+      <div className="nexo-field-row3">
+        <Field label="Dia de vencimento">
+          <select className="nexo-select" value={f.diaVencimento} onChange={set("diaVencimento")}>
+            <option value="">Selecione</option>
+            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </Field>
+        <Field label="Cor">
+          <input className="nexo-input" value={f.cor} onChange={set("cor")} placeholder="Ex.: Prata" />
+        </Field>
+        <Field label="Câmbio">
+          <select className="nexo-select" value={f.cambio} onChange={set("cambio")}>
+            <option value="">Selecione</option>
+            <option>Manual</option>
+            <option>Automático</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="nexo-field-row3">
+        <Field label="Combustível">
+          <select className="nexo-select" value={f.combustivel} onChange={set("combustivel")}>
+            <option value="">Selecione</option>
+            <option>Flex</option>
+            <option>Gasolina</option>
+            <option>Etanol</option>
+            <option>Diesel</option>
+            <option>Elétrico</option>
+            <option>Híbrido</option>
+            <option>GNV</option>
+          </select>
+        </Field>
+        <Field label="Quilometragem">
+          <input type="number" min="0" className="nexo-input" value={f.quilometragem} onChange={set("quilometragem")} placeholder="0" />
+        </Field>
+        <Field label="Número do motor">
+          <input className="nexo-input mono" value={f.numeroMotor} onChange={set("numeroMotor")} placeholder="Número do motor" />
+        </Field>
+      </div>
+
+      <div className="nexo-field-row">
+        <Field label="Estado de circulação">
+          <input className="nexo-input" value={f.estadoCirculacao} onChange={set("estadoCirculacao")} placeholder="Ex.: São Paulo" />
+        </Field>
+        <Field label="Cidade de circulação">
+          <input className="nexo-input" value={f.cidadeCirculacao} onChange={set("cidadeCirculacao")} placeholder="Ex.: São José dos Campos" />
+        </Field>
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-dim)", cursor: "pointer" }}>
+        <input type="checkbox" checked={f.veiculoTrabalho} onChange={setBool("veiculoTrabalho")} />
+        Veículo de trabalho (Táxi/Uber)
+      </label>
+
+      <div className="nexo-field-row">
+        <Field label="Valor do veículo">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorVeiculo} onChange={set("valorVeiculo")} placeholder="0,00" />
         </Field>
         <Field label="Valor mensal">
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorMensal} onChange={set("valorMensal")} placeholder="0,00" />
@@ -2254,17 +2331,27 @@ const clienteToRow = (c) => ({
   cep: c.cep || null, endereco: c.endereco || null, status: c.status || "Ativo",
 });
 const rowToVeiculo = (r) => ({
-  id: r.id, clienteId: r.cliente_id, marca: r.marca || "", modelo: r.modelo || "", ano: r.ano || "",
+  id: r.id, clienteId: r.cliente_id, tipoVeiculo: r.tipo_veiculo || "Carro ou utilitário",
+  marca: r.marca || "", modelo: r.modelo || "", ano: r.ano || "",
   anoFabricacao: r.ano_fabricacao || "", placa: r.placa || "", renavam: r.renavam || "", chassi: r.chassi || "", cor: r.cor || "",
-  valorVeiculo: r.valor_veiculo ?? "", valorMensal: r.valor_mensal ?? "",
+  cambio: r.cambio || "", combustivel: r.combustivel || "", quilometragem: r.quilometragem ?? "", numeroMotor: r.numero_motor || "",
+  estadoCirculacao: r.estado_circulacao || "", cidadeCirculacao: r.cidade_circulacao || "", veiculoTrabalho: !!r.veiculo_trabalho,
+  diaVencimento: r.dia_vencimento ?? "", depreciacao: r.depreciacao || "",
+  valorVeiculo: r.valor_veiculo ?? "", valorCoberto: r.valor_coberto ?? "", valorMensal: r.valor_mensal ?? "",
   dataCadastro: r.data_cadastro || "", status: r.status || "Ativo",
   codigoFipe: r.codigo_fipe || "", valorFipe: r.valor_fipe ?? "",
   fipeCombustivel: r.fipe_combustivel || "", fipeMesReferencia: r.fipe_mes_referencia || "", fipeUltimaConsulta: r.fipe_ultima_consulta || "",
 });
 const veiculoToRow = (v) => ({
-  cliente_id: v.clienteId, marca: v.marca, modelo: v.modelo, ano: v.ano || null, ano_fabricacao: v.anoFabricacao || null,
+  cliente_id: v.clienteId, tipo_veiculo: v.tipoVeiculo || null, marca: v.marca, modelo: v.modelo, ano: v.ano || null, ano_fabricacao: v.anoFabricacao || null,
   placa: v.placa, renavam: v.renavam || null, chassi: v.chassi || null, cor: v.cor || null,
+  cambio: v.cambio || null, combustivel: v.combustivel || null,
+  quilometragem: v.quilometragem === "" || v.quilometragem == null ? null : Number(v.quilometragem),
+  numero_motor: v.numeroMotor || null, estado_circulacao: v.estadoCirculacao || null, cidade_circulacao: v.cidadeCirculacao || null,
+  veiculo_trabalho: !!v.veiculoTrabalho, dia_vencimento: v.diaVencimento === "" || v.diaVencimento == null ? null : Number(v.diaVencimento),
+  depreciacao: v.depreciacao || null,
   valor_veiculo: v.valorVeiculo === "" ? null : Number(v.valorVeiculo),
+  valor_coberto: v.valorCoberto === "" || v.valorCoberto == null ? null : Number(v.valorCoberto),
   valor_mensal: v.valorMensal === "" ? null : Number(v.valorMensal), data_cadastro: v.dataCadastro || null,
   status: v.status || "Ativo",
   codigo_fipe: v.codigoFipe || null, valor_fipe: v.valorFipe === "" || v.valorFipe == null ? null : Number(v.valorFipe),
