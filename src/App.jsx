@@ -10,7 +10,7 @@ import {
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Link2, ExternalLink
+  Link2, ExternalLink, PartyPopper
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -349,12 +349,26 @@ function maskCpfCnpj(v) {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 /** Monta o link do WhatsApp Web/App a partir de um telefone (com ou sem DDI/máscara).
- * Números brasileiros sem o "55" na frente recebem o DDI automaticamente. */
-function linkWhatsApp(numero) {
+ * Números brasileiros sem o "55" na frente recebem o DDI automaticamente.
+ * "mensagem" (opcional) já vem preenchida na conversa, pronta para revisar e enviar. */
+function linkWhatsApp(numero, mensagem) {
   const digitos = (numero || "").replace(/\D/g, "");
   if (!digitos) return "";
   const comDDI = digitos.length > 11 ? digitos : `55${digitos}`;
-  return `https://wa.me/${comDDI}`;
+  const base = `https://wa.me/${comDDI}`;
+  return mensagem ? `${base}?text=${encodeURIComponent(mensagem)}` : base;
+}
+
+/** Retorna os clientes cujo aniversário (dia e mês do campo "nascimento") é hoje. */
+function aniversariantesDeHoje(clientes) {
+  const hoje = new Date();
+  const diaHoje = hoje.getDate();
+  const mesHoje = hoje.getMonth() + 1;
+  return (clientes || []).filter((c) => {
+    if (!c.nascimento) return false;
+    const [, mes, dia] = c.nascimento.split("-").map(Number);
+    return dia === diaHoje && mes === mesHoje;
+  });
 }
 function computeBoletoStatus(b) {
   if (b.dataPagamento) return "Pago";
@@ -1234,6 +1248,7 @@ const COMISSAO_CORRETORA_PERCENTUAL = 10; // ajuste aqui se o percentual de reco
 
 function Dashboard({ db, onOpenModal }) {
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
+  const aniversariantesHoje = useMemo(() => aniversariantesDeHoje(db.clientes), [db.clientes]);
 
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
   const veiculosAtivos = db.veiculos.filter((v) => v.status === "Ativo").length;
@@ -1298,6 +1313,48 @@ function Dashboard({ db, onOpenModal }) {
           <button className="nexo-btn" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
         </div>
       </div>
+
+      {aniversariantesHoje.length > 0 && (
+        <div
+          className="nexo-card"
+          style={{ marginBottom: 20, borderColor: "var(--warning)", background: "linear-gradient(135deg, rgba(219,155,61,0.10), var(--surface))" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <PartyPopper size={20} color="var(--warning)" />
+            <div style={{ fontWeight: 700, fontSize: 15 }}>
+              {aniversariantesHoje.length === 1 ? "Aniversariante de hoje 🎉" : `Aniversariantes de hoje 🎉 (${aniversariantesHoje.length})`}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {aniversariantesHoje.map((c) => {
+              const idade = c.nascimento ? new Date().getFullYear() - Number(c.nascimento.slice(0, 4)) : null;
+              const contato = c.whatsapp || c.telefone;
+              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe da Seu Seguro Corretora deseja a você um feliz aniversário e muitas felicidades!`;
+              return (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.nome}</div>
+                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>{idade ? `Fazendo ${idade} anos hoje` : "Aniversário hoje"}</div>
+                  </div>
+                  {contato ? (
+                    <a
+                      className="nexo-btn nexo-btn-sm"
+                      style={{ background: "var(--success)", borderColor: "var(--success)", color: "#fff" }}
+                      href={linkWhatsApp(contato, mensagem)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle size={13} /> Mandar parabéns
+                    </a>
+                  ) : (
+                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="nexo-kpi-grid">
         <Kpi icon={Users} label="Clientes ativos" value={clientesAtivos} tone="accent" />
