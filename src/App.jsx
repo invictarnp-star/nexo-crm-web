@@ -348,6 +348,14 @@ function maskCpfCnpj(v) {
   if (d.length <= 11) return maskCPF(d);
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
+/** Monta o link do WhatsApp Web/App a partir de um telefone (com ou sem DDI/máscara).
+ * Números brasileiros sem o "55" na frente recebem o DDI automaticamente. */
+function linkWhatsApp(numero) {
+  const digitos = (numero || "").replace(/\D/g, "");
+  if (!digitos) return "";
+  const comDDI = digitos.length > 11 ? digitos : `55${digitos}`;
+  return `https://wa.me/${comDDI}`;
+}
 function computeBoletoStatus(b) {
   if (b.dataPagamento) return "Pago";
   if (!b.dataVencimento) return "Em aberto";
@@ -1614,6 +1622,18 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                       <td><AtivoInativoBadge ativo={c.status} /></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
+                          {(c.whatsapp || c.telefone) && (
+                            <a
+                              className="nexo-icon-btn"
+                              style={{ color: "var(--success)" }}
+                              href={linkWhatsApp(c.whatsapp || c.telefone)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Conversar no WhatsApp"
+                            >
+                              <MessageCircle size={13} />
+                            </a>
+                          )}
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cliente", c)}><Pencil size={13} /></button>
                           <button className="nexo-icon-btn" onClick={() => onDeleteCliente(c.id)}><Trash2 size={13} /></button>
                           <button className="nexo-icon-btn" onClick={() => onOpenDetail(c.id)}><Eye size={13} /></button>
@@ -2042,10 +2062,30 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             </div>
           )}
           <div className="nexo-info-row"><Phone size={14} /> {cliente.telefone || "—"}</div>
-          <div className="nexo-info-row"><MessageCircle size={14} /> {cliente.whatsapp || "—"}</div>
+          <div className="nexo-info-row">
+            <MessageCircle size={14} />
+            {cliente.whatsapp ? (
+              <a href={linkWhatsApp(cliente.whatsapp)} target="_blank" rel="noopener noreferrer" style={{ color: "var(--success)" }}>
+                {cliente.whatsapp}
+              </a>
+            ) : (
+              "—"
+            )}
+          </div>
           <div className="nexo-info-row"><Mail size={14} /> {cliente.email || "—"}</div>
           <div className="nexo-info-row"><MapPin size={14} /> {cliente.endereco || "—"}{cliente.cep ? ` · CEP ${cliente.cep}` : ""}</div>
-          <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 14 }} onClick={() => onOpenModal("cliente", cliente)}>
+          {(cliente.whatsapp || cliente.telefone) && (
+            <a
+              className="nexo-btn"
+              style={{ width: "100%", justifyContent: "center", marginTop: 14, background: "var(--success)", borderColor: "var(--success)", color: "#fff" }}
+              href={linkWhatsApp(cliente.whatsapp || cliente.telefone)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle size={14} /> Conversar no WhatsApp
+            </a>
+          )}
+          <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => onOpenModal("cliente", cliente)}>
             <Pencil size={14} /> Editar dados pessoais
           </button>
         </div>
