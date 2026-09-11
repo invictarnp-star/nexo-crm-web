@@ -161,3 +161,28 @@ alter table veiculos add column if not exists cor text;
 -- ------------------------------------------------------------------
 alter table boletos add column if not exists nosso_numero text;
 create unique index if not exists idx_boletos_nosso_numero on boletos (nosso_numero) where nosso_numero is not null;
+
+-- ------------------------------------------------------------------
+-- Tabela: links_uteis (atalhos para os sistemas das seguradoras/
+-- corretoras e outros portais usados no dia a dia, com CRUD no Nexo)
+-- ------------------------------------------------------------------
+create table if not exists links_uteis (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  url text not null,
+  observacao text,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists idx_links_uteis_url on links_uteis (url);
+alter table links_uteis enable row level security;
+create policy "acesso total links_uteis" on links_uteis for all using (true) with check (true);
+
+-- Seed com os links já em uso (não duplica se já existir a mesma URL)
+insert into links_uteis (nome, url, observacao) values
+  ('SGA Hinova (Invicta Mais)', 'https://sga.hinova.com.br/sga/sgav4_invicta/v5/login.php', 'Sistema do consórcio/associação'),
+  ('Power CRM', 'https://app.powercrm.com.br/login', null),
+  ('Porto Seguro — Corretor Online', 'https://corretor.portoseguro.com.br/corretoronline', null),
+  ('Suhai Seguradora — Cotação', 'https://suhaiseguradoracotacao.com.br/login', null),
+  ('Ituran — Vendas', 'https://vendas.ituran.com.br/sale', null),
+  ('Tokio Marine — Portal Parceiros', 'https://ssoportais3.tokiomarine.com.br/openam/XUI/?realm=TOKIOLFR&goto=http://portalparceiros.tokiomarine.com.br/#login/', null)
+on conflict (url) do nothing;
