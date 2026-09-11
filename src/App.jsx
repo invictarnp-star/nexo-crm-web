@@ -10,7 +10,7 @@ import {
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Link2, ExternalLink, PartyPopper, Bell
+  Link2, ExternalLink, PartyPopper, Bell, Bot, Send
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -370,6 +370,50 @@ function aniversariantesDeHoje(clientes) {
     return dia === diaHoje && mes === mesHoje;
   });
 }
+
+/** Retorna os clientes com CNH cadastrada que já venceu ou vai vencer nos
+ * próximos `dias` dias (padrão 30 — dá tempo do cliente providenciar a
+ * renovação), do mais urgente pro menos urgente. */
+function cnhsVencendo(clientes, dias = 30) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  return (clientes || [])
+    .filter((c) => c.cnhValidade)
+    .map((c) => {
+      const venc = parseISODate(c.cnhValidade);
+      const diasRestantes = Math.round((venc - hoje) / 86400000);
+      return { ...c, diasRestantes };
+    })
+    .filter((c) => c.diasRestantes <= dias)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes);
+}
+
+/** Monta um resumo em texto, só com contagens e totais (SEM nenhum dado
+ * pessoal de cliente), para dar contexto ao assistente de IA sem que
+ * informação sensível saia do sistema. */
+function montarContextoAssistente(db) {
+  const boletosComStatus = (db.boletos || []).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
+  const pagos = boletosComStatus.filter((b) => b.status === "Pago").length;
+  const emAberto = boletosComStatus.filter((b) => b.status === "Em aberto").length;
+  const aVencer = boletosComStatus.filter((b) => b.status === "A vencer").length;
+  const vencidos = boletosComStatus.filter((b) => b.status === "Vencido").length;
+  const valorEmAberto = sum(boletosComStatus.filter((b) => b.status !== "Pago").map((b) => b.valor));
+  const clientesAtivos = (db.clientes || []).filter((c) => c.status === "Ativo").length;
+  const clientesInativos = (db.clientes || []).length - clientesAtivos;
+  const veiculosAtivos = (db.veiculos || []).filter((v) => v.status === "Ativo").length;
+  const veiculosInativos = (db.veiculos || []).length - veiculosAtivos;
+  const qtdAniversariantesHoje = aniversariantesDeHoje(db.clientes).length;
+  const qtdCnhVencendo = cnhsVencendo(db.clientes, 30).length;
+
+  return [
+    `Clientes: ${(db.clientes || []).length} cadastrados (${clientesAtivos} ativos, ${clientesInativos} inativos).`,
+    `Veículos: ${(db.veiculos || []).length} cadastrados (${veiculosAtivos} ativos, ${veiculosInativos} inativos).`,
+    `Boletos: ${boletosComStatus.length} no total — ${pagos} pagos, ${emAberto} em aberto, ${aVencer} a vencer nos próximos 7 dias, ${vencidos} vencidos.`,
+    `Valor total em aberto (não pago, soma de tudo que não é "Pago"): ${formatBRL(valorEmAberto)}.`,
+    qtdAniversariantesHoje > 0 ? `${qtdAniversariantesHoje} cliente(s) fazendo aniversário hoje.` : null,
+    qtdCnhVencendo > 0 ? `${qtdCnhVencendo} CNH(s) vencida(s) ou vencendo nos próximos 30 dias.` : null,
+  ].filter(Boolean).join("\n");
+}
+
 function computeBoletoStatus(b) {
   if (b.dataPagamento) return "Pago";
   if (!b.dataVencimento) return "Em aberto";
@@ -1249,6 +1293,7 @@ const COMISSAO_CORRETORA_PERCENTUAL = 10; // ajuste aqui se o percentual de reco
 function Dashboard({ db, onOpenModal }) {
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
   const aniversariantesHoje = useMemo(() => aniversariantesDeHoje(db.clientes), [db.clientes]);
+  const cnhVencendoLista = useMemo(() => cnhsVencendo(db.clientes, 30), [db.clientes]);
 
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
   const veiculosAtivos = db.veiculos.filter((v) => v.status === "Ativo").length;
@@ -1415,6 +1460,64 @@ function Dashboard({ db, onOpenModal }) {
             {boletosVencendoComCliente.length > 6 && (
               <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
                 +{boletosVencendoComCliente.length - 6} outro(s) boleto(s) a vencer — veja em Financeiro.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {cnhVencendoLista.length > 0 && (
+        <div
+          className="nexo-card"
+          style={{ marginBottom: 20, borderColor: "var(--danger)", background: "linear-gradient(135deg, rgba(221,95,82,0.10), var(--surface))" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <AlertTriangle size={20} color="var(--danger)" />
+            <div style={{ fontWeight: 700, fontSize: 15 }}>
+              {cnhVencendoLista.length === 1
+                ? "1 CNH vencida ou vencendo"
+                : `${cnhVencendoLista.length} CNHs vencidas ou vencendo`}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {cnhVencendoLista.slice(0, 6).map((c) => {
+              const contato = c.whatsapp || c.telefone;
+              const quando =
+                c.diasRestantes < 0
+                  ? `venceu há ${Math.abs(c.diasRestantes)} dia(s)`
+                  : c.diasRestantes === 0
+                  ? "vence hoje"
+                  : c.diasRestantes === 1
+                  ? "vence amanhã"
+                  : `vence em ${c.diasRestantes} dias`;
+              const mensagem = `Olá, ${c.nome.split(" ")[0]}! Passando para lembrar que sua CNH ${c.diasRestantes < 0 ? "venceu" : "vence"} em ${formatDateBR(c.cnhValidade)}. Se precisar de ajuda para renovar, é só chamar!`;
+              return (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.nome}</div>
+                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                      CNH {quando} ({formatDateBR(c.cnhValidade)})
+                    </div>
+                  </div>
+                  {contato ? (
+                    <a
+                      className="nexo-btn nexo-btn-sm"
+                      style={{ background: "var(--danger)", borderColor: "var(--danger)", color: "#fff" }}
+                      href={linkWhatsApp(contato, mensagem)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle size={13} /> Avisar
+                    </a>
+                  ) : (
+                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
+                  )}
+                </div>
+              );
+            })}
+            {cnhVencendoLista.length > 6 && (
+              <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                +{cnhVencendoLista.length - 6} outro(s) — veja em Clientes.
               </div>
             )}
           </div>
@@ -3143,6 +3246,303 @@ function RedefinirSenhaScreen({ onConcluido }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Verificação em duas etapas (2FA) — desafio no login                  */
+/* ------------------------------------------------------------------ */
+
+function MfaChallengeScreen({ onVerificado }) {
+  const [codigo, setCodigo] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function handleVerificar() {
+    const codigoLimpo = codigo.replace(/\D/g, "");
+    if (codigoLimpo.length !== 6) {
+      setErro("Digite o código de 6 dígitos do seu aplicativo autenticador.");
+      return;
+    }
+    setCarregando(true);
+    setErro("");
+    try {
+      const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+      const factor = (factorsData?.totp || []).find((f) => f.status === "verified");
+      if (!factor) {
+        setErro("Não encontramos sua verificação em duas etapas. Entre em contato com o suporte.");
+        setCarregando(false);
+        return;
+      }
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: factor.id,
+        challengeId: challengeData.id,
+        code: codigoLimpo,
+      });
+      if (verifyError) throw verifyError;
+      onVerificado();
+    } catch (e) {
+      setErro("Código inválido ou expirado. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  return (
+    <div className="nexo-login-page">
+      <div className="nexo-login-body">
+        <div className="nexo-login-hero">
+          <div className="nexo-login-hero-blob b1" />
+          <div className="nexo-login-hero-blob b2" />
+          <div className="nexo-login-skyline" aria-hidden="true">
+            {[38, 62, 44, 80, 52, 68, 40, 90, 56, 46, 72, 50, 84, 40, 60].map((h, i) => (
+              <span key={i} style={{ height: `${h}%` }} />
+            ))}
+          </div>
+          <div className="nexo-login-hero-content">
+            <div className="nexo-login-brand">
+              <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
+              <div>
+                <div className="nexo-login-brand-name">SEU SEGURO</div>
+                <div className="nexo-login-brand-tagline">Seguros para todos</div>
+              </div>
+            </div>
+            <div className="nexo-login-hero-mid">
+              <div className="nexo-login-quote">"Protegendo o que <span>realmente importa</span>."</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="nexo-login-panel">
+          <div className="nexo-login-card">
+            <div className="nexo-login-eyebrow">Verificação em duas etapas</div>
+            <h1>Digite o código do seu app</h1>
+            <p className="sub">Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digite o código de 6 dígitos.</p>
+            <div className="nexo-login-fields">
+              <Field label="Código de verificação">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="nexo-input mono"
+                  style={{ letterSpacing: 4, fontSize: 18, textAlign: "center" }}
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onKeyDown={(e) => e.key === "Enter" && handleVerificar()}
+                  placeholder="000000"
+                  autoFocus
+                />
+              </Field>
+            </div>
+            {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
+            <button className="nexo-btn nexo-btn-primary nexo-login-submit" disabled={carregando} onClick={handleVerificar}>
+              {carregando ? "Verificando…" : "Verificar"}
+            </button>
+            <button
+              type="button"
+              className="nexo-login-link"
+              style={{ marginTop: 14 }}
+              onClick={() => supabase.auth.signOut()}
+            >
+              Usar outra conta
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="nexo-login-page-foot">
+        Sistema desenvolvido por Gilmar Alves<br />
+        © {new Date().getFullYear()} Seu Seguro Corretora — Todos os direitos reservados.
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Segurança da conta — ativar/desativar verificação em duas etapas    */
+/* ------------------------------------------------------------------ */
+
+function SegurancaModal({ onClose }) {
+  const [etapa, setEtapa] = useState("carregando"); // carregando | inativo | ativando | ativo
+  const [factorAtivo, setFactorAtivo] = useState(null);
+  const [factorPendente, setFactorPendente] = useState(null); // { id, qrCode, secret }
+  const [codigo, setCodigo] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const carregarFactors = useCallback(async () => {
+    setErro("");
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) {
+      setErro("Não foi possível carregar as configurações de segurança.");
+      setEtapa("inativo");
+      return;
+    }
+    const verificado = (data?.totp || []).find((f) => f.status === "verified");
+    if (verificado) {
+      setFactorAtivo(verificado);
+      setEtapa("ativo");
+    } else {
+      setFactorAtivo(null);
+      setEtapa("inativo");
+    }
+  }, []);
+
+  useEffect(() => { carregarFactors(); }, [carregarFactors]);
+
+  async function handleAtivar() {
+    setCarregando(true);
+    setErro("");
+    try {
+      // Remove fatores TOTP não confirmados de tentativas anteriores, pra não acumular.
+      const { data: existentes } = await supabase.auth.mfa.listFactors();
+      const pendentes = (existentes?.totp || []).filter((f) => f.status !== "verified");
+      for (const f of pendentes) {
+        await supabase.auth.mfa.unenroll({ factorId: f.id });
+      }
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Nexo Gestão" });
+      if (error) throw error;
+      setFactorPendente({ id: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
+      setEtapa("ativando");
+    } catch (e) {
+      setErro(e.message || "Não foi possível iniciar a ativação. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleConfirmar() {
+    const codigoLimpo = codigo.replace(/\D/g, "");
+    if (codigoLimpo.length !== 6 || !factorPendente) {
+      setErro("Digite o código de 6 dígitos mostrado no seu aplicativo autenticador.");
+      return;
+    }
+    setCarregando(true);
+    setErro("");
+    try {
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factorPendente.id });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: factorPendente.id,
+        challengeId: challengeData.id,
+        code: codigoLimpo,
+      });
+      if (verifyError) throw verifyError;
+      setCodigo("");
+      setFactorPendente(null);
+      await carregarFactors();
+    } catch (e) {
+      setErro("Código inválido. Confira o horário do seu celular e tente de novo.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleDesativar() {
+    if (!factorAtivo) return;
+    if (!window.confirm("Desativar a verificação em duas etapas? Sua conta ficará protegida só por senha.")) return;
+    setCarregando(true);
+    setErro("");
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: factorAtivo.id });
+      if (error) throw error;
+      await carregarFactors();
+    } catch (e) {
+      setErro("Não foi possível desativar agora. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleCancelarAtivacao() {
+    if (factorPendente) {
+      await supabase.auth.mfa.unenroll({ factorId: factorPendente.id }).catch(() => {});
+    }
+    setFactorPendente(null);
+    setCodigo("");
+    setErro("");
+    await carregarFactors();
+  }
+
+  return (
+    <Modal title="Segurança da conta" onClose={onClose}>
+      {etapa === "carregando" && <div className="nexo-cell-muted">Carregando…</div>}
+
+      {etapa === "inativo" && (
+        <div>
+          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 14 }}>
+            A verificação em duas etapas pede, além da senha, um código gerado no seu celular
+            (Google Authenticator, Authy, Microsoft Authenticator, etc.) a cada login — assim,
+            mesmo que alguém descubra sua senha, não consegue entrar na conta sem o celular.
+          </p>
+          {erro && <div className="nexo-login-alert err" style={{ marginBottom: 12 }}>{erro}</div>}
+          <button className="nexo-btn nexo-btn-primary" onClick={handleAtivar} disabled={carregando}>
+            <Shield size={14} /> {carregando ? "Preparando…" : "Ativar verificação em duas etapas"}
+          </button>
+        </div>
+      )}
+
+      {etapa === "ativando" && factorPendente && (
+        <div>
+          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 10 }}>
+            1. Abra um aplicativo autenticador no seu celular e escaneie o QR code abaixo.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
+            <img
+              src={factorPendente.qrCode}
+              alt="QR code para configurar a verificação em duas etapas"
+              style={{ width: 180, height: 180, background: "#fff", padding: 8, borderRadius: 8 }}
+            />
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 10, textAlign: "center" }}>
+            Não consegue escanear? Digite manualmente este código no app: <br />
+            <span className="mono" style={{ color: "var(--text-dim)" }}>{factorPendente.secret}</span>
+          </p>
+          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 10 }}>
+            2. Digite o código de 6 dígitos que apareceu no app para confirmar:
+          </p>
+          <Field label="Código de verificação">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              className="nexo-input mono"
+              style={{ letterSpacing: 4, fontSize: 18, textAlign: "center" }}
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => e.key === "Enter" && handleConfirmar()}
+              placeholder="000000"
+              autoFocus
+            />
+          </Field>
+          {erro && <div className="nexo-login-alert err" style={{ margin: "10px 0" }}>{erro}</div>}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button className="nexo-btn nexo-btn-primary" onClick={handleConfirmar} disabled={carregando}>
+              {carregando ? "Confirmando…" : "Confirmar e ativar"}
+            </button>
+            <button className="nexo-btn" onClick={handleCancelarAtivacao} disabled={carregando}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {etapa === "ativo" && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, color: "var(--success)" }}>
+            <CheckCircle2 size={18} />
+            <div style={{ fontWeight: 600, fontSize: 13.5 }}>Verificação em duas etapas ativada</div>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 14 }}>
+            A cada login será pedido também o código do seu aplicativo autenticador.
+          </p>
+          {erro && <div className="nexo-login-alert err" style={{ marginBottom: 12 }}>{erro}</div>}
+          <button className="nexo-btn nexo-btn-danger" onClick={handleDesativar} disabled={carregando}>
+            {carregando ? "Desativando…" : "Desativar verificação em duas etapas"}
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Status genérico (Adesões / Comissões)                                */
 /* ------------------------------------------------------------------ */
 
@@ -3816,6 +4216,115 @@ const boletoToRow = (b) => {
   };
 };
 
+/* ------------------------------------------------------------------ */
+/* Assistente de IA (Google Gemini) — botão flutuante                  */
+/* ------------------------------------------------------------------ */
+
+function AssistenteIA({ db }) {
+  const [aberto, setAberto] = useState(false);
+  const [mensagens, setMensagens] = useState([]); // { autor: "usuario" | "assistente", texto }
+  const [pergunta, setPergunta] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const fimRef = useRef(null);
+
+  useEffect(() => {
+    if (aberto) fimRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensagens, aberto]);
+
+  const enviar = async () => {
+    const texto = pergunta.trim();
+    if (!texto || enviando) return;
+    const historico = mensagens;
+    setMensagens((m) => [...m, { autor: "usuario", texto }]);
+    setPergunta("");
+    setEnviando(true);
+    try {
+      const contexto = montarContextoAssistente(db);
+      const resp = await fetch("/api/assistente-ia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pergunta: texto, contexto, historico }),
+      });
+      const dados = await resp.json().catch(() => ({}));
+      setMensagens((m) => [
+        ...m,
+        { autor: "assistente", texto: dados.resposta || dados.erro || "Não foi possível obter resposta do assistente." },
+      ]);
+    } catch (e) {
+      setMensagens((m) => [...m, { autor: "assistente", texto: "Não foi possível falar com o assistente agora. Tente novamente." }]);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setAberto((v) => !v)}
+        title="Assistente de IA"
+        style={{
+          position: "fixed", right: 22, bottom: 22, width: 52, height: 52, borderRadius: "50%",
+          background: "var(--accent)", color: "#fff", border: "none", boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 60,
+        }}
+      >
+        {aberto ? <X size={22} /> : <Bot size={24} />}
+      </button>
+
+      {aberto && (
+        <div
+          style={{
+            position: "fixed", right: 22, bottom: 84, width: 340, maxWidth: "calc(100vw - 32px)", height: 460,
+            maxHeight: "calc(100vh - 120px)", background: "var(--surface)", border: "1px solid var(--border-soft)",
+            borderRadius: 14, boxShadow: "0 12px 32px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column",
+            overflow: "hidden", zIndex: 60,
+          }}
+        >
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-soft)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5 }}>
+            <Bot size={17} color="var(--accent)" /> Assistente Nexo
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            {mensagens.length === 0 && (
+              <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>
+                Olá! Posso ajudar com dúvidas sobre o sistema e um resumo geral dos seus números (sem acessar dados pessoais de clientes). O que você quer saber?
+              </div>
+            )}
+            {mensagens.map((m, i) => (
+              <div
+                key={i}
+                style={{
+                  alignSelf: m.autor === "usuario" ? "flex-end" : "flex-start",
+                  background: m.autor === "usuario" ? "var(--accent)" : "var(--surface-2)",
+                  color: m.autor === "usuario" ? "#fff" : "var(--text)",
+                  borderRadius: 10, padding: "8px 11px", fontSize: 13, maxWidth: "85%", whiteSpace: "pre-wrap",
+                }}
+              >
+                {m.texto}
+              </div>
+            ))}
+            {enviando && <div className="nexo-cell-muted" style={{ fontSize: 12 }}>Digitando…</div>}
+            <div ref={fimRef} />
+          </div>
+          <div style={{ padding: 10, borderTop: "1px solid var(--border-soft)", display: "flex", gap: 8 }}>
+            <input
+              className="nexo-input"
+              style={{ flex: 1 }}
+              placeholder="Digite sua pergunta…"
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
+              disabled={enviando}
+            />
+            <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={enviar} disabled={enviando || !pergunta.trim()}>
+              <Send size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function App() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = sem sessão, objeto = logado
   const [recuperandoSenha, setRecuperandoSenha] = useState(false);
@@ -3826,6 +4335,8 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mfaPendente, setMfaPendente] = useState(false);
+  const [mostrarSeguranca, setMostrarSeguranca] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -3836,6 +4347,22 @@ export default function App() {
     });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Verificação em duas etapas: se o usuário ativou o 2FA, o login por senha
+  // só chega ao "aal1" — precisa confirmar o código do app autenticador
+  // ("aal2") antes de liberar os dados do sistema.
+  useEffect(() => {
+    if (!sessao) {
+      setMfaPendente(false);
+      return;
+    }
+    let cancelado = false;
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
+      if (cancelado || error) return;
+      setMfaPendente(data.currentLevel === "aal1" && data.nextLevel === "aal2");
+    });
+    return () => { cancelado = true; };
+  }, [sessao]);
 
   const carregarTudo = useCallback(async () => {
     setLoading(true);
@@ -3884,8 +4411,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (sessao) carregarTudo();
-  }, [carregarTudo, sessao]);
+    if (sessao && !mfaPendente) carregarTudo();
+  }, [carregarTudo, sessao, mfaPendente]);
 
   const closeModal = () => setModal(null);
   const openModal = (type, data = null, defaultClienteId = null, defaultVeiculoId = null, defaultSeguradoraId = null) =>
@@ -4550,6 +5077,15 @@ export default function App() {
     );
   }
 
+  if (mfaPendente) {
+    return (
+      <div className="nexo">
+        <style>{STYLE}</style>
+        <MfaChallengeScreen onVerificado={() => setMfaPendente(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="nexo">
       <style>{STYLE}</style>
@@ -4589,9 +5125,14 @@ export default function App() {
             </nav>
             <div className="nexo-sidebar-foot">
               <div style={{ marginBottom: 8, wordBreak: "break-all" }}>{sessao?.user?.email}</div>
-              <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
-                Sair
-              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setMostrarSeguranca(true)}>
+                  <Shield size={13} /> Segurança
+                </button>
+                <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
+                  Sair
+                </button>
+              </div>
             </div>
           </aside>
 
@@ -4656,8 +5197,12 @@ export default function App() {
               )}
             </main>
           </div>
+
+          <AssistenteIA db={db} />
         </div>
       )}
+
+      {mostrarSeguranca && <SegurancaModal onClose={() => setMostrarSeguranca(false)} />}
 
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
