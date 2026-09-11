@@ -10,7 +10,7 @@ import {
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Link2, ExternalLink, PartyPopper
+  Link2, ExternalLink, PartyPopper, Bell
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -1255,6 +1255,20 @@ function Dashboard({ db, onOpenModal }) {
   const veiculosInativos = db.veiculos.filter((v) => v.status === "Inativo").length;
   const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
+
+  // Boletos que vencem nos próximos dias (mesma regra do KPI "Boletos a vencer"),
+  // já com o cliente encontrado e os dias restantes calculados, pra montar o
+  // lembrete de WhatsApp — do mais urgente pro menos urgente.
+  const boletosVencendoComCliente = aVencer
+    .map((b) => {
+      const cliente = db.clientes.find((c) => c.id === b.clienteId);
+      const venc = parseISODate(b.dataVencimento);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const diasRestantes = Math.round((venc - hoje) / 86400000);
+      return { ...b, cliente, diasRestantes };
+    })
+    .filter((b) => b.cliente)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes);
   const valorEmAberto = sum(emAberto.map((b) => b.valor));
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
@@ -1352,6 +1366,57 @@ function Dashboard({ db, onOpenModal }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {boletosVencendoComCliente.length > 0 && (
+        <div
+          className="nexo-card"
+          style={{ marginBottom: 20, borderColor: "var(--info)", background: "linear-gradient(135deg, rgba(122,143,176,0.12), var(--surface))" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <Bell size={20} color="var(--info)" />
+            <div style={{ fontWeight: 700, fontSize: 15 }}>
+              {boletosVencendoComCliente.length === 1
+                ? "1 boleto vence nos próximos dias 📅"
+                : `${boletosVencendoComCliente.length} boletos vencem nos próximos dias 📅`}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {boletosVencendoComCliente.slice(0, 6).map((b) => {
+              const contato = b.cliente.whatsapp || b.cliente.telefone;
+              const quando = b.diasRestantes <= 0 ? "vence hoje" : b.diasRestantes === 1 ? "vence amanhã" : `vence em ${b.diasRestantes} dias`;
+              const mensagem = `Olá, ${b.cliente.nome.split(" ")[0]}! Passando para lembrar que seu boleto de ${formatBRL(b.valor)} vence em ${formatDateBR(b.dataVencimento)}. Qualquer dúvida, estou à disposição!`;
+              return (
+                <div key={b.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{b.cliente.nome}</div>
+                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                      {formatBRL(b.valor)} · {quando} ({formatDateBR(b.dataVencimento)})
+                    </div>
+                  </div>
+                  {contato ? (
+                    <a
+                      className="nexo-btn nexo-btn-sm"
+                      style={{ background: "var(--info)", borderColor: "var(--info)", color: "#fff" }}
+                      href={linkWhatsApp(contato, mensagem)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle size={13} /> Lembrar
+                    </a>
+                  ) : (
+                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
+                  )}
+                </div>
+              );
+            })}
+            {boletosVencendoComCliente.length > 6 && (
+              <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                +{boletosVencendoComCliente.length - 6} outro(s) boleto(s) a vencer — veja em Financeiro.
+              </div>
+            )}
           </div>
         </div>
       )}
