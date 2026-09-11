@@ -201,11 +201,89 @@ const STYLE = `
 .nexo-tab { padding: 8px 4px; margin-right: 18px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; }
 .nexo-tab.active { color: var(--text); border-color: var(--accent); }
 
+/* ------------------------------------------------------------------ */
+/* Tela de login                                                        */
+/* ------------------------------------------------------------------ */
+.nexo-login-page { min-height: 100vh; width: 100%; display: flex; flex-direction: column; background: var(--ink); }
+.nexo-login-body { flex: 1; display: flex; min-height: 0; }
+.nexo-login-hero {
+  flex: 1.15; position: relative; overflow: hidden; display: flex; flex-direction: column;
+  justify-content: space-between; padding: 56px 60px 44px;
+  background:
+    radial-gradient(1100px 760px at 18% 12%, rgba(62,134,191,0.32), transparent 58%),
+    radial-gradient(900px 680px at 88% 90%, rgba(52,177,114,0.16), transparent 55%),
+    linear-gradient(160deg, #0B1015 0%, #0F1822 46%, #14263A 100%);
+}
+.nexo-login-hero-blob {
+  position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; pointer-events: none;
+}
+.nexo-login-hero-blob.b1 { width: 340px; height: 340px; background: var(--accent); top: -120px; left: -100px; }
+.nexo-login-hero-blob.b2 { width: 300px; height: 300px; background: var(--success); bottom: -140px; right: -80px; opacity: 0.28; }
+.nexo-login-skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 130px; display: flex; align-items: flex-end; gap: 3px; padding: 0 0 0 0; opacity: 0.5; }
+.nexo-login-skyline span { display: block; flex: 1; background: linear-gradient(180deg, rgba(233,238,243,0.14), rgba(233,238,243,0.03)); border-top: 1px solid rgba(233,238,243,0.12); }
+.nexo-login-hero-content { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
+.nexo-login-brand { display: flex; align-items: center; gap: 14px; animation: nexoLoginFade .7s ease both; }
+.nexo-login-brand-mark {
+  width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim)); box-shadow: 0 10px 26px rgba(62,134,191,0.45);
+}
+.nexo-login-brand-name { font-size: 25px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
+.nexo-login-brand-tagline { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+.nexo-login-hero-mid { margin: auto 0; max-width: 520px; animation: nexoLoginFade .8s ease .1s both; }
+.nexo-login-quote { font-size: 36px; font-weight: 700; line-height: 1.3; letter-spacing: -0.5px; color: var(--text); }
+.nexo-login-quote span { color: var(--accent); }
+.nexo-login-hero-icons { display: flex; align-items: center; gap: 18px; margin-top: 26px; color: var(--text-faint); }
+.nexo-login-hero-icons .item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.nexo-login-hero-icons svg { color: var(--accent); }
+.nexo-login-hero-foot { position: relative; z-index: 2; font-size: 12px; color: var(--text-faint); animation: nexoLoginFade .9s ease .15s both; }
+
+.nexo-login-panel {
+  flex: 0 0 460px; display: flex; align-items: center; justify-content: center; padding: 40px 44px; position: relative;
+  background: radial-gradient(600px 500px at 50% 40%, rgba(62,134,191,0.07), transparent 65%), var(--ink);
+}
+.nexo-login-card {
+  width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 20px; padding: 40px 34px 32px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65);
+  animation: nexoLoginUp .6s cubic-bezier(.16,1,.3,1) .05s both;
+}
+.nexo-login-eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+.nexo-login-card h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; margin: 0 0 6px; }
+.nexo-login-card p.sub { font-size: 13.5px; color: var(--text-dim); margin: 0 0 26px; }
+.nexo-login-fields { display: flex; flex-direction: column; gap: 16px; }
+.nexo-login-forgot-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+.nexo-login-link { font-size: 12.5px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+.nexo-login-link:hover { text-decoration: underline; }
+.nexo-login-submit { width: 100%; justify-content: center; margin-top: 22px; padding: 12px; font-size: 13.5px; letter-spacing: .6px; text-transform: uppercase; }
+.nexo-login-alert { border-radius: 9px; padding: 10px 12px; font-size: 12.5px; margin-top: 16px; line-height: 1.5; }
+.nexo-login-alert.err { background: var(--danger-soft); color: var(--danger); }
+.nexo-login-alert.ok { background: var(--success-soft); color: var(--success); }
+.nexo-login-back { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; margin-bottom: 18px; padding: 0; }
+.nexo-login-back:hover { color: var(--text); }
+.nexo-login-page-foot { text-align: center; font-size: 11px; color: var(--text-faint); padding: 16px 20px 20px; line-height: 1.7; border-top: 1px solid var(--border-soft); background: var(--ink); }
+
+@keyframes nexoLoginFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes nexoLoginUp { from { opacity: 0; transform: translateY(22px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .nexo-login-card, .nexo-login-brand, .nexo-login-hero-mid, .nexo-login-hero-foot { animation: none; }
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .nexo-charts-grid { grid-template-columns: 1fr; }
   .nexo-detail-grid { grid-template-columns: 1fr; }
+  .nexo-login-hero { padding: 44px 40px; }
+  .nexo-login-panel { flex-basis: 400px; padding: 32px; }
+}
+@media (max-width: 860px) {
+  .nexo-login-body { flex-direction: column; }
+  .nexo-login-hero { flex: none; min-height: 240px; padding: 30px 26px; }
+  .nexo-login-hero-mid { margin: 16px 0; }
+  .nexo-login-quote { font-size: 21px; }
+  .nexo-login-hero-icons { display: none; }
+  .nexo-login-skyline { height: 70px; }
+  .nexo-login-panel { flex: 1; padding: 26px 20px 34px; }
+  .nexo-login-card { padding: 30px 24px 26px; border-radius: 16px; }
 }
 @media (max-width: 768px) {
   .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); }
@@ -219,6 +297,10 @@ const STYLE = `
   .nexo-overlay.open { display:block; position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 39; }
   .nexo-topbar { padding: 0 14px; }
   .nexo-topbar-title span.hide-mobile { display:none; }
+}
+@media (max-width: 420px) {
+  .nexo-login-card { padding: 26px 18px 22px; }
+  .nexo-login-brand-name { font-size: 21px; }
 }
 `;
 
@@ -2390,10 +2472,12 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
 /* ------------------------------------------------------------------ */
 
 function LoginScreen({ onEntrar }) {
+  const [modo, setModo] = useState("login"); // "login" | "recuperar"
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
 
   async function handleSubmit() {
     if (!email.trim() || !senha.trim()) {
@@ -2411,47 +2495,147 @@ function LoginScreen({ onEntrar }) {
     onEntrar();
   }
 
+  async function handleRecuperar() {
+    if (!email.trim()) {
+      setErro("Informe seu e-mail para receber o link de redefinição.");
+      return;
+    }
+    setCarregando(true);
+    setErro("");
+    setAviso("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+    });
+    setCarregando(false);
+    if (error) {
+      setErro("Não foi possível enviar o e-mail agora. Tente novamente em instantes.");
+      return;
+    }
+    setAviso("Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.");
+  }
+
+  function voltarParaLogin() {
+    setModo("login");
+    setErro("");
+    setAviso("");
+  }
+
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
-      <div className="nexo-card" style={{ maxWidth: 360, width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <div className="nexo-brand-mark">SS</div>
-          <div>
-            <div className="nexo-brand-name">Seu Seguro Corretora</div>
-            <div className="nexo-brand-tag">Acesso restrito</div>
+    <div className="nexo-login-page">
+      <div className="nexo-login-body">
+        <div className="nexo-login-hero">
+          <div className="nexo-login-hero-blob b1" />
+          <div className="nexo-login-hero-blob b2" />
+          <div className="nexo-login-skyline" aria-hidden="true">
+            {[38, 62, 44, 80, 52, 68, 40, 90, 56, 46, 72, 50, 84, 40, 60].map((h, i) => (
+              <span key={i} style={{ height: `${h}%` }} />
+            ))}
+          </div>
+          <div className="nexo-login-hero-content">
+            <div className="nexo-login-brand">
+              <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
+              <div>
+                <div className="nexo-login-brand-name">SEU SEGURO</div>
+                <div className="nexo-login-brand-tagline">Seguros para todos</div>
+              </div>
+            </div>
+            <div className="nexo-login-hero-mid">
+              <div className="nexo-login-quote">"Protegendo o que <span>realmente importa</span>."</div>
+              <div className="nexo-login-hero-icons">
+                <span className="item"><Shield size={15} /> Dados protegidos</span>
+                <span className="item"><CheckCircle2 size={15} /> Cobertura completa</span>
+                <span className="item"><Clock size={15} /> Atendimento ágil</span>
+              </div>
+            </div>
+            <div className="nexo-login-hero-foot">Plataforma de gestão para corretoras e representantes de seguros.</div>
           </div>
         </div>
-        <Field label="E-mail">
-          <input
-            type="email"
-            className="nexo-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            placeholder="seu@email.com"
-            autoFocus
-          />
-        </Field>
-        <div style={{ height: 12 }} />
-        <Field label="Senha">
-          <input
-            type="password"
-            className="nexo-input"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            placeholder="••••••••"
-          />
-        </Field>
-        {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
-        <button
-          className="nexo-btn nexo-btn-primary"
-          style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
-          disabled={carregando}
-          onClick={handleSubmit}
-        >
-          {carregando ? "Entrando…" : "Entrar"}
-        </button>
+
+        <div className="nexo-login-panel">
+          <div className="nexo-login-card">
+            {modo === "login" ? (
+              <>
+                <div className="nexo-login-eyebrow">Bem-vindo</div>
+                <h1>Entre na sua conta</h1>
+                <p className="sub">Acesse o painel da Seu Seguro Corretora.</p>
+                <div className="nexo-login-fields">
+                  <Field label="E-mail">
+                    <input
+                      type="email"
+                      className="nexo-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                      placeholder="seu@email.com"
+                      autoComplete="username"
+                      autoFocus
+                    />
+                  </Field>
+                  <Field label="Senha">
+                    <input
+                      type="password"
+                      className="nexo-input"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                    />
+                  </Field>
+                </div>
+                <div className="nexo-login-forgot-row">
+                  <button type="button" className="nexo-login-link" onClick={() => { setModo("recuperar"); setErro(""); setAviso(""); }}>
+                    Esqueci minha senha
+                  </button>
+                </div>
+                {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
+                <button
+                  className="nexo-btn nexo-btn-primary nexo-login-submit"
+                  disabled={carregando}
+                  onClick={handleSubmit}
+                >
+                  {carregando ? "Entrando…" : "Entrar"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="nexo-login-back" onClick={voltarParaLogin}>
+                  <ArrowLeft size={14} /> Voltar
+                </button>
+                <div className="nexo-login-eyebrow">Recuperar acesso</div>
+                <h1>Esqueceu sua senha?</h1>
+                <p className="sub">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
+                <div className="nexo-login-fields">
+                  <Field label="E-mail">
+                    <input
+                      type="email"
+                      className="nexo-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleRecuperar()}
+                      placeholder="seu@email.com"
+                      autoComplete="username"
+                      autoFocus
+                    />
+                  </Field>
+                </div>
+                {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
+                {aviso && <div className="nexo-login-alert ok" role="status">{aviso}</div>}
+                <button
+                  className="nexo-btn nexo-btn-primary nexo-login-submit"
+                  disabled={carregando}
+                  onClick={handleRecuperar}
+                >
+                  {carregando ? "Enviando…" : "Enviar link de redefinição"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="nexo-login-page-foot">
+        Sistema desenvolvido por Gilmar Alves<br />
+        © {new Date().getFullYear()} Seu Seguro Corretora — Todos os direitos reservados.
       </div>
     </div>
   );
