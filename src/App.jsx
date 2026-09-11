@@ -9,7 +9,8 @@ import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
-  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer
+  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
+  Link2, ExternalLink
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -2561,6 +2562,103 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Links Úteis                                                          */
+/* ------------------------------------------------------------------ */
+
+function LinkForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState(initial || { nome: "", url: "", observacao: "" });
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function submit() {
+    const errs = {};
+    if (!f.nome.trim()) errs.nome = "Informe um nome.";
+    if (!f.url.trim()) errs.url = "Informe o link.";
+    else if (!/^https?:\/\//i.test(f.url.trim())) errs.url = "O link deve começar com http:// ou https://";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+
+  return (
+    <>
+      <Field label="Nome *" error={errors.nome}>
+        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: SGA Hinova, Porto Seguro Corretor…" />
+      </Field>
+      <Field label="Link (URL) *" error={errors.url}>
+        <input className="nexo-input mono" value={f.url} onChange={set("url")} placeholder="https://..." />
+      </Field>
+      <Field label="Observação (opcional)">
+        <input className="nexo-input" value={f.observacao} onChange={set("observacao")} placeholder="Ex.: login com CPF, usuário compartilhado…" />
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar link</button>
+      </div>
+    </>
+  );
+}
+
+function LinksUteisView({ db, onOpenModal, onDeleteLink }) {
+  const [query, setQuery] = useState("");
+  const filtered = db.linksUteis.filter((l) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return l.nome.toLowerCase().includes(q) || l.url.toLowerCase().includes(q) || (l.observacao || "").toLowerCase().includes(q);
+  });
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Links Úteis<span className="nexo-section-count">{db.linksUteis.length} cadastrados</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("link")}><Plus size={15} /> Novo link</button>
+      </div>
+
+      <div className="nexo-filters">
+        <div className="nexo-filter-field" style={{ minWidth: 260 }}>
+          <label>Buscar</label>
+          <input className="nexo-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nome, link ou observação" />
+        </div>
+      </div>
+
+      {db.linksUteis.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={Link2} title="Nenhum link cadastrado" sub="Clique em “Novo link” para adicionar os sistemas das seguradoras/corretoras que você usa." /></div>
+      ) : filtered.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={ListFilter} title="Nenhum link encontrado" sub="Ajuste a busca para ver outros resultados." /></div>
+      ) : (
+        <div className="nexo-table-wrap">
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead>
+                <tr><th>Nome</th><th>Link</th><th>Observação</th><th></th></tr>
+              </thead>
+              <tbody>
+                {filtered.map((l) => (
+                  <tr key={l.id}>
+                    <td style={{ fontWeight: 600 }}>{l.nome}</td>
+                    <td>
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="mono" style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4, wordBreak: "break-all" }}>
+                        {l.url} <ExternalLink size={12} />
+                      </a>
+                    </td>
+                    <td className="nexo-cell-muted">{l.observacao || "—"}</td>
+                    <td>
+                      <div className="nexo-actions-cell">
+                        <button className="nexo-icon-btn" onClick={() => onOpenModal("link", l)}><Pencil size={13} /></button>
+                        <button className="nexo-icon-btn" onClick={() => onDeleteLink(l.id)}><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Adesões                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -2911,9 +3009,13 @@ const NAV_ITEMS = [
   { key: "consultoras", label: "Consultoras", Icon: Users },
   { key: "adesoes", label: "Adesões", Icon: FileDown },
   { key: "comissoes", label: "Comissões", Icon: CreditCard },
+  { key: "links", label: "Links Úteis", Icon: Link2 },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], linksUteis: [] };
+
+const rowToLink = (r) => ({ id: r.id, nome: r.nome || "", url: r.url || "", observacao: r.observacao || "" });
+const linkToRow = (l) => ({ nome: l.nome, url: l.url, observacao: l.observacao || null });
 
 const rowToConsultora = (r) => ({ id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa" });
 const consultoraToRow = (c) => ({ nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa" });
@@ -3040,7 +3142,7 @@ export default function App() {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, linksUteisRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -3050,6 +3152,7 @@ export default function App() {
         supabase.from("consultoras").select("*").order("nome"),
         supabase.from("adesoes").select("*"),
         supabase.from("comissoes").select("*"),
+        supabase.from("links_uteis").select("*").order("nome"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -3060,6 +3163,7 @@ export default function App() {
       if (consultorasRes.error) throw consultorasRes.error;
       if (adesoesRes.error) throw adesoesRes.error;
       if (comissoesRes.error) throw comissoesRes.error;
+      if (linksUteisRes.error) throw linksUteisRes.error;
       setDb({
         clientes: (clientesRes.data || []).map(rowToCliente),
         veiculos: (veiculosRes.data || []).map(rowToVeiculo),
@@ -3070,6 +3174,7 @@ export default function App() {
         consultoras: (consultorasRes.data || []).map(rowToConsultora),
         adesoes: (adesoesRes.data || []).map(rowToAdesao),
         comissoes: (comissoesRes.data || []).map(rowToComissao),
+        linksUteis: (linksUteisRes.data || []).map(rowToLink),
       });
     } catch (e) {
       console.error(e);
@@ -3317,6 +3422,34 @@ export default function App() {
       setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.filter((c) => c.id !== id) }));
     } catch (e) {
       alert("Não foi possível excluir a cotação: " + e.message);
+    }
+  };
+
+  // --- Links Úteis ---
+  const saveLink = async (link) => {
+    try {
+      if (link.id) {
+        const { data, error } = await supabase.from("links_uteis").update(linkToRow(link)).eq("id", link.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, linksUteis: prev.linksUteis.map((l) => (l.id === data.id ? rowToLink(data) : l)) }));
+      } else {
+        const { data, error } = await supabase.from("links_uteis").insert(linkToRow(link)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, linksUteis: [...prev.linksUteis, rowToLink(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      alert("Não foi possível salvar o link: " + e.message);
+    }
+  };
+  const deleteLink = async (id) => {
+    if (!window.confirm("Excluir este link?")) return;
+    try {
+      const { error } = await supabase.from("links_uteis").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, linksUteis: prev.linksUteis.filter((l) => l.id !== id) }));
+    } catch (e) {
+      alert("Não foi possível excluir o link: " + e.message);
     }
   };
 
@@ -3578,6 +3711,7 @@ export default function App() {
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
     cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões",
+    links: "Links Úteis",
     clienteDetail: "Detalhes do cliente",
   };
 
@@ -3694,6 +3828,7 @@ export default function App() {
               {view === "comissoes" && (
                 <ComissoesView db={db} onOpenModal={openModal} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />
               )}
+              {view === "links" && <LinksUteisView db={db} onOpenModal={openModal} onDeleteLink={deleteLink} />}
               {view === "clienteDetail" && (
                 <ClienteDetailView
                   db={db}
@@ -3761,6 +3896,11 @@ export default function App() {
       {modal && modal.type === "consultora" && (
         <Modal title={modal.data ? "Editar consultora" : "Nova consultora"} onClose={closeModal}>
           <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "link" && (
+        <Modal title={modal.data ? "Editar link" : "Novo link"} onClose={closeModal}>
+          <LinkForm initial={modal.data} onSave={saveLink} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "adesao" && (
