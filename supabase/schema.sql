@@ -152,3 +152,12 @@ alter table clientes add column if not exists cnh_validade date;
 alter table veiculos add column if not exists ano_fabricacao text;
 alter table veiculos add column if not exists renavam text;
 alter table veiculos add column if not exists cor text;
+
+-- ------------------------------------------------------------------
+-- Migração: campo "Nosso Número" no boleto (controle único usado como
+-- chave de conciliação ao importar o relatório de baixa da seguradora/
+-- corretora). Índice único parcial: permite vários boletos sem Nosso
+-- Número (NULL), mas não permite dois boletos com o mesmo Nosso Número.
+-- ------------------------------------------------------------------
+alter table boletos add column if not exists nosso_numero text;
+create unique index if not exists idx_boletos_nosso_numero on boletos (nosso_numero) where nosso_numero is not null;
