@@ -1096,15 +1096,34 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
 }
 
 function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, defaultVeiculoId, onSave, onCancel }) {
-  const [f, setF] = useState(
-    initial || {
-      clienteId: defaultClienteId || "", veiculoId: defaultVeiculoId || "", numero: "", nossoNumero: "",
-      dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "", parcelas: 1,
+  const [f, setF] = useState(() => {
+    if (initial) {
+      const veiculoIdsIniciais = initial.veiculoIds && initial.veiculoIds.length
+        ? initial.veiculoIds
+        : (initial.veiculoId ? [initial.veiculoId] : []);
+      return { ...initial, veiculoIds: veiculoIdsIniciais };
     }
-  );
+    return {
+      clienteId: defaultClienteId || "", veiculoIds: defaultVeiculoId ? [defaultVeiculoId] : [], numero: "", nossoNumero: "",
+      dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "", parcelas: 1,
+    };
+  });
   const [errors, setErrors] = useState({});
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const veiculosDoCliente = veiculos.filter((v) => v.clienteId === f.clienteId);
+
+  function toggleVeiculo(id) {
+    setF((prev) => {
+      const jaTem = prev.veiculoIds.includes(id);
+      return { ...prev, veiculoIds: jaTem ? prev.veiculoIds.filter((v) => v !== id) : [...prev.veiculoIds, id] };
+    });
+  }
+  function marcarTodosVeiculos() {
+    setF((prev) => ({ ...prev, veiculoIds: veiculosDoCliente.map((v) => v.id) }));
+  }
+  function limparVeiculos() {
+    setF((prev) => ({ ...prev, veiculoIds: [] }));
+  }
 
   function submit() {
     const errs = {};
@@ -1124,18 +1143,42 @@ function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, de
     <>
       <div className="nexo-field-row">
         <Field label="Cliente *" error={errors.clienteId}>
-          <select className="nexo-select" value={f.clienteId} onChange={(e) => setF({ ...f, clienteId: e.target.value, veiculoId: "" })}>
+          <select className="nexo-select" value={f.clienteId} onChange={(e) => setF({ ...f, clienteId: e.target.value, veiculoIds: [] })}>
             <option value="">Selecione</option>
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
-        <Field label="Veículo (opcional)">
-          <select className="nexo-select" value={f.veiculoId} onChange={set("veiculoId")} disabled={!f.clienteId}>
-            <option value="">{f.clienteId ? "Nenhum (boleto direto no cliente)" : "Escolha o cliente primeiro"}</option>
-            {veiculosDoCliente.map((v) => <option key={v.id} value={v.id}>{v.marca} {v.modelo} · {v.placa}</option>)}
-          </select>
-        </Field>
       </div>
+
+      <Field label="Veículos cobertos por este boleto (opcional)">
+        {!f.clienteId ? (
+          <div className="nexo-empty-sub">Escolha o cliente primeiro.</div>
+        ) : veiculosDoCliente.length === 0 ? (
+          <div className="nexo-empty-sub">Este cliente não tem veículos cadastrados — o boleto ficará direto no cliente.</div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              <button type="button" className="nexo-btn nexo-btn-sm" onClick={marcarTodosVeiculos}>Marcar todos ({veiculosDoCliente.length})</button>
+              <button type="button" className="nexo-btn nexo-btn-sm" onClick={limparVeiculos}>Nenhum (boleto direto no cliente)</button>
+            </div>
+            <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8 }}>
+              {veiculosDoCliente.map((v) => (
+                <label key={v.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={f.veiculoIds.includes(v.id)} onChange={() => toggleVeiculo(v.id)} />
+                  <span className="mono">{v.placa}</span>
+                  <span style={{ color: "var(--text-dim)" }}>{v.marca} {v.modelo}</span>
+                </label>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 4 }}>
+              {f.veiculoIds.length === 0
+                ? "Nenhum veículo selecionado — este boleto ficará lançado direto no cliente."
+                : `${f.veiculoIds.length} veículo(s) selecionado(s) — use isso para um boleto único que cobre vários veículos do mesmo cliente.`}
+            </div>
+          </div>
+        )}
+      </Field>
+
       <div className="nexo-field-row">
         <Field label="Número do boleto *" error={errors.numero}>
           <input className="nexo-input mono" value={f.numero} onChange={set("numero")} placeholder="Ex.: 000123" />
@@ -1151,7 +1194,7 @@ function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, de
         <Field label="1º vencimento *" error={errors.dataVencimento}>
           <input type="date" className="nexo-input" value={f.dataVencimento} onChange={set("dataVencimento")} />
         </Field>
-        <Field label="Valor de cada parcela (R$) *" error={errors.valor}>
+        <Field label={f.veiculoIds.length > 1 ? "Valor total do boleto (R$) *" : "Valor de cada parcela (R$) *"} error={errors.valor}>
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valor} onChange={set("valor")} placeholder="0,00" />
         </Field>
       </div>
@@ -1720,7 +1763,9 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
         .map((linha) => ({
           nome: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
           cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
-          placa: valorDaColuna(cabecalhos, linha, ["placa"]),
+          // Aceita mais de uma placa na mesma linha (separadas por , ; ou /) para um boleto único que
+          // cobre vários veículos do mesmo cliente (ex.: cliente com frota, boleto único mensal).
+          placa: valorDaColuna(cabecalhos, linha, ["placas", "placa"]),
           nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nnumero", "nosso"]),
           valor: paraNumero(valorDaColuna(cabecalhos, linha, ["valor", "valorboleto"])),
           dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datavencimento", "datadevencimento"])),
@@ -1776,10 +1821,11 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
 
   const filtered = boletosComStatus.filter((b) => {
     const cliente = db.clientes.find((c) => c.id === b.clienteId);
-    const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
+    const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
+    const veiculosDoBoleto = idsVeiculosDoBoleto.map((id) => db.veiculos.find((v) => v.id === id)).filter(Boolean);
     if (fCliente && !(cliente && cliente.nome.toLowerCase().includes(fCliente.toLowerCase()))) return false;
     if (fCpf && !(cliente && cliente.cpf.replace(/\D/g, "").includes(fCpf.replace(/\D/g, "")))) return false;
-    if (fPlaca && !(veiculo && veiculo.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
+    if (fPlaca && !veiculosDoBoleto.some((v) => v.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
     if (fStatus !== "Todos" && b.status !== fStatus) return false;
     if (fDe && b.dataVencimento && b.dataVencimento < fDe) return false;
     if (fAte && b.dataVencimento && b.dataVencimento > fAte) return false;
@@ -1811,7 +1857,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                 "modelo-cadastro-boletos.csv",
                 [
                   { titulo: "Nome do Cliente", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                  { titulo: "Placa", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
+                  { titulo: "Placa(s) - separe com ; se for boleto único de vários veículos", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
                   { titulo: "Valor", valor: () => "" }, { titulo: "Vencimento", valor: () => "" },
                 ],
                 [{}]
@@ -1911,12 +1957,22 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
               <tbody>
                 {filtered.map((b) => {
                   const cliente = db.clientes.find((c) => c.id === b.clienteId);
-                  const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
+                  const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
+                  const veiculosDoBoleto = idsVeiculosDoBoleto.map((id) => db.veiculos.find((v) => v.id === id)).filter(Boolean);
                   return (
                     <tr key={b.id}>
                       <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
-                      <td className="nexo-cell-muted">{veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "—"}</td>
-                      <td className="mono nexo-cell-muted">{veiculo ? veiculo.placa : "—"}</td>
+                      <td className="nexo-cell-muted">
+                        {veiculosDoBoleto.length === 0 ? "—"
+                          : veiculosDoBoleto.length === 1 ? `${veiculosDoBoleto[0].marca} ${veiculosDoBoleto[0].modelo}`
+                          : `${veiculosDoBoleto.length} veículos`}
+                      </td>
+                      <td className="mono nexo-cell-muted" title={veiculosDoBoleto.length > 1 ? veiculosDoBoleto.map((v) => v.placa).join(", ") : undefined}>
+                        {veiculosDoBoleto.length === 0 ? "—"
+                          : veiculosDoBoleto.length === 1 ? veiculosDoBoleto[0].placa
+                          : veiculosDoBoleto.length <= 3 ? veiculosDoBoleto.map((v) => v.placa).join(", ")
+                          : `${veiculosDoBoleto.slice(0, 2).map((v) => v.placa).join(", ")} +${veiculosDoBoleto.length - 2}`}
+                      </td>
                       <td className="mono nexo-cell-muted">{b.nossoNumero || "—"}</td>
                       <td>{formatDateBR(b.dataVencimento)}</td>
                       <td className="mono">{formatBRL(b.valor)}</td>
@@ -1952,7 +2008,9 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
 
   const veiculosDoCliente = db.veiculos.filter((v) => v.clienteId === clienteId);
   const veiculoIds = veiculosDoCliente.map((v) => v.id);
-  const boletosDoCliente = db.boletos.filter((b) => b.clienteId === clienteId || veiculoIds.includes(b.veiculoId)).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
+  const boletosDoCliente = db.boletos
+    .filter((b) => b.clienteId === clienteId || veiculoIds.includes(b.veiculoId) || (b.veiculoIds || []).some((vid) => veiculoIds.includes(vid)))
+    .map((b) => ({ ...b, status: computeBoletoStatus(b) }));
 
   const pagos = boletosDoCliente.filter((b) => b.status === "Pago");
   const emAberto = boletosDoCliente.filter((b) => b.status !== "Pago");
@@ -2036,11 +2094,19 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             ) : (
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Número</th><th>Veículos</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
                   <tbody>
-                    {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => (
+                    {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => {
+                      const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
+                      const placasDoBoleto = idsVeiculosDoBoleto.map((id) => veiculosDoCliente.find((v) => v.id === id)?.placa).filter(Boolean);
+                      return (
                       <tr key={b.id}>
                         <td className="mono">{b.numero}</td>
+                        <td className="mono nexo-cell-muted" title={placasDoBoleto.length > 1 ? placasDoBoleto.join(", ") : undefined}>
+                          {placasDoBoleto.length === 0 ? "Direto no cliente"
+                            : placasDoBoleto.length <= 3 ? placasDoBoleto.join(", ")
+                            : `${placasDoBoleto.slice(0, 2).join(", ")} +${placasDoBoleto.length - 2}`}
+                        </td>
                         <td>{formatDateBR(b.dataVencimento)}</td>
                         <td className="mono">{formatBRL(b.valor)}</td>
                         <td><StatusBadge status={b.status} /></td>
@@ -2051,7 +2117,8 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -2074,11 +2141,15 @@ function RelatoriosView({ db }) {
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
 
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
-  const placaVeiculo = (id) => db.veiculos.find((v) => v.id === id)?.placa || "—";
+  const placasVeiculoBoleto = (b) => {
+    const ids = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
+    const placas = ids.map((id) => db.veiculos.find((v) => v.id === id)?.placa).filter(Boolean);
+    return placas.length ? placas.join(" | ") : "—";
+  };
 
   const colunasBoleto = [
     { titulo: "Cliente", valor: (b) => nomeCliente(b.clienteId) },
-    { titulo: "Placa", valor: (b) => placaVeiculo(b.veiculoId) },
+    { titulo: "Placa(s)", valor: (b) => placasVeiculoBoleto(b) },
     { titulo: "Número", valor: (b) => b.numero },
     { titulo: "Vencimento", valor: (b) => formatDateBR(b.dataVencimento) },
     { titulo: "Valor", valor: (b) => b.valor },
@@ -3562,17 +3633,26 @@ const veiculoToRow = (v) => ({
   fipe_combustivel: v.fipeCombustivel || null, fipe_mes_referencia: v.fipeMesReferencia || null, fipe_ultima_consulta: v.fipeUltimaConsulta || null,
 });
 const rowToBoleto = (r) => ({
-  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "",
+  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", veiculoIds: r.veiculo_ids || [], numero: r.numero || "",
   nossoNumero: r.nosso_numero || "",
   dataEmissao: r.data_emissao || "", dataVencimento: r.data_vencimento || "", valor: r.valor ?? "",
   dataPagamento: r.data_pagamento || "",
 });
-const boletoToRow = (b) => ({
-  cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero,
-  nosso_numero: (b.nossoNumero || "").trim() || null,
-  data_emissao: b.dataEmissao || null,
-  data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
-});
+/** Um boleto pode cobrir vários veículos do mesmo cliente (ex.: boleto único de um cliente
+ * com a frota toda). veiculo_ids guarda a lista completa; veiculo_id continua preenchido
+ * (com o 1º da lista) só para compatibilidade com telas/relatórios antigos que leem 1 veículo só. */
+const boletoToRow = (b) => {
+  const veiculoIds = Array.isArray(b.veiculoIds) ? b.veiculoIds.filter(Boolean) : (b.veiculoId ? [b.veiculoId] : []);
+  return {
+    cliente_id: b.clienteId,
+    veiculo_id: veiculoIds.length ? veiculoIds[0] : null,
+    veiculo_ids: veiculoIds,
+    numero: b.numero,
+    nosso_numero: (b.nossoNumero || "").trim() || null,
+    data_emissao: b.dataEmissao || null,
+    data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
+  };
+};
 
 export default function App() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = sem sessão, objeto = logado
@@ -3761,14 +3841,40 @@ export default function App() {
   };
 
   const deleteVeiculo = async (id) => {
-    if (!window.confirm("Excluir este veículo? Os boletos vinculados também serão removidos.")) return;
+    if (!window.confirm("Excluir este veículo? Boletos lançados só para ele serão removidos; boletos que cobrem vários veículos (inclusive este) serão mantidos, só tirando este veículo da lista.")) return;
     try {
+      // Boletos que citam este veículo, via veiculo_ids (boleto de vários veículos) ou veiculo_id (boleto de 1 só)
+      const afetados = db.boletos.filter((b) => b.veiculoId === id || (b.veiculoIds || []).includes(id));
+      const idsRestantesPorBoleto = new Map(
+        afetados.map((b) => [b.id, (b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : [])).filter((vid) => vid !== id)])
+      );
+      const paraExcluir = afetados.filter((b) => (idsRestantesPorBoleto.get(b.id) || []).length === 0);
+      const paraAtualizar = afetados.filter((b) => (idsRestantesPorBoleto.get(b.id) || []).length > 0);
+
+      for (const b of paraAtualizar) {
+        const novosIds = idsRestantesPorBoleto.get(b.id);
+        const { error: errUpd } = await supabase.from("boletos").update({ veiculo_ids: novosIds, veiculo_id: novosIds[0] }).eq("id", b.id);
+        if (errUpd) throw errUpd;
+      }
+
       const { error } = await supabase.from("veiculos").delete().eq("id", id);
       if (error) throw error;
+
+      if (paraExcluir.length) {
+        const { error: errDel } = await supabase.from("boletos").delete().in("id", paraExcluir.map((b) => b.id));
+        if (errDel) throw errDel;
+      }
+
       setDb((prev) => ({
         ...prev,
         veiculos: prev.veiculos.filter((v) => v.id !== id),
-        boletos: prev.boletos.filter((b) => b.veiculoId !== id),
+        boletos: prev.boletos
+          .filter((b) => !paraExcluir.some((x) => x.id === b.id))
+          .map((b) => {
+            if (!idsRestantesPorBoleto.has(b.id)) return b;
+            const novosIds = idsRestantesPorBoleto.get(b.id);
+            return { ...b, veiculoIds: novosIds, veiculoId: novosIds[0] || "" };
+          }),
       }));
     } catch (e) {
       alert("Não foi possível excluir o veículo: " + e.message);
@@ -4167,13 +4273,20 @@ export default function App() {
           }
           nossosNumerosDoArquivo.add(nossoNumero);
         }
-        const veiculo = l.placa
-          ? db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase() === l.placa.replace(/[^a-z0-9]/gi, "").toLowerCase())
-          : null;
+        // aceita uma ou várias placas na mesma linha (separadas por , ; ou /) para um boleto único
+        // que cobre vários veículos do mesmo cliente
+        const placasDaLinha = (l.placa || "").split(/[,;/]+/).map((p) => p.trim()).filter(Boolean);
+        const veiculosEncontrados = placasDaLinha
+          .map((p) => db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase() === p.replace(/[^a-z0-9]/gi, "").toLowerCase()))
+          .filter(Boolean);
+        if (placasDaLinha.length && veiculosEncontrados.length < placasDaLinha.length) {
+          const naoEncontradas = placasDaLinha.filter((p) => !veiculosEncontrados.some((v) => v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase() === p.replace(/[^a-z0-9]/gi, "").toLowerCase()));
+          rejeitadas.push(`${linhaRef}: placa(s) não encontrada(s) para este cliente: ${naoEncontradas.join(", ")} (boleto seguiu com as demais placas)`);
+        }
         payload.push(
           boletoToRow({
             clienteId: cliente.id,
-            veiculoId: veiculo ? veiculo.id : "",
+            veiculoIds: veiculosEncontrados.map((v) => v.id),
             numero: nossoNumero || `IMP-${Date.now()}-${idx}`,
             nossoNumero,
             dataEmissao: todayISO(),
