@@ -4261,6 +4261,188 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Usuários (Administrador / Operador)                                  */
+/* ------------------------------------------------------------------ */
+
+function NovoUsuarioForm({ sessao, onCriado }) {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [role, setRole] = useState("operador");
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function criar() {
+    if (!nome.trim() || !email.trim() || !senha.trim()) {
+      setErro("Preencha nome, e-mail e senha.");
+      return;
+    }
+    if (senha.length < 6) {
+      setErro("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+    setSalvando(true);
+    setErro("");
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "criar", nome, email, senha, role }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível criar o usuário.");
+      setNome(""); setEmail(""); setSenha(""); setRole("operador");
+      showToast("Usuário criado com sucesso.", "success");
+      onCriado();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="nexo-card" style={{ marginBottom: 16 }}>
+      <div className="nexo-chart-title" style={{ marginBottom: 12 }}>Novo usuário</div>
+      <div className="nexo-field-row3">
+        <Field label="Nome">
+          <input className="nexo-input" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
+        </Field>
+        <Field label="E-mail">
+          <input type="email" className="nexo-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" />
+        </Field>
+        <Field label="Senha">
+          <input type="password" className="nexo-input" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
+        </Field>
+      </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginTop: 12, flexWrap: "wrap" }}>
+        <div style={{ maxWidth: 220, flex: "1 1 220px" }}>
+          <Field label="Perfil">
+            <select className="nexo-select" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="operador">Operador (acesso limitado)</option>
+              <option value="admin">Administrador (acesso total)</option>
+            </select>
+          </Field>
+        </div>
+        <button className="nexo-btn nexo-btn-primary" disabled={salvando} onClick={criar}>
+          {salvando ? "Criando…" : "Criar usuário"}
+        </button>
+      </div>
+      {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
+    </div>
+  );
+}
+
+function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
+  const [alterando, setAlterando] = useState(null);
+
+  async function alterarRole(userId, novoRole) {
+    setAlterando(userId);
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "alterar_role", userId, role: novoRole }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível alterar o perfil.");
+      await onRecarregarUsuarios();
+      showToast("Perfil atualizado.", "success");
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setAlterando(null);
+    }
+  }
+
+  async function excluirUsuario(userId, nome) {
+    if (userId === meuUserId) {
+      showToast("Você não pode excluir seu próprio usuário.", "warning");
+      return;
+    }
+    if (!(await confirmDialog(`Excluir o acesso de "${nome}"? Essa ação não pode ser desfeita.`))) return;
+    setAlterando(userId);
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "excluir", userId }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível excluir o usuário.");
+      await onRecarregarUsuarios();
+      showToast("Usuário excluído.", "success");
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setAlterando(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div>
+          <div className="nexo-section-title">Usuários<span className="nexo-section-count">{db.usuarios.length} cadastrados</span></div>
+          <div className="nexo-section-sub">Quem tem acesso ao sistema e com qual perfil</div>
+        </div>
+      </div>
+
+      <NovoUsuarioForm sessao={sessao} onCriado={onRecarregarUsuarios} />
+
+      {db.usuarios.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={Shield} title="Nenhum usuário cadastrado" sub="Use o formulário acima para criar o primeiro acesso." /></div>
+      ) : (
+        <div className="nexo-table-wrap">
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th></th></tr></thead>
+              <tbody>
+                {db.usuarios.map((u) => (
+                  <tr key={u.userId}>
+                    <td>
+                      <div className="nexo-name-cell">
+                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(u.nome || u.email) }}>{getIniciais(u.nome || u.email)}</div>
+                        <span style={{ fontWeight: 600 }}>{u.nome || "—"}{u.userId === meuUserId && <span className="nexo-cell-muted"> (você)</span>}</span>
+                      </div>
+                    </td>
+                    <td className="nexo-cell-muted">{u.email}</td>
+                    <td>
+                      <select
+                        className="nexo-select"
+                        style={{ maxWidth: 200 }}
+                        value={u.role}
+                        disabled={alterando === u.userId || u.userId === meuUserId}
+                        onChange={(e) => alterarRole(u.userId, e.target.value)}
+                      >
+                        <option value="operador">Operador</option>
+                        <option value="admin">Administrador</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div className="nexo-actions-cell">
+                        <button
+                          className="nexo-icon-btn danger"
+                          disabled={alterando === u.userId || u.userId === meuUserId}
+                          onClick={() => excluirUsuario(u.userId, u.nome || u.email)}
+                          title="Excluir usuário"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Links Úteis                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -4784,9 +4966,18 @@ const NAV_ITEMS = [
   { key: "consultoras", label: "Consultoras", Icon: Users, group: "Equipe & recursos" },
   { key: "relatorios", label: "Relatórios", Icon: FileText, group: "Equipe & recursos" },
   { key: "links", label: "Links Úteis", Icon: Link2, group: "Equipe & recursos" },
+  { key: "usuarios", label: "Usuários", Icon: Shield, group: "Equipe & recursos" },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], linksUteis: [] };
+// Perfil "operador": só enxerga os módulos operacionais do dia a dia.
+// Consultoras, Adesões, Relatórios, Links Úteis e Usuários ficam restritos
+// a administradores (a tabela `perfis` e as políticas de RLS no Supabase
+// aplicam essa mesma regra também no banco de dados).
+const MODULOS_OPERADOR = ["clientes", "veiculos", "financeiro", "cotacoes", "comissoes", "clienteDetail"];
+
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], linksUteis: [], usuarios: [] };
+
+const rowToUsuario = (r) => ({ userId: r.user_id, nome: r.nome || "", email: r.email || "", role: r.role || "operador" });
 
 const rowToLink = (r) => ({ id: r.id, nome: r.nome || "", url: r.url || "", observacao: r.observacao || "" });
 const linkToRow = (l) => ({ nome: l.nome, url: l.url, observacao: l.observacao || null });
@@ -5035,6 +5226,7 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [mfaPendente, setMfaPendente] = useState(false);
   const [mostrarSeguranca, setMostrarSeguranca] = useState(false);
+  const [perfil, setPerfil] = useState(undefined); // undefined = carregando, null = sem perfil, objeto = { role, nome }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -5062,11 +5254,43 @@ export default function App() {
     return () => { cancelado = true; };
   }, [sessao]);
 
+  // Perfil de acesso (Administrador / Operador). A tabela `perfis` é
+  // protegida por RLS: cada usuário só enxerga a própria linha, exceto
+  // administradores, que enxergam todas — por isso essa consulta é segura
+  // mesmo antes de sabermos o papel do usuário logado.
+  useEffect(() => {
+    if (!sessao || mfaPendente) { setPerfil(sessao === null ? null : undefined); return; }
+    let cancelado = false;
+    supabase
+      .from("perfis")
+      .select("*")
+      .eq("user_id", sessao.user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelado) return;
+        if (error) {
+          // A tabela "perfis" ainda não existe (migração de
+          // supabase/perfis-usuarios.sql não rodada) — libera acesso total
+          // em vez de restringir o sistema para todo mundo por engano.
+          setPerfil({ role: "admin" });
+          return;
+        }
+        setPerfil(data || null);
+        if (data && data.role !== "admin") {
+          setView((v) => (MODULOS_OPERADOR.includes(v) ? v : "clientes"));
+        }
+      });
+    return () => { cancelado = true; };
+  }, [sessao, mfaPendente]);
+
+  const ehAdmin = perfil?.role === "admin";
+  const podeVer = (chave) => ehAdmin || MODULOS_OPERADOR.includes(chave);
+
   const carregarTudo = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, linksUteisRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, linksUteisRes, perfisRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -5077,6 +5301,7 @@ export default function App() {
         supabase.from("adesoes").select("*"),
         supabase.from("comissoes").select("*"),
         supabase.from("links_uteis").select("*").order("nome"),
+        supabase.from("perfis").select("*").order("nome"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -5088,6 +5313,8 @@ export default function App() {
       if (adesoesRes.error) throw adesoesRes.error;
       if (comissoesRes.error) throw comissoesRes.error;
       if (linksUteisRes.error) throw linksUteisRes.error;
+      // Se a tabela `perfis` ainda não existir no banco (migração não
+      // rodada), ignora o erro em vez de travar o carregamento do resto do sistema.
       setDb({
         clientes: (clientesRes.data || []).map(rowToCliente),
         veiculos: (veiculosRes.data || []).map(rowToVeiculo),
@@ -5099,6 +5326,7 @@ export default function App() {
         adesoes: (adesoesRes.data || []).map(rowToAdesao),
         comissoes: (comissoesRes.data || []).map(rowToComissao),
         linksUteis: (linksUteisRes.data || []).map(rowToLink),
+        usuarios: (perfisRes?.data || []).map(rowToUsuario),
       });
     } catch (e) {
       console.error(e);
@@ -5106,6 +5334,12 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const recarregarUsuarios = useCallback(async () => {
+    const { data, error } = await supabase.from("perfis").select("*").order("nome");
+    if (error) { showToast("Não foi possível atualizar a lista de usuários: " + error.message, "error"); return; }
+    setDb((prev) => ({ ...prev, usuarios: (data || []).map(rowToUsuario) }));
   }, []);
 
   useEffect(() => {
@@ -5742,7 +5976,7 @@ export default function App() {
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
     cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões",
-    links: "Links Úteis",
+    links: "Links Úteis", usuarios: "Usuários",
     clienteDetail: "Detalhes do cliente",
   };
 
@@ -5845,10 +6079,13 @@ export default function App() {
               </div>
             </div>
             <div className="nexo-sidebar-scroll">
-              {["Visão geral", "Operação", "Financeiro", "Equipe & recursos"].map((grupo) => (
+              {["Visão geral", "Operação", "Financeiro", "Equipe & recursos"].map((grupo) => {
+                const itensDoGrupo = NAV_ITEMS.filter((item) => item.group === grupo && podeVer(item.key));
+                if (itensDoGrupo.length === 0) return null;
+                return (
                 <nav className="nexo-nav" key={grupo}>
                   <div className="nexo-sidebar-group-label">{grupo}</div>
-                  {NAV_ITEMS.filter((item) => item.group === grupo).map(({ key, label, Icon }) => (
+                  {itensDoGrupo.map(({ key, label, Icon }) => (
                     <div
                       key={key}
                       className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
@@ -5860,7 +6097,8 @@ export default function App() {
                     </div>
                   ))}
                 </nav>
-              ))}
+                );
+              })}
             </div>
             <button className="nexo-collapse-btn" onClick={() => setSidebarCollapsed((v) => !v)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}>
               {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
@@ -5933,7 +6171,7 @@ export default function App() {
                     <div className="nexo-avatar-xs" style={{ background: "linear-gradient(135deg, var(--accent-2), var(--accent-dim))" }}>{iniciaisUsuario}</div>
                     <div className="hide-mobile">
                       <div className="nexo-user-chip-name">{nomeExibicao || "Usuário"}</div>
-                      <div className="nexo-user-chip-role">Corretora</div>
+                      <div className="nexo-user-chip-role">{ehAdmin ? "Administrador" : "Operador"}</div>
                     </div>
                     <ChevronDown size={14} className="hide-mobile" />
                   </div>
@@ -5991,6 +6229,9 @@ export default function App() {
                 <ComissoesView db={db} onOpenModal={openModal} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />
               )}
               {view === "links" && <LinksUteisView db={db} onOpenModal={openModal} onDeleteLink={deleteLink} />}
+              {view === "usuarios" && ehAdmin && (
+                <UsuariosView db={db} sessao={sessao} meuUserId={sessao?.user?.id} onRecarregarUsuarios={recarregarUsuarios} />
+              )}
               {view === "clienteDetail" && (
                 <ClienteDetailView
                   db={db}
