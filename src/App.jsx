@@ -366,7 +366,7 @@ const STYLE = `
 .nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); transition: border-color .12s; }
 .nexo-veiculo-card:hover { border-color: var(--border-strong); }
 .nexo-veiculo-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
-.nexo-mini-kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.nexo-mini-kpis { display:grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
 .nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; }
 .nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 .nexo-mini-kpi-value { font-size: 16px; font-weight: 700; }
@@ -517,6 +517,9 @@ function formatDateBR(iso) {
   const d = parseISODate(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("pt-BR");
+}
+function capitalizar(texto) {
+  return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
 }
 function maskCPF(v) {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -2723,6 +2726,33 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
   const cotacoesDoCliente = db.cotacoes.filter((q) => q.clienteId === clienteId);
   const comissoesDoCliente = db.comissoes.filter((cm) => cm.clienteId === clienteId);
 
+  // Total do mês atual: soma os boletos do cliente (de todos os veículos)
+  // que vencem no mesmo mês — útil pra ver de uma vez quanto o cliente
+  // paga no mês somando as parcelas de cada veículo.
+  const agora = new Date();
+  const mesAtualKey = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+  const boletosMesAtual = boletosDoCliente.filter((b) => (b.dataVencimento || "").slice(0, 7) === mesAtualKey);
+  const totalMesAtual = sum(boletosMesAtual.map((b) => b.valor));
+  const nomeMesAtual = capitalizar(agora.toLocaleDateString("pt-BR", { month: "long" }));
+
+  // Mesmo total, mas quebrado por mês de vencimento — cobre os outros
+  // meses além do atual (ex.: um veículo que vence em outubro).
+  const totaisPorMes = {};
+  boletosDoCliente.forEach((b) => {
+    if (!b.dataVencimento) return;
+    const key = b.dataVencimento.slice(0, 7);
+    if (!totaisPorMes[key]) totaisPorMes[key] = { key, total: 0, qtd: 0 };
+    totaisPorMes[key].total += Number(b.valor) || 0;
+    totaisPorMes[key].qtd += 1;
+  });
+  const totaisPorMesOrdenados = Object.values(totaisPorMes)
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map((g) => {
+      const [ano, mesNum] = g.key.split("-");
+      const label = capitalizar(new Date(Number(ano), Number(mesNum) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }));
+      return { ...g, label };
+    });
+
   const [aba, setAba] = useState("resumo");
   const abas = [
     { key: "resumo", label: "Resumo" },
@@ -2792,6 +2822,8 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
           {aba === "resumo" && (
             <>
               <div className="nexo-mini-kpis">
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Veículos</div><div className="nexo-mini-kpi-value">{veiculosDoCliente.length}</div></div>
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Vence em {nomeMesAtual}</div><div className="nexo-mini-kpi-value">{formatBRL(totalMesAtual)}</div></div>
                 <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos pagos</div><div className="nexo-mini-kpi-value">{pagos.length}</div></div>
                 <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos em aberto</div><div className="nexo-mini-kpi-value">{emAberto.length}</div></div>
                 <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total em aberto</div><div className="nexo-mini-kpi-value">{formatBRL(totalEmAberto)}</div></div>
@@ -2847,6 +2879,20 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             <div className="nexo-card">
               <div className="nexo-chart-title">Boletos do cliente</div>
               <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
+              {totaisPorMesOrdenados.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 4px" }}>
+                  {totaisPorMesOrdenados.map((g) => (
+                    <span
+                      key={g.key}
+                      className="nexo-badge"
+                      style={{ background: g.key === mesAtualKey ? "var(--accent-soft)" : "var(--surface-2)", color: g.key === mesAtualKey ? "var(--accent-2)" : "var(--text-dim)" }}
+                      title={`${g.qtd} boleto(s) vencendo em ${g.label}`}
+                    >
+                      {g.label}: <strong className="mono">{formatBRL(g.total)}</strong> ({g.qtd})
+                    </span>
+                  ))}
+                </div>
+              )}
               {boletosDoCliente.length === 0 ? (
                 <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
               ) : (
