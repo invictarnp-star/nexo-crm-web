@@ -1,4 +1,4 @@
-# Nexo Gestão — Clientes, Veículos e Financeiro
+# Corretora Seu Seguro — Clientes, Veículos e Financeiro
 
 Sistema web de gestão de clientes, veículos e recebimentos, com banco de dados no Supabase.
 
