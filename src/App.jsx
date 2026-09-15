@@ -731,6 +731,33 @@ const STATUS_META = {
   "Em aberto": { color: "var(--info)", bg: "var(--info-soft)", Icon: FileText },
 };
 
+/* Esteira de status da cotação. O valor salvo no banco não tem acento
+   (evita qualquer problema de codificação) — o rótulo exibido na tela é
+   que leva o acento. */
+const COTACAO_STATUS = ["Nova", "Em analise", "Enviada", "Negociacao", "Aprovada", "Recusada", "Convertida"];
+const COTACAO_STATUS_LABELS = {
+  Nova: "Nova", "Em analise": "Em análise", Enviada: "Enviada", Negociacao: "Negociação",
+  Aprovada: "Aprovada", Recusada: "Recusada", Convertida: "Convertida",
+};
+const COTACAO_STATUS_META = {
+  Nova: { color: "var(--text-dim)", bg: "var(--surface-3)", Icon: FileText },
+  "Em analise": { color: "var(--info)", bg: "var(--info-soft)", Icon: Search },
+  Enviada: { color: "var(--accent-2)", bg: "var(--accent-soft)", Icon: Send },
+  Negociacao: { color: "var(--warning)", bg: "var(--warning-soft)", Icon: MessageCircle },
+  Aprovada: { color: "var(--success)", bg: "var(--success-soft)", Icon: CheckCircle2 },
+  Recusada: { color: "var(--danger)", bg: "var(--danger-soft)", Icon: XCircle },
+  Convertida: { color: "#B08BF0", bg: "rgba(176,139,240,0.16)", Icon: PartyPopper },
+};
+function CotacaoStatusBadge({ status }) {
+  const meta = COTACAO_STATUS_META[status] || COTACAO_STATUS_META.Nova;
+  const Icon = meta.Icon;
+  return (
+    <span className="nexo-badge" style={{ color: meta.color, background: meta.bg }}>
+      <Icon size={12} /> {COTACAO_STATUS_LABELS[status] || status}
+    </span>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Small UI primitives                                                 */
 /* ------------------------------------------------------------------ */
@@ -2941,7 +2968,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
               ) : (
                 <div className="nexo-table-scroll">
                   <table className="nexo-table">
-                    <thead><tr><th>Data</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th></th></tr></thead>
+                    <thead><tr><th>Data</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Status</th><th></th></tr></thead>
                     <tbody>
                       {cotacoesDoCliente.sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || "")).map((q) => {
                         const seguradora = db.seguradoras.find((s) => s.id === q.seguradoraId);
@@ -2952,6 +2979,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
                             <td>{seguradora?.nome || "—"}</td>
                             <td>{plano?.nome || "—"}</td>
                             <td className="mono">{formatBRL(q.valor)}</td>
+                            <td><CotacaoStatusBadge status={q.status || "Nova"} /></td>
                             <td><div className="nexo-actions-cell"><button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", q)}><Pencil size={13} /></button></div></td>
                           </tr>
                         );
@@ -3162,7 +3190,7 @@ function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, default
   const [f, setF] = useState(
     initial || {
       clienteId: defaultClienteId || "", veiculoId: "", seguradoraId: "", planoId: "",
-      valor: "", dataCotacao: todayISO(), observacoes: "",
+      valor: "", dataCotacao: todayISO(), observacoes: "", status: "Nova",
     }
   );
   const [errors, setErrors] = useState({});
@@ -3222,6 +3250,11 @@ function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, default
           <input type="date" className="nexo-input" value={f.dataCotacao} onChange={set("dataCotacao")} />
         </Field>
       </div>
+      <Field label="Status da cotação">
+        <select className="nexo-select" value={f.status || "Nova"} onChange={set("status")}>
+          {COTACAO_STATUS.map((s) => <option key={s} value={s}>{COTACAO_STATUS_LABELS[s]}</option>)}
+        </select>
+      </Field>
       <Field label="Observações">
         <textarea className="nexo-textarea" value={f.observacoes} onChange={set("observacoes")} placeholder="Notas internas sobre esta cotação" />
       </Field>
@@ -3311,12 +3344,24 @@ function gerarPdfCotacao(cotacao, db) {
   doc.save(`cotacao-${(cliente?.nome || "cliente").replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
 
-function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos }) {
+function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos, onAlterarStatusCotacao }) {
   const [nomeSeguradora, setNomeSeguradora] = useState("");
   const [importando, setImportando] = useState(false);
   const [buscaCotacao, setBuscaCotacao] = useState("");
+  const [alterandoStatus, setAlterandoStatus] = useState(null);
   const fileInputRef = useRef(null);
   const valorTotalCotado = sum(db.cotacoes.map((c) => c.valor));
+  const totalConvertidas = db.cotacoes.filter((c) => (c.status || "Nova") === "Convertida").length;
+
+  async function mudarStatus(cotacao, novoStatus) {
+    if (!onAlterarStatusCotacao || novoStatus === (cotacao.status || "Nova")) return;
+    setAlterandoStatus(cotacao.id);
+    try {
+      await onAlterarStatusCotacao(cotacao, novoStatus);
+    } finally {
+      setAlterandoStatus(null);
+    }
+  }
 
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeVeiculo = (id) => {
@@ -3380,6 +3425,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         <Kpi icon={Shield} label="Seguradoras parceiras" value={db.seguradoras.length} tone="accent" />
         <Kpi icon={FileText} label="Planos cadastrados" value={db.planos.length} tone="info" />
         <Kpi icon={Wallet} label="Cotações registradas" value={db.cotacoes.length} tone="success" />
+        <Kpi icon={PartyPopper} label="Convertidas" value={totalConvertidas} tone="success" />
         <Kpi icon={TrendingUp} label="Valor total cotado" value={formatBRL(valorTotalCotado)} tone="warning" />
       </div>
 
@@ -3486,7 +3532,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         ) : (
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th></th></tr></thead>
+              <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {cotacoesFiltradas
                   .slice()
@@ -3504,6 +3550,17 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
                       <td>{nomePlanoPorId(c.planoId)}</td>
                       <td className="mono nexo-cell-strong">{formatBRL(c.valor)}</td>
                       <td className="nexo-cell-muted">{formatDateBR(c.dataCotacao)}</td>
+                      <td>
+                        <select
+                          className="nexo-select"
+                          style={{ maxWidth: 168, fontSize: 12.5 }}
+                          value={c.status || "Nova"}
+                          disabled={alterandoStatus === c.id}
+                          onChange={(e) => mudarStatus(c, e.target.value)}
+                        >
+                          {COTACAO_STATUS.map((s) => <option key={s} value={s}>{COTACAO_STATUS_LABELS[s]}</option>)}
+                        </select>
+                      </td>
                       <td>
                         <div className="nexo-actions-cell">
                           <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}><FileDown size={12} /> PDF</button>
@@ -5073,11 +5130,12 @@ const planoToRow = (p) => ({
 const rowToCotacao = (r) => ({
   id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id, seguradoraId: r.seguradora_id, planoId: r.plano_id,
   valor: r.valor ?? "", dataCotacao: r.data_cotacao || "", observacoes: r.observacoes || "",
+  status: r.status || "Nova",
 });
 const cotacaoToRow = (c) => ({
   cliente_id: c.clienteId, veiculo_id: c.veiculoId || null, seguradora_id: c.seguradoraId, plano_id: c.planoId,
   valor: c.valor === "" || c.valor == null ? null : Number(c.valor), data_cotacao: c.dataCotacao || null,
-  observacoes: c.observacoes || null,
+  observacoes: c.observacoes || null, status: c.status || "Nova",
 });
 
 /* Mapeamento entre o formato usado no app (camelCase) e as colunas do Supabase (snake_case) */
@@ -5628,20 +5686,36 @@ export default function App() {
   };
 
   const saveCotacao = async (cotacao) => {
+    // Se a migração da esteira de status (supabase/status-cotacoes.sql) ainda
+    // não foi rodada, a coluna "status" não existe — tenta de novo sem ela
+    // em vez de travar o salvamento de cotações que já funcionava antes.
+    const salvar = async (comStatus) => {
+      const row = cotacaoToRow(cotacao);
+      if (!comStatus) delete row.status;
+      return cotacao.id
+        ? supabase.from("cotacoes").update(row).eq("id", cotacao.id).select().single()
+        : supabase.from("cotacoes").insert(row).select().single();
+    };
     try {
+      let { data, error } = await salvar(true);
+      if (error && /status/i.test(error.message || "") && (error.code === "42703" || /column/i.test(error.message || ""))) {
+        ({ data, error } = await salvar(false));
+        if (!error) showToast("Cotação salva, mas a esteira de status ainda não foi ativada (rode supabase/status-cotacoes.sql no Supabase).", "warning");
+      }
+      if (error) throw error;
       if (cotacao.id) {
-        const { data, error } = await supabase.from("cotacoes").update(cotacaoToRow(cotacao)).eq("id", cotacao.id).select().single();
-        if (error) throw error;
         setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.map((c) => (c.id === data.id ? rowToCotacao(data) : c)) }));
       } else {
-        const { data, error } = await supabase.from("cotacoes").insert(cotacaoToRow(cotacao)).select().single();
-        if (error) throw error;
         setDb((prev) => ({ ...prev, cotacoes: [...prev.cotacoes, rowToCotacao(data)] }));
       }
       closeModal();
     } catch (e) {
       showToast("Não foi possível salvar a cotação: " + e.message, "error");
     }
+  };
+
+  const alterarStatusCotacao = async (cotacao, novoStatus) => {
+    await saveCotacao({ ...cotacao, status: novoStatus });
   };
 
   const deleteCotacao = async (id) => {
@@ -6267,6 +6341,7 @@ export default function App() {
                   onDeletePlano={deletePlano}
                   onDeleteCotacao={deleteCotacao}
                   onImportarPlanos={importarPlanosCSV}
+                  onAlterarStatusCotacao={alterarStatusCotacao}
                 />
               )}
               {view === "consultoras" && <ConsultorasView db={db} onOpenModal={openModal} onDeleteConsultora={deleteConsultora} />}
