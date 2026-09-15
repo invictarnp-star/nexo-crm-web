@@ -73,7 +73,18 @@ Para ativar:
 
 Enquanto o passo 1 não for feito, a tela de Usuários simplesmente não aparece e o restante do sistema continua funcionando normalmente — nenhuma tabela existente é alterada.
 
-## 5. Consulta automática por placa (marca, modelo, ano e valor Fipe)
+## 5. Esteira de status das cotações
+
+Cada cotação agora tem um status que representa o andamento da negociação: **Nova → Em análise → Enviada → Negociação → Aprovada / Recusada → Convertida**. O status aparece como uma coluna com um seletor rápido na tabela de "Cotações realizadas" (e como selo na aba Cotações do detalhe do cliente), além de um card com o total de cotações **Convertidas** no topo da página.
+
+Para ativar:
+
+1. No **SQL Editor** do Supabase, copie e rode o conteúdo de `supabase/status-cotacoes.sql`. Isso adiciona a coluna `status` na tabela `cotacoes` (todas as cotações já existentes ficam com "Nova" por padrão) — nenhum dado é apagado.
+2. Pronto — não precisa de nenhuma variável de ambiente nem passo na Vercel. Recarregue a página depois de rodar o script.
+
+Enquanto o passo 1 não for feito, o sistema continua salvando e editando cotações normalmente (só sem o campo de status); ao rodar o script, o recurso passa a funcionar sem precisar mexer em mais nada.
+
+## 6. Consulta automática por placa (marca, modelo, ano e valor Fipe)
 
 O sistema tem um botão **"Buscar dados"** no campo Placa (e outro para Chassi) que preenche marca, modelo e ano automaticamente, além do código Fipe e do valor de referência.
 
@@ -95,7 +106,7 @@ Enquanto `PLACA_API_URL` não estiver configurada, o botão "Buscar dados" mostr
 
 **Testando localmente:** como essa consulta roda numa função de servidor (Vercel Function), o `npm run dev` comum (Vite) não a executa. Para testar localmente, instale a CLI da Vercel (`npm i -g vercel`) e rode `vercel dev` na pasta do projeto — ou simplesmente teste depois de publicar.
 
-## 6. Publicar o site (Vercel — grátis)
+## 7. Publicar o site (Vercel — grátis)
 
 1. Crie uma conta em https://vercel.com (pode entrar com GitHub, GitLab ou e-mail).
 2. Se você tiver o código num repositório do GitHub: no painel da Vercel, clique em **Add New → Project** e importe o repositório.
@@ -123,6 +134,7 @@ api/
   consulta-cpf.js       → consulta de CPF (servidor)
   gerenciar-usuarios.js → criar/excluir usuários e alterar perfil (servidor, admin)
 supabase/
-  schema.sql            → script para criar as tabelas no Supabase
-  perfis-usuarios.sql   → script para ativar os perfis Administrador/Operador
+  schema.sql              → script para criar as tabelas no Supabase
+  perfis-usuarios.sql     → script para ativar os perfis Administrador/Operador
+  status-cotacoes.sql     → script para ativar a esteira de status das cotações
 ```
