@@ -55,6 +55,24 @@ CPF_API_HEADER (opcional) = nome do header de autenticação, se não for "Autho
 
 Enquanto essas variáveis não estiverem configuradas, o botão mostra uma mensagem explicando o que falta, e o cadastro continua funcionando normalmente com preenchimento manual.
 
+## 4. Perfis de usuário (Administrador / Operador)
+
+O sistema tem dois níveis de acesso: **Administrador** (acesso total) e **Operador** (acesso ao dia a dia — Clientes, Veículos, Financeiro, Cotações e Comissões — sem ver Consultoras, Adesões, Relatórios, Links Úteis nem a tela de Usuários).
+
+Para ativar:
+
+1. No **SQL Editor** do Supabase, copie e rode o conteúdo de `supabase/perfis-usuarios.sql`. Isso cria a tabela `perfis` e restringe Consultoras/Adesões a administradores.
+2. Rode o comando de exemplo no fim desse mesmo arquivo para transformar sua própria conta em administrador (troque o e-mail pelo que você usa para logar).
+3. No painel da Vercel → **Settings → Environment Variables**, adicione:
+   ```
+   SUPABASE_SERVICE_ROLE_KEY = a chave "service_role" do seu projeto
+                                (Supabase → Project Settings → API)
+   ```
+   Essa variável é secreta e usada só no servidor (`api/gerenciar-usuarios.js`) — nunca prefixe com `VITE_`.
+4. Depois de publicar (ou rodar `vercel dev`), acesse **Usuários** no menu (só aparece para administradores) para criar os acessos da sua equipe, escolhendo o perfil de cada um.
+
+Enquanto o passo 1 não for feito, a tela de Usuários simplesmente não aparece e o restante do sistema continua funcionando normalmente — nenhuma tabela existente é alterada.
+
 ## 5. Consulta automática por placa (marca, modelo, ano e valor Fipe)
 
 O sistema tem um botão **"Buscar dados"** no campo Placa (e outro para Chassi) que preenche marca, modelo e ano automaticamente, além do código Fipe e do valor de referência.
@@ -101,8 +119,10 @@ src/
   supabaseClient.js  → conexão com o Supabase
   main.jsx           → ponto de entrada do React
 api/
-  consulta-veiculo.js → consulta de placa/chassi + Fipe (servidor)
-  consulta-cpf.js     → consulta de CPF (servidor)
+  consulta-veiculo.js   → consulta de placa/chassi + Fipe (servidor)
+  consulta-cpf.js       → consulta de CPF (servidor)
+  gerenciar-usuarios.js → criar/excluir usuários e alterar perfil (servidor, admin)
 supabase/
-  schema.sql         → script para criar as tabelas no Supabase
+  schema.sql            → script para criar as tabelas no Supabase
+  perfis-usuarios.sql   → script para ativar os perfis Administrador/Operador
 ```
