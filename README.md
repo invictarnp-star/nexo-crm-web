@@ -57,11 +57,11 @@ Enquanto essas variáveis não estiverem configuradas, o botão mostra uma mensa
 
 ## 4. Perfis de usuário (Administrador / Operador)
 
-O sistema tem dois níveis de acesso: **Administrador** (acesso total) e **Operador** (acesso ao dia a dia — Clientes, Veículos, Financeiro, Cotações e Comissões — sem ver Consultoras, Adesões, Relatórios, Links Úteis nem a tela de Usuários).
+O sistema tem dois níveis de acesso: **Administrador** (acesso total) e **Operador** (acesso ao dia a dia — Clientes, Veículos, Financeiro, Cotações e Comissões — sem ver Consultores, Adesões, Relatórios, Links Úteis nem a tela de Usuários).
 
 Para ativar:
 
-1. No **SQL Editor** do Supabase, copie e rode o conteúdo de `supabase/perfis-usuarios.sql`. Isso cria a tabela `perfis` e restringe Consultoras/Adesões a administradores.
+1. No **SQL Editor** do Supabase, copie e rode o conteúdo de `supabase/perfis-usuarios.sql`. Isso cria a tabela `perfis` e restringe Consultores/Adesões a administradores.
 2. Rode o comando de exemplo no fim desse mesmo arquivo para transformar sua própria conta em administrador (troque o e-mail pelo que você usa para logar).
 3. No painel da Vercel → **Settings → Environment Variables**, adicione:
    ```
