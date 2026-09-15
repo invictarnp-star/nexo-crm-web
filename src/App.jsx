@@ -4315,7 +4315,7 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
 
   return (
     <>
-      <Field label="Nome da consultora *" error={errors.nome}>
+      <Field label="Nome do consultor *" error={errors.nome}>
         <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Nome completo" />
       </Field>
       <div className="nexo-field-row">
@@ -4334,7 +4334,7 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
       </Field>
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultora</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultor</button>
       </div>
     </>
   );
@@ -4346,19 +4346,19 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
     <div>
       <div className="nexo-section-head">
         <div>
-          <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
-          <div className="nexo-section-sub">Equipe comercial, adesões e comissões por consultora</div>
+          <div className="nexo-section-title">Consultores<span className="nexo-section-count">{db.consultoras.length} cadastrados</span></div>
+          <div className="nexo-section-sub">Equipe comercial, adesões e comissões por consultor</div>
         </div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Novo consultor</button>
       </div>
 
       {db.consultoras.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum consultor cadastrado" sub="Clique em “Novo consultor” para começar." /></div>
       ) : (
         <>
           <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-            <Kpi icon={Users} label="Consultoras cadastradas" value={db.consultoras.length} tone="info" />
-            <Kpi icon={CheckCircle2} label="Consultoras ativas" value={ativasCount} tone="success" />
+            <Kpi icon={Users} label="Consultores cadastrados" value={db.consultoras.length} tone="info" />
+            <Kpi icon={CheckCircle2} label="Consultores ativos" value={ativasCount} tone="success" />
           </div>
           <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
             {db.consultoras.map((c) => {
@@ -4702,7 +4702,7 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   function submit() {
     const errs = {};
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
-    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
     if (!f.valorAdesao || Number(f.valorAdesao) <= 0) errs.valorAdesao = "Informe um valor válido.";
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
@@ -4717,7 +4717,7 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
-        <Field label="Consultora responsável *" error={errors.consultoraId}>
+        <Field label="Consultor responsável *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -4771,7 +4771,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
       <div className="nexo-section-head">
         <div>
           <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
-          <div className="nexo-section-sub">Taxas de adesão de novos clientes por consultora</div>
+          <div className="nexo-section-sub">Taxas de adesão de novos clientes por consultor</div>
         </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("adesao")}><Plus size={15} /> Nova adesão</button>
       </div>
@@ -4797,7 +4797,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Cliente</th><th>Consultora</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Cliente</th><th>Consultor</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {filtradas.map((a) => (
                   <tr key={a.id}>
@@ -4859,7 +4859,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
 
   function submit() {
     const errs = {};
-    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
     if (!f.valorBase || Number(f.valorBase) <= 0) errs.valorBase = "Informe o valor do contrato/adesão.";
     if (!f.percentual || Number(f.percentual) <= 0) errs.percentual = "Informe o percentual.";
@@ -4870,7 +4870,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   return (
     <>
       <div className="nexo-field-row">
-        <Field label="Consultora *" error={errors.consultoraId}>
+        <Field label="Consultor *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -4969,7 +4969,7 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
       <div className="nexo-section-head">
         <div>
           <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
-          <div className="nexo-section-sub">Comissões de consultoras, produção e fechamento por período</div>
+          <div className="nexo-section-sub">Comissões de consultores, produção e fechamento por período</div>
         </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Nova comissão</button>
       </div>
@@ -4983,7 +4983,7 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
 
       <div className="nexo-tabs">
         <div className={`nexo-tab ${aba === "lista" ? "active" : ""}`} onClick={() => setAba("lista")}>Lançamentos</div>
-        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultora</div>
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultor</div>
       </div>
 
       {aba === "lista" ? (
@@ -4993,7 +4993,7 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
               <label>Buscar</label>
               <div className="nexo-searchbar">
                 <Search size={14} />
-                <input value={buscaComissao} onChange={(e) => setBuscaComissao(e.target.value)} placeholder="Consultora, cliente ou referência…" />
+                <input value={buscaComissao} onChange={(e) => setBuscaComissao(e.target.value)} placeholder="Consultor, cliente ou referência…" />
               </div>
             </div>
             <div className="nexo-filter-field">
@@ -5011,7 +5011,7 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Referência</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Consultor</th><th>Cliente</th><th>Sobre</th><th>Referência</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {filtradas.map((c) => (
                       <tr key={c.id}>
@@ -5050,11 +5050,11 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
       ) : (
         <div className="nexo-table-wrap">
           {fechamentoPorConsultora.length === 0 ? (
-            <EmptyState icon={Users} title="Nenhum fechamento ainda" sub="Lance comissões para ver o total por consultora." />
+            <EmptyState icon={Users} title="Nenhum fechamento ainda" sub="Lance comissões para ver o total por consultor." />
           ) : (
             <div className="nexo-table-scroll">
               <table className="nexo-table">
-                <thead><tr><th>Consultora</th><th>Contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th><th style={{ width: 160 }}>Progresso pago</th></tr></thead>
+                <thead><tr><th>Consultor</th><th>Contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th><th style={{ width: 160 }}>Progresso pago</th></tr></thead>
                 <tbody>
                   {fechamentoPorConsultora.map((f) => {
                     const pct = f.totalComissao > 0 ? Math.round((f.totalPago / f.totalComissao) * 100) : 0;
@@ -5101,7 +5101,7 @@ const NAV_ITEMS = [
   { key: "financeiro", label: "Financeiro", Icon: Receipt, group: "Financeiro" },
   { key: "comissoes", label: "Comissões", Icon: CreditCard, group: "Financeiro" },
   { key: "adesoes", label: "Adesões", Icon: FileDown, group: "Financeiro" },
-  { key: "consultoras", label: "Consultoras", Icon: Users, group: "Equipe & recursos" },
+  { key: "consultoras", label: "Consultores", Icon: Users, group: "Equipe & recursos" },
   { key: "relatorios", label: "Relatórios", Icon: FileText, group: "Equipe & recursos" },
   { key: "links", label: "Links Úteis", Icon: Link2, group: "Equipe & recursos" },
   { key: "usuarios", label: "Usuários", Icon: Shield, group: "Equipe & recursos" },
@@ -5821,11 +5821,11 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar a consultora: " + e.message, "error");
+      showToast("Não foi possível salvar o consultor: " + e.message, "error");
     }
   };
   const deleteConsultora = async (id) => {
-    if (!(await confirmDialog("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas."))) return;
+    if (!(await confirmDialog("Excluir este consultor? Adesões e comissões vinculadas a ele também serão removidas."))) return;
     try {
       const { error } = await supabase.from("consultoras").delete().eq("id", id);
       if (error) throw error;
@@ -5836,7 +5836,7 @@ export default function App() {
         comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
       }));
     } catch (e) {
-      showToast("Não foi possível excluir a consultora: " + e.message, "error");
+      showToast("Não foi possível excluir o consultor: " + e.message, "error");
     }
   };
 
@@ -6145,7 +6145,7 @@ export default function App() {
 
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
-    cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões",
+    cotacoes: "Cotação de seguros", consultoras: "Consultores", adesoes: "Adesões", comissoes: "Comissões",
     links: "Links Úteis", usuarios: "Usuários",
     clienteDetail: "Detalhes do cliente",
   };
@@ -6480,7 +6480,7 @@ export default function App() {
         </Modal>
       )}
       {modal && modal.type === "consultora" && (
-        <Modal title={modal.data ? "Editar consultora" : "Nova consultora"} onClose={closeModal}>
+        <Modal title={modal.data ? "Editar consultor" : "Novo consultor"} onClose={closeModal}>
           <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
         </Modal>
       )}
