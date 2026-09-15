@@ -8,9 +8,10 @@ import {
 import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
-  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
+  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, TrendingDown, ChevronRight, ChevronDown,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Link2, ExternalLink, PartyPopper, Bell, Bot, Send
+  Link2, ExternalLink, PartyPopper, Bell, Bot, Send, LogOut, PanelLeftClose, PanelLeftOpen,
+  ArrowUpRight, Sparkles, UserCircle2, Download, SlidersHorizontal, Info
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -21,18 +22,22 @@ const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 .nexo {
-  --ink: #0B1015;
+  --ink: #0A0E14;
   --surface: #121922;
   --surface-2: #19222D;
   --surface-3: #202B38;
+  --surface-raised: #1B2530;
   --border: #263241;
   --border-soft: #1D2732;
-  --text: #E9EEF3;
+  --border-strong: #324256;
+  --text: #EDF1F5;
   --text-dim: #92A2B2;
   --text-faint: #56646F;
   --accent: #3E86BF;
+  --accent-2: #5AA7DC;
   --accent-dim: #2C5F87;
   --accent-soft: rgba(62,134,191,0.14);
+  --accent-ring: rgba(62,134,191,0.35);
   --success: #34B172;
   --success-soft: rgba(52,177,114,0.14);
   --warning: #DB9B3D;
@@ -41,165 +46,334 @@ const STYLE = `
   --danger-soft: rgba(221,95,82,0.14);
   --info: #7A8FB0;
   --info-soft: rgba(122,143,176,0.16);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-md: 0 8px 24px -8px rgba(0,0,0,0.45);
+  --shadow-lg: 0 20px 48px -16px rgba(0,0,0,0.55);
+  --shadow-glow: 0 8px 22px -6px rgba(62,134,191,0.45);
   font-family: 'Inter', -apple-system, sans-serif;
   background: var(--ink);
   color: var(--text);
   min-height: 100vh;
   width: 100%;
   position: relative;
+  -webkit-font-smoothing: antialiased;
 }
 .nexo * { box-sizing: border-box; }
 .nexo .mono { font-family: 'JetBrains Mono', monospace; }
+.nexo ::-webkit-scrollbar { width: 10px; height: 10px; }
+.nexo ::-webkit-scrollbar-track { background: transparent; }
+.nexo ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 20px; border: 2px solid var(--ink); }
+.nexo *:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+@keyframes nexoFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.nexo-fade-in { animation: nexoFadeUp .28s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) { .nexo-fade-in { animation: none; } }
 
 /* Layout */
 .nexo-shell { display: flex; min-height: 100vh; }
 .nexo-sidebar {
-  width: 232px; flex-shrink: 0; background: var(--surface);
-  border-right: 1px solid var(--border-soft); padding: 20px 14px;
-  display: flex; flex-direction: column; gap: 18px;
+  width: 240px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border-soft); padding: 18px 12px;
+  display: flex; flex-direction: column; gap: 14px;
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
-  transition: transform .25s ease;
+  transition: transform .25s ease, width .2s ease;
 }
-.nexo-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 10px; }
+.nexo-sidebar.collapsed { width: 72px; }
+.nexo-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 12px; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px; }
 .nexo-brand-mark {
-  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  width: 36px; height: 36px; border-radius: var(--radius-md); flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent-dim));
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 15px; color: #fff; letter-spacing: -0.5px;
+  font-weight: 800; font-size: 14.5px; color: #fff; letter-spacing: -0.5px;
+  box-shadow: var(--shadow-glow);
 }
-.nexo-brand-name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; line-height: 1.1;}
-.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
-.nexo-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.nexo-brand-text { min-width: 0; overflow: hidden; }
+.nexo-sidebar.collapsed .nexo-brand-text, .nexo-sidebar.collapsed .nexo-sidebar-group-label,
+.nexo-sidebar.collapsed .nexo-nav-item span, .nexo-sidebar.collapsed .nexo-sidebar-foot-info,
+.nexo-sidebar.collapsed .nexo-collapse-btn span { display: none; }
+.nexo-sidebar.collapsed .nexo-brand { justify-content: center; }
+.nexo-sidebar.collapsed .nexo-nav-item { justify-content: center; padding: 10px; }
+.nexo-brand-name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; line-height: 1.2; white-space: nowrap; }
+.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; white-space: nowrap; }
+.nexo-sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 14px; margin: 0 -4px; padding: 0 4px; }
+.nexo-sidebar-group-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--text-dim); font-weight: 800; padding: 8px 12px 6px; white-space: nowrap; opacity: .85; }
+.nexo-nav { display: flex; flex-direction: column; gap: 2px; }
 .nexo-nav-item {
-  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
-  border-radius: 8px; color: var(--text-dim); font-size: 13.5px; font-weight: 500;
-  cursor: pointer; border: 1px solid transparent; user-select: none;
+  position: relative; display: flex; align-items: center; gap: 11px; padding: 9px 12px;
+  border-radius: var(--radius-sm); color: var(--text-dim); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; border: 1px solid transparent; user-select: none; white-space: nowrap;
+  transition: background .12s ease, color .12s ease;
 }
+.nexo-nav-item svg { flex-shrink: 0; }
 .nexo-nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); border-color: rgba(62,134,191,0.35); }
-.nexo-nav-item.active svg { color: var(--accent); }
-.nexo-sidebar-foot { font-size: 10.5px; color: var(--text-faint); padding: 8px; border-top: 1px solid var(--border-soft); padding-top: 12px;}
-
-.nexo-main { margin-left: 232px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.nexo-topbar {
-  height: 60px; border-bottom: 1px solid var(--border-soft); background: rgba(18,25,34,0.7);
-  backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: space-between;
-  padding: 0 22px; position: sticky; top: 0; z-index: 30; gap: 12px;
+.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); border-color: var(--accent-ring); }
+.nexo-nav-item.active::before { content: ""; position: absolute; left: -12px; top: 6px; bottom: 6px; width: 3px; border-radius: 4px; background: var(--accent-2); }
+.nexo-sidebar.collapsed .nexo-nav-item.active::before { display: none; }
+.nexo-nav-item.active svg { color: var(--accent-2); }
+.nexo-nav-tooltip {
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  background: var(--surface-3); color: var(--text); font-size: 12px; font-weight: 600;
+  padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  white-space: nowrap; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none;
+  transition: opacity .12s ease; z-index: 50;
 }
-.nexo-topbar-title { font-size: 15.5px; font-weight: 700; display:flex; align-items:center; gap:10px;}
-.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
+.nexo-sidebar.collapsed .nexo-nav-item:hover .nexo-nav-tooltip { opacity: 1; }
+.nexo-collapse-btn {
+  display: flex; align-items: center; gap: 8px; justify-content: center; margin: 0 4px;
+  padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-soft); background: var(--surface-2);
+  color: var(--text-faint); cursor: pointer; font-size: 11.5px; font-weight: 600;
+}
+.nexo-collapse-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.nexo-sidebar-foot { font-size: 10.5px; color: var(--text-faint); padding: 10px 6px 2px; border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 8px; }
+.nexo-sidebar-foot-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.nexo-main { margin-left: 240px; flex: 1; min-width: 0; display: flex; flex-direction: column; transition: margin-left .2s ease; }
+.nexo-main.sidebar-collapsed { margin-left: 72px; }
+.nexo-topbar {
+  height: 64px; border-bottom: 1px solid var(--border-soft); background: rgba(10,14,20,0.78);
+  backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; position: sticky; top: 0; z-index: 30; gap: 16px;
+}
+.nexo-topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.nexo-topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; display:flex; flex-direction: column; line-height: 1.25;}
+.nexo-topbar-greeting { font-size: 11px; color: var(--text-faint); font-weight: 500; }
+.nexo-topbar-search {
+  display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 8px 12px; width: 280px; max-width: 32vw; color: var(--text-faint);
+  transition: border-color .15s, background .15s;
+}
+.nexo-topbar-search:focus-within { border-color: var(--accent-dim); background: var(--surface-3); }
+.nexo-topbar-search input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
+.nexo-topbar-search input::placeholder { color: var(--text-faint); }
+.nexo-topbar-search kbd { font-size: 10.5px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: inherit; }
+.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center;}
 .nexo-hamburger { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 6px;}
-.nexo-content { padding: 24px 26px 60px; flex: 1; }
+.nexo-content { padding: 26px 28px 64px; flex: 1; }
 .nexo-overlay { display:none; }
+
+.nexo-topbar-iconbtn { position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); cursor: pointer; }
+.nexo-topbar-iconbtn:hover { color: var(--text); border-color: var(--border-strong); }
+.nexo-notif-dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface-2); }
+.nexo-user-chip { display: flex; align-items: center; gap: 9px; padding: 5px 10px 5px 5px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; }
+.nexo-user-chip:hover { border-color: var(--border-strong); }
+.nexo-user-chip-name { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+.nexo-user-chip-role { font-size: 10.5px; color: var(--text-faint); line-height: 1.2; }
 
 /* Buttons */
 .nexo-btn {
-  display: inline-flex; align-items: center; gap: 7px; font-family: inherit;
-  font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit;
+  font-size: 13px; font-weight: 600; padding: 9px 15px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
-  cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s;
+  cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s, transform .08s, box-shadow .15s;
 }
-.nexo-btn:hover { border-color: var(--accent-dim); }
-.nexo-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.nexo-btn-primary:hover { background: #3679AC; }
+.nexo-btn:hover { border-color: var(--accent-dim); background: var(--surface-3); }
+.nexo-btn:active { transform: translateY(1px); }
+.nexo-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.nexo-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
+.nexo-btn-primary:hover { background: #3679AC; border-color: #3679AC; box-shadow: var(--shadow-glow); }
 .nexo-btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
-.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); border-color: transparent; }
 .nexo-btn-danger { color: var(--danger); }
-.nexo-btn-sm { padding: 6px 10px; font-size: 12px; }
-.nexo-icon-btn {
-  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
-  cursor: pointer;
+.nexo-btn-danger:hover { border-color: var(--danger); background: var(--danger-soft); }
+.nexo-btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+.nexo-btn-success:hover { background: #2C9A63; border-color: #2C9A63; }
+.nexo-btn-sm { padding: 6px 11px; font-size: 12px; }
+.nexo-btn-block { width: 100%; }
+.nexo-btn .nexo-spinner { animation: nexoSpin .7s linear infinite; }
+.nexo-btn.is-loading { color: transparent !important; pointer-events: none; position: relative; }
+.nexo-btn.is-loading::after {
+  content: ""; position: absolute; width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: nexoSpin .7s linear infinite;
 }
-.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); }
+.nexo-btn-ghost.is-loading::after, .nexo-btn:not(.nexo-btn-primary):not(.nexo-btn-success).is-loading::after { border: 2px solid var(--border-strong); border-top-color: var(--text); }
+@keyframes nexoSpin { to { transform: rotate(360deg); } }
+.nexo-icon-btn {
+  width: 31px; height: 31px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+  cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+}
+.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); background: var(--surface-3); }
+.nexo-icon-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+.nexo-btn-group { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+.nexo-btn-group .nexo-btn { border: none; border-radius: 0; border-right: 1px solid var(--border); }
+.nexo-btn-group .nexo-btn:last-child { border-right: none; }
+
+/* Dropdown menu */
+.nexo-dropdown { position: relative; display: inline-block; }
+.nexo-dropdown-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; background: var(--surface-3);
+  border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 45;
+  padding: 6px; display: flex; flex-direction: column; gap: 1px;
+}
+.nexo-dropdown-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-dim); cursor: pointer; background: none; border: none; text-align: left; font-family: inherit; width: 100%; }
+.nexo-dropdown-item:hover { background: var(--surface-2); color: var(--text); }
+.nexo-dropdown-item svg { color: var(--text-faint); flex-shrink: 0; }
+.nexo-dropdown-sep { height: 1px; background: var(--border-soft); margin: 5px 2px; }
 
 /* Cards */
-.nexo-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 18px; }
-.nexo-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-.nexo-kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 16px 14px; position: relative; overflow: hidden;}
-.nexo-kpi-icon { width: 32px; height: 32px; border-radius: 8px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;}
-.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 500; margin-bottom: 4px;}
-.nexo-kpi-value { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
-.nexo-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;}
-.nexo-chart-title { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
-.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 14px; }
+.nexo-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); }
+.nexo-card-title { font-size: 13.5px; font-weight: 700; }
+.nexo-card-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+.nexo-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.nexo-kpi {
+  background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg);
+  padding: 17px 18px 16px; position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
+  transition: border-color .15s, transform .15s;
+}
+.nexo-kpi:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.nexo-kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.nexo-kpi-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink: 0;}
+.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;}
+.nexo-kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; line-height: 1; }
+.nexo-kpi-foot { margin-top: 8px; font-size: 11px; color: var(--text-faint); }
+.nexo-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px 2px 5px; border-radius: 999px; }
+.nexo-trend.up { color: var(--success); background: var(--success-soft); }
+.nexo-trend.down { color: var(--danger); background: var(--danger-soft); }
+.nexo-trend.flat { color: var(--text-faint); background: var(--surface-2); }
+.nexo-charts-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin-bottom: 14px;}
+.nexo-charts-grid > * { min-width: 0; }
+.nexo-chart-title { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 16px; }
 
 /* Section header */
-.nexo-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;}
-.nexo-section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.nexo-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;}
+.nexo-section-title { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; }
+.nexo-section-sub { font-size: 12.5px; color: var(--text-faint); margin-top: 3px; font-weight: 500; }
 .nexo-section-count { font-size: 12.5px; color: var(--text-faint); font-weight: 500; margin-left: 8px;}
+.nexo-section-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Search & filters */
-.nexo-searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; max-width: 380px; flex: 1; }
+.nexo-searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 9px 12px; max-width: 380px; flex: 1; transition: border-color .15s;}
+.nexo-searchbar:focus-within { border-color: var(--accent-dim); }
+.nexo-searchbar svg { color: var(--text-faint); flex-shrink: 0; }
 .nexo-searchbar input { background:none; border:none; outline:none; color: var(--text); font-size: 13px; width: 100%; font-family:inherit;}
 .nexo-searchbar input::placeholder { color: var(--text-faint); }
-.nexo-filters { background: var(--surface); border:1px solid var(--border-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display:flex; flex-wrap:wrap; gap: 12px; align-items:flex-end;}
+.nexo-filters { background: var(--surface); border:1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px; display:flex; flex-wrap:wrap; gap: 12px; align-items:flex-end;}
 .nexo-filter-field { display:flex; flex-direction:column; gap:5px; min-width: 130px; flex:1;}
 .nexo-filter-field label { font-size: 10.5px; text-transform:uppercase; letter-spacing:.4px; color: var(--text-faint); font-weight:600;}
+.nexo-filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-2); border: 1px solid var(--accent-ring); }
+.nexo-filter-chip button { background: none; border: none; color: inherit; cursor: pointer; display: flex; padding: 0; }
 
 /* Inputs */
 .nexo-input, .nexo-select, .nexo-textarea {
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
+  border-radius: var(--radius-sm); padding: 9px 11px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
+  transition: border-color .12s, background .12s;
 }
-.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); }
+.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); background: var(--surface-3); }
+.nexo-input:disabled, .nexo-select:disabled, .nexo-textarea:disabled { opacity: .55; cursor: not-allowed; }
 .nexo-textarea { resize: vertical; min-height: 60px; }
 .nexo-field { display:flex; flex-direction:column; gap: 6px; }
-.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 500; }
-.nexo-field-error { font-size: 11px; color: var(--danger); }
+.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.nexo-field-error { font-size: 11px; color: var(--danger); display: flex; align-items: center; gap: 4px; }
 .nexo-field-row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .nexo-field-row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.nexo-checkbox { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--surface-2); accent-color: var(--accent); cursor: pointer; }
 
 /* Table */
-.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
+.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
 .nexo-table-scroll { overflow-x: auto; }
 .nexo-table { width: 100%; border-collapse: collapse; min-width: 640px; }
 .nexo-table th {
-  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--text-faint); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-soft);
-  white-space: nowrap;
+  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--text-faint); font-weight: 700; padding: 13px 16px; border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap; background: var(--surface-2);
 }
-.nexo-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.nexo-table td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 .nexo-table tr:last-child td { border-bottom: none; }
+.nexo-table tbody tr { transition: background .1s; }
 .nexo-table tbody tr:hover { background: var(--surface-2); }
 .nexo-row-link { cursor: pointer; }
 .nexo-cell-muted { color: var(--text-faint); font-size: 12px; }
+.nexo-cell-strong { font-weight: 600; }
 .nexo-actions-cell { display:flex; gap: 6px; justify-content:flex-end; }
+.nexo-table-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border-soft); background: var(--surface-2); }
+.nexo-pagination { display: flex; align-items: center; gap: 4px; }
+.nexo-pagination button { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-3); color: var(--text-dim); cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.nexo-pagination button:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
+.nexo-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+.nexo-progress-track { width: 100%; height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.nexo-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--success), var(--accent-2)); transition: width .3s ease; }
+.nexo-ai-fab { transition: transform .15s ease, box-shadow .15s ease; }
+.nexo-ai-fab:hover { transform: translateY(-2px) scale(1.04); }
+.nexo-pagination button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* Badges */
-.nexo-badge { display:inline-flex; align-items:center; gap:5px; font-size: 11.5px; font-weight: 600; padding: 4px 9px; border-radius: 20px; }
+.nexo-badge { display:inline-flex; align-items:center; gap:5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .nexo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink:0; }
+.nexo-avatar { width: 52px; height: 52px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--accent-2); display:flex; align-items:center; justify-content:center; font-weight: 700; font-size: 19px; flex-shrink: 0; }
+.nexo-avatar-sm { width: 34px; height: 34px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; display:flex; align-items:center; justify-content:center; flex-shrink: 0; color: #fff; }
+.nexo-avatar-xs { width: 27px; height: 27px; border-radius: 50%; font-size: 11px; font-weight: 700; display:flex; align-items:center; justify-content:center; flex-shrink: 0; color: #fff; }
+.nexo-name-cell { display: flex; align-items: center; gap: 11px; }
+
+/* Skeleton */
+@keyframes nexoShimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+.nexo-skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%); background-size: 400px 100%; animation: nexoShimmer 1.4s ease infinite; border-radius: var(--radius-sm); }
+.nexo-skeleton-line { height: 12px; margin-bottom: 8px; }
+.nexo-skeleton-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.nexo-skeleton-card { height: 106px; border-radius: var(--radius-lg); }
 
 /* Empty state */
 .nexo-empty { text-align:center; padding: 60px 20px; color: var(--text-faint); }
 .nexo-empty svg { margin-bottom: 12px; opacity: .5; }
-.nexo-empty-title { color: var(--text-dim); font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.nexo-empty-title { color: var(--text-dim); font-weight: 700; font-size: 14px; margin-bottom: 4px; }
 .nexo-empty-sub { font-size: 12.5px; }
 
+/* Toasts */
+.nexo-toast-wrap { position: fixed; top: 18px; right: 18px; z-index: 200; display: flex; flex-direction: column; gap: 10px; max-width: min(360px, calc(100vw - 32px)); }
+@keyframes nexoToastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.nexo-toast { display: flex; align-items: flex-start; gap: 10px; background: var(--surface-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-lg); font-size: 13px; animation: nexoToastIn .22s cubic-bezier(.16,1,.3,1) both; }
+.nexo-toast svg { flex-shrink: 0; margin-top: 1px; }
+.nexo-toast.success { border-left: 3px solid var(--success); }
+.nexo-toast.success svg { color: var(--success); }
+.nexo-toast.error { border-left: 3px solid var(--danger); }
+.nexo-toast.error svg { color: var(--danger); }
+.nexo-toast.info { border-left: 3px solid var(--info); }
+.nexo-toast.info svg { color: var(--info); }
+.nexo-toast.warning { border-left: 3px solid var(--warning); }
+.nexo-toast.warning svg { color: var(--warning); }
+.nexo-toast-close { margin-left: auto; background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; display: flex; }
+.nexo-toast-close:hover { color: var(--text); }
+
+/* Confirm dialog */
+.nexo-confirm-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+
 /* Modal */
-.nexo-modal-overlay { position: fixed; inset: 0; background: rgba(5,8,11,0.6); z-index: 100; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding: 40px 16px; }
-.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+.nexo-modal-overlay { position: fixed; inset: 0; background: rgba(4,6,9,0.65); z-index: 100; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding: 40px 16px; backdrop-filter: blur(2px); }
+@keyframes nexoModalIn { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
+.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); animation: nexoModalIn .2s cubic-bezier(.16,1,.3,1) both; }
 .nexo-modal.wide { max-width: 620px; }
 .nexo-modal-head { display:flex; align-items:center; justify-content:space-between; padding: 18px 20px; border-bottom: 1px solid var(--border-soft); }
 .nexo-modal-head h3 { font-size: 15.5px; font-weight: 700; margin: 0; }
 .nexo-modal-body { padding: 20px; display:flex; flex-direction:column; gap: 14px; }
 .nexo-modal-foot { display:flex; justify-content:flex-end; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border-soft); }
 
+/* Tooltip (generic) */
+.nexo-tt { position: relative; display: inline-flex; }
+.nexo-tt-bubble { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border); color: var(--text); font-size: 11.5px; font-weight: 500; padding: 6px 9px; border-radius: var(--radius-sm); white-space: nowrap; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .12s ease; z-index: 50; }
+.nexo-tt:hover .nexo-tt-bubble { opacity: 1; }
+
 /* Client detail */
 .nexo-detail-grid { display:grid; grid-template-columns: 300px 1fr; gap: 16px; align-items:start; }
-.nexo-info-row { display:flex; align-items:center; gap: 9px; font-size: 13px; color: var(--text-dim); padding: 7px 0; border-bottom: 1px solid var(--border-soft); }
+.nexo-detail-grid > * { min-width: 0; }
+.nexo-info-row { display:flex; align-items:center; gap: 9px; font-size: 13px; color: var(--text-dim); padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
 .nexo-info-row:last-child { border-bottom: none; }
 .nexo-info-row svg { color: var(--text-faint); flex-shrink:0; }
-.nexo-avatar { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display:flex; align-items:center; justify-content:center; font-weight: 700; font-size: 19px; }
-.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); }
+.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); transition: border-color .12s; }
+.nexo-veiculo-card:hover { border-color: var(--border-strong); }
 .nexo-veiculo-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
 .nexo-mini-kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
-.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; }
+.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; }
 .nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 .nexo-mini-kpi-value { font-size: 16px; font-weight: 700; }
-.nexo-tabs { display:flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px; }
-.nexo-tab { padding: 8px 4px; margin-right: 18px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; }
-.nexo-tab.active { color: var(--text); border-color: var(--accent); }
+.nexo-tabs { display:flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px; overflow-x: auto; }
+.nexo-tab { padding: 9px 4px; margin-right: 20px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .12s; }
+.nexo-tab:hover { color: var(--text-dim); }
+.nexo-tab.active { color: var(--text); border-color: var(--accent-2); }
 
 /* ------------------------------------------------------------------ */
 /* Tela de login                                                        */
@@ -231,11 +405,11 @@ const STYLE = `
 .nexo-login-brand-tagline { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
 .nexo-login-hero-mid { margin: auto 0; max-width: 520px; animation: nexoLoginFade .8s ease .1s both; }
 .nexo-login-quote { font-size: 36px; font-weight: 700; line-height: 1.3; letter-spacing: -0.5px; color: var(--text); }
-.nexo-login-quote span { color: var(--accent); }
-.nexo-login-hero-icons { display: flex; align-items: center; gap: 18px; margin-top: 26px; color: var(--text-faint); }
-.nexo-login-hero-icons .item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-.nexo-login-hero-icons svg { color: var(--accent); }
-.nexo-login-hero-foot { position: relative; z-index: 2; font-size: 12px; color: var(--text-faint); animation: nexoLoginFade .9s ease .15s both; }
+.nexo-login-quote span { color: var(--accent-2); }
+.nexo-login-hero-icons { display: flex; align-items: center; gap: 18px; margin-top: 26px; color: var(--text-dim); flex-wrap: wrap; }
+.nexo-login-hero-icons .item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
+.nexo-login-hero-icons svg { color: var(--accent-2); }
+.nexo-login-hero-foot { position: relative; z-index: 2; font-size: 12px; color: var(--text-dim); animation: nexoLoginFade .9s ease .15s both; }
 
 .nexo-login-panel {
   flex: 0 0 460px; display: flex; align-items: center; justify-content: center; padding: 40px 44px; position: relative;
@@ -268,8 +442,10 @@ const STYLE = `
 }
 
 /* Responsive */
+@media (max-width: 1180px) {
+  .nexo-topbar-search { width: 200px; }
+}
 @media (max-width: 1024px) {
-  .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .nexo-charts-grid { grid-template-columns: 1fr; }
   .nexo-detail-grid { grid-template-columns: 1fr; }
   .nexo-login-hero { padding: 44px 40px; }
@@ -285,10 +461,17 @@ const STYLE = `
   .nexo-login-panel { flex: 1; padding: 26px 20px 34px; }
   .nexo-login-card { padding: 30px 24px 26px; border-radius: 16px; }
 }
+@media (max-width: 900px) {
+  .nexo-topbar-search { display: none; }
+}
 @media (max-width: 768px) {
-  .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); }
+  .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); width: 240px !important; }
   .nexo-sidebar.open { transform: translateX(0); }
-  .nexo-main { margin-left: 0; }
+  .nexo-sidebar .nexo-brand-text, .nexo-sidebar .nexo-sidebar-group-label, .nexo-sidebar .nexo-nav-item span, .nexo-sidebar .nexo-sidebar-foot-info { display: block !important; }
+  .nexo-sidebar .nexo-nav-item { justify-content: flex-start !important; padding: 9px 12px !important; }
+  .nexo-sidebar .nexo-brand { justify-content: flex-start !important; }
+  .nexo-collapse-btn { display: none; }
+  .nexo-main, .nexo-main.sidebar-collapsed { margin-left: 0; }
   .nexo-hamburger { display: inline-flex; align-items:center; justify-content:center; }
   .nexo-content { padding: 16px 14px 40px; }
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -296,7 +479,9 @@ const STYLE = `
   .nexo-field-row, .nexo-field-row3 { grid-template-columns: 1fr; }
   .nexo-overlay.open { display:block; position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 39; }
   .nexo-topbar { padding: 0 14px; }
-  .nexo-topbar-title span.hide-mobile { display:none; }
+  .nexo-topbar-greeting { display: none; }
+  .nexo-user-chip-role { display: none; }
+  .hide-mobile { display: none !important; }
 }
 @media (max-width: 420px) {
   .nexo-login-card { padding: 26px 18px 22px; }
@@ -316,6 +501,16 @@ const sum = (arr) => arr.reduce((a, b) => a + (Number(b) || 0), 0);
 function formatBRL(v) {
   const n = Number(v) || 0;
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+const AVATAR_HUES = ["#3E86BF", "#34B172", "#DB9B3D", "#B08BF0", "#DD5F52", "#5AA7DC", "#3FB8AF"];
+function getIniciais(nome) {
+  return (nome || "").split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase() || "?";
+}
+function getAvatarColor(nome) {
+  const s = nome || "";
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_HUES[hash % AVATAR_HUES.length];
 }
 function formatDateBR(iso) {
   if (!iso) return "—";
@@ -588,6 +783,96 @@ function Modal({ title, onClose, children, wide, footer }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Notificações (toast) e confirmação — substituem alert()/confirm()   */
+/* Bus global simples: qualquer função do app pode chamar showToast()  */
+/* ou confirmDialog() sem precisar receber props, já que só existe um  */
+/* <ToastHost/> e um <ConfirmHost/>, montados uma vez na raiz do app.  */
+/* ------------------------------------------------------------------ */
+let _setToasts = null;
+let _toastSeq = 1;
+function showToast(message, type = "info") {
+  if (!_setToasts) return;
+  const id = _toastSeq++;
+  _setToasts((prev) => [...prev, { id, message, type }]);
+  setTimeout(() => {
+    if (_setToasts) _setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, 5500);
+}
+
+function ToastHost() {
+  const [toasts, setToasts] = useState([]);
+  useEffect(() => {
+    _setToasts = setToasts;
+    return () => { _setToasts = null; };
+  }, []);
+  if (toasts.length === 0) return null;
+  const iconFor = { success: CheckCircle2, error: XCircle, info: Info, warning: AlertTriangle };
+  return (
+    <div className="nexo-toast-wrap">
+      {toasts.map((t) => {
+        const Icon = iconFor[t.type] || Info;
+        return (
+          <div key={t.id} className={`nexo-toast ${t.type}`}>
+            <Icon size={17} />
+            <div style={{ flex: 1, whiteSpace: "pre-wrap", lineHeight: 1.45 }}>{t.message}</div>
+            <button className="nexo-toast-close" onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}>
+              <X size={14} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+let _setConfirmRequest = null;
+function confirmDialog(message, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    if (!_setConfirmRequest) { resolve(window.confirm(message)); return; }
+    _setConfirmRequest({ message, opts, resolve });
+  });
+}
+
+function ConfirmHost() {
+  const [request, setRequest] = useState(null);
+  useEffect(() => {
+    _setConfirmRequest = setRequest;
+    return () => { _setConfirmRequest = null; };
+  }, []);
+  if (!request) return null;
+  const { message, opts, resolve } = request;
+  const finish = (result) => { setRequest(null); resolve(result); };
+  const perigoso = opts.tone !== "neutral";
+  return (
+    <div className="nexo-modal-overlay" onClick={() => finish(false)}>
+      <div className="nexo-modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+        <div className="nexo-modal-body" style={{ textAlign: "center", paddingTop: 30, paddingBottom: 6 }}>
+          <div
+            className="nexo-confirm-icon"
+            style={{
+              margin: "0 auto 14px",
+              background: perigoso ? "var(--danger-soft)" : "var(--info-soft)",
+              color: perigoso ? "var(--danger)" : "var(--info)",
+            }}
+          >
+            {perigoso ? <AlertTriangle size={20} /> : <Info size={20} />}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{opts.title || "Confirmar ação"}</div>
+          <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.55 }}>{message}</div>
+        </div>
+        <div className="nexo-modal-foot" style={{ justifyContent: "center" }}>
+          <button className="nexo-btn" onClick={() => finish(false)}>Cancelar</button>
+          <button className={`nexo-btn ${perigoso ? "nexo-btn-danger" : "nexo-btn-primary"}`} onClick={() => finish(true)}>
+            {opts.confirmLabel || "Confirmar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImportCSVButton({ label, onArquivoSelecionado, disabled }) {
   const inputRef = React.useRef(null);
   return (
@@ -629,6 +914,7 @@ function Kpi({ icon, label, value, tone }) {
     warning: ["var(--warning)", "var(--warning-soft)"],
     danger: ["var(--danger)", "var(--danger-soft)"],
     info: ["var(--info)", "var(--info-soft)"],
+    neutral: ["var(--text-dim)", "var(--surface-2)"],
   }[tone || "accent"];
   return (
     <div className="nexo-kpi">
@@ -1317,6 +1603,52 @@ function Dashboard({ db, onOpenModal }) {
   const valorEmAberto = sum(emAberto.map((b) => b.valor));
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
+  const cotacoesRegistradas = db.cotacoes.length;
+
+  // Atividades recentes: um feed unificado a partir de eventos que já existem
+  // no banco (sem inventar dado novo) — pagamento de boleto, nova cotação,
+  // veículo cadastrado, adesão recebida e comissão paga, ordenados por data.
+  const atividadesRecentes = useMemo(() => {
+    const eventos = [];
+    db.boletos.forEach((b) => {
+      if (b.dataPagamento) {
+        const cliente = db.clientes.find((c) => c.id === b.clienteId);
+        eventos.push({ tipo: "pagamento", icon: Wallet, tone: "success", data: b.dataPagamento, titulo: "Pagamento recebido", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(b.valor)}` });
+      }
+    });
+    db.cotacoes.forEach((q) => {
+      if (q.dataCotacao) {
+        const cliente = db.clientes.find((c) => c.id === q.clienteId);
+        eventos.push({ tipo: "cotacao", icon: FileText, tone: "info", data: q.dataCotacao, titulo: "Nova cotação", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(q.valor)}` });
+      }
+    });
+    db.veiculos.forEach((v) => {
+      if (v.dataCadastro) {
+        const cliente = db.clientes.find((c) => c.id === v.clienteId);
+        eventos.push({ tipo: "veiculo", icon: Car, tone: "accent", data: v.dataCadastro, titulo: "Veículo cadastrado", sub: `${v.marca} ${v.modelo} · ${cliente?.nome || "Cliente"}` });
+      }
+    });
+    db.adesoes.forEach((a) => {
+      if (a.dataRecebimento) {
+        const cliente = db.clientes.find((c) => c.id === a.clienteId);
+        eventos.push({ tipo: "adesao", icon: FileDown, tone: "success", data: a.dataRecebimento, titulo: "Adesão recebida", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(a.valorRecebido || a.valorAdesao)}` });
+      }
+    });
+    db.comissoes.forEach((cm) => {
+      if (cm.dataEfetivaPagamento) {
+        eventos.push({ tipo: "comissao", icon: CreditCard, tone: "warning", data: cm.dataEfetivaPagamento, titulo: "Comissão paga", sub: `${formatBRL(cm.valorComissao)} · ${cm.referencia || ""}` });
+      }
+    });
+    return eventos.filter((e) => e.data).sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 8);
+  }, [db.boletos, db.cotacoes, db.veiculos, db.adesoes, db.comissoes, db.clientes]);
+
+  const relativeDate = (iso) => {
+    const dias = Math.round((new Date().setHours(0, 0, 0, 0) - parseISODate(iso)) / 86400000);
+    if (dias <= 0) return "hoje";
+    if (dias === 1) return "ontem";
+    if (dias < 30) return `há ${dias} dias`;
+    return formatDateBR(iso);
+  };
 
   // Comissão recorrente da corretora: 10% sobre os boletos que vencem
   // (serão baixados) NO MÊS ATUAL — não sobre o total acumulado de todos
@@ -1388,7 +1720,7 @@ function Dashboard({ db, onOpenModal }) {
             {aniversariantesHoje.map((c) => {
               const idade = c.nascimento ? new Date().getFullYear() - Number(c.nascimento.slice(0, 4)) : null;
               const contato = c.whatsapp || c.telefone;
-              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe da Seu Seguro Corretora deseja a você um feliz aniversário e muitas felicidades!`;
+              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe do Nexo Gestão deseja a você um feliz aniversário e muitas felicidades!`;
               return (
                 <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div>
@@ -1533,6 +1865,8 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
+        <Kpi icon={Wallet} label="Cotações registradas" value={cotacoesRegistradas} tone="info" />
+        <Kpi icon={TrendingUp} label="Produção do mês" value={formatBRL(valorBoletosDoMesAtual)} tone="success" />
         <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`} value={formatBRL(comissaoCorretora)} tone="accent" />
       </div>
 
@@ -1621,19 +1955,44 @@ function Dashboard({ db, onOpenModal }) {
         </div>
       </div>
 
-      <div className="nexo-card">
-        <div className="nexo-chart-title">Evolução mensal dos recebimentos</div>
-        <div className="nexo-chart-sub">Total pago por mês, últimos 6 meses</div>
-        <div style={{ height: 240 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={evolucao} margin={{ left: 0, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
-              <XAxis dataKey="label" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
-              <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} formatter={(v) => formatBRL(v)} />
-              <Line type="monotone" dataKey="total" stroke="#3E86BF" strokeWidth={2.5} dot={{ r: 3, fill: "#3E86BF" }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="nexo-charts-grid">
+        <div className="nexo-card">
+          <div className="nexo-chart-title">Evolução mensal dos recebimentos</div>
+          <div className="nexo-chart-sub">Total pago por mês, últimos 6 meses</div>
+          <div style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={evolucao} margin={{ left: 0, right: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
+                <XAxis dataKey="label" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
+                <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} formatter={(v) => formatBRL(v)} />
+                <Line type="monotone" dataKey="total" stroke="#3E86BF" strokeWidth={2.5} dot={{ r: 3, fill: "#3E86BF" }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="nexo-card">
+          <div className="nexo-chart-title">Atividades recentes</div>
+          <div className="nexo-chart-sub">Últimos eventos registrados no sistema</div>
+          {atividadesRecentes.length === 0 ? (
+            <EmptyState icon={Clock} title="Nenhuma atividade ainda" sub="Assim que houver pagamentos, cotações ou cadastros, eles aparecem aqui." />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 260, overflowY: "auto" }}>
+              {atividadesRecentes.map((a, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 2px", borderBottom: i < atividadesRecentes.length - 1 ? "1px solid var(--border-soft)" : "none" }}>
+                  <div className="nexo-kpi-icon" style={{ width: 28, height: 28, background: `var(--${a.tone}-soft)`, flexShrink: 0 }}>
+                    <a.icon size={14} color={`var(--${a.tone})`} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>{a.titulo}</div>
+                    <div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{a.sub}</div>
+                  </div>
+                  <div className="nexo-cell-muted" style={{ fontSize: 11, whiteSpace: "nowrap" }}>{relativeDate(a.data)}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1646,12 +2005,23 @@ function Dashboard({ db, onOpenModal }) {
 
 function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImportarClientes, onImportarClientesEVeiculos }) {
   const [query, setQuery] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState("Todos");
   const [importando, setImportando] = useState(false);
   const [importandoCombo, setImportandoCombo] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
   const fileInputRef = useRef(null);
   const fileInputComboRef = useRef(null);
 
+  const ultimaInteracao = (clienteId) => {
+    const datas = [
+      ...db.boletos.filter((b) => b.clienteId === clienteId).flatMap((b) => [b.dataPagamento, b.dataVencimento]),
+      ...db.cotacoes.filter((q) => q.clienteId === clienteId).map((q) => q.dataCotacao),
+    ].filter(Boolean).sort();
+    return datas.length ? datas[datas.length - 1] : null;
+  };
+
   const filtered = db.clientes.filter((c) => {
+    if (statusFiltro !== "Todos" && c.status !== statusFiltro) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     const nomeMatch = c.nome.toLowerCase().includes(q);
@@ -1683,12 +2053,12 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
         }))
         .filter((c) => c.nome && c.cpf);
       if (clientesNovos.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
+        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.", "warning");
       } else {
         await onImportarClientes(clientesNovos);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      showToast("Não foi possível ler o arquivo: " + err.message, "error");
     } finally {
       setImportando(false);
     }
@@ -1726,12 +2096,12 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
         }))
         .filter((r) => r.nome && r.cpf);
       if (registros.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
+        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.", "warning");
       } else {
         await onImportarClientesEVeiculos(registros);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      showToast("Não foi possível ler o arquivo: " + err.message, "error");
     } finally {
       setImportandoCombo(false);
     }
@@ -1740,110 +2110,142 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
-        <div className="nexo-topbar-actions">
-          <button
-            className="nexo-btn"
-            onClick={() =>
-              exportarCSV(
-                "modelo-clientes.csv",
-                [
-                  { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                  { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
-                  { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
-                  { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
-                  { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
-                ],
-                [{}]
-              )
-            }
-          >
-            Baixar modelo
-          </button>
-          <button className="nexo-btn" disabled={importando} onClick={() => fileInputRef.current?.click()}>
-            {importando ? "Importando…" : "Importar CSV"}
-          </button>
+        <div>
+          <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
+          <div className="nexo-section-sub">Sua carteira de clientes e o histórico de cada um</div>
+        </div>
+        <div className="nexo-section-actions">
+          <div className="nexo-dropdown">
+            <button className="nexo-btn" onClick={() => setMenuAberto((v) => !v)}>
+              <SlidersHorizontal size={13} /> Importar / Exportar <ChevronDown size={13} />
+            </button>
+            {menuAberto && (
+              <div className="nexo-dropdown-menu" onMouseLeave={() => setMenuAberto(false)}>
+                <button
+                  className="nexo-dropdown-item"
+                  onClick={() => {
+                    exportarCSV(
+                      "modelo-clientes.csv",
+                      [
+                        { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
+                        { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
+                        { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
+                        { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
+                        { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
+                      ],
+                      [{}]
+                    );
+                    setMenuAberto(false);
+                  }}
+                >
+                  <Download size={14} /> Baixar modelo (clientes)
+                </button>
+                <button className="nexo-dropdown-item" disabled={importando} onClick={() => { fileInputRef.current?.click(); setMenuAberto(false); }}>
+                  <Upload size={14} /> {importando ? "Importando…" : "Importar CSV de clientes"}
+                </button>
+                <div className="nexo-dropdown-sep" />
+                <button
+                  className="nexo-dropdown-item"
+                  onClick={() => {
+                    exportarCSV(
+                      "modelo-clientes-e-veiculos.csv",
+                      [
+                        { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
+                        { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
+                        { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
+                        { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
+                        { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
+                        { titulo: "Placa", valor: () => "" }, { titulo: "Marca", valor: () => "" },
+                        { titulo: "Modelo", valor: () => "" }, { titulo: "Ano", valor: () => "" },
+                        { titulo: "Ano Fabricação", valor: () => "" }, { titulo: "Tipo de veículo", valor: () => "" },
+                        { titulo: "Renavam", valor: () => "" }, { titulo: "Chassi", valor: () => "" }, { titulo: "Cor", valor: () => "" },
+                      ],
+                      [{}]
+                    );
+                    setMenuAberto(false);
+                  }}
+                  title="Cada linha é um veículo. Repita o CPF do mesmo cliente em várias linhas para cadastrar mais de um veículo para ele."
+                >
+                  <Download size={14} /> Baixar modelo (+ veículos)
+                </button>
+                <button className="nexo-dropdown-item" disabled={importandoCombo} onClick={() => { fileInputComboRef.current?.click(); setMenuAberto(false); }}>
+                  <Upload size={14} /> {importandoCombo ? "Importando…" : "Importar clientes + veículos"}
+                </button>
+                <div className="nexo-dropdown-sep" />
+                <button
+                  className="nexo-dropdown-item"
+                  onClick={() => {
+                    exportarCSV(
+                      "clientes.csv",
+                      [
+                        { titulo: "Nome", valor: (c) => c.nome },
+                        { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
+                        { titulo: "Nascimento", valor: (c) => c.nascimento },
+                        { titulo: "Sexo", valor: (c) => c.sexo },
+                        { titulo: "Telefone", valor: (c) => c.telefone },
+                        { titulo: "WhatsApp", valor: (c) => c.whatsapp },
+                        { titulo: "E-mail", valor: (c) => c.email },
+                        { titulo: "Endereço", valor: (c) => c.endereco },
+                        { titulo: "Status", valor: (c) => c.status },
+                      ],
+                      filtered
+                    );
+                    setMenuAberto(false);
+                  }}
+                >
+                  <FileText size={14} /> Exportar CSV
+                </button>
+              </div>
+            )}
+          </div>
           <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
-          <button
-            className="nexo-btn"
-            onClick={() =>
-              exportarCSV(
-                "modelo-clientes-e-veiculos.csv",
-                [
-                  { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                  { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
-                  { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
-                  { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
-                  { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
-                  { titulo: "Placa", valor: () => "" }, { titulo: "Marca", valor: () => "" },
-                  { titulo: "Modelo", valor: () => "" }, { titulo: "Ano", valor: () => "" },
-                  { titulo: "Ano Fabricação", valor: () => "" }, { titulo: "Tipo de veículo", valor: () => "" },
-                  { titulo: "Renavam", valor: () => "" }, { titulo: "Chassi", valor: () => "" }, { titulo: "Cor", valor: () => "" },
-                ],
-                [{}]
-              )
-            }
-            title="Cada linha é um veículo. Repita o CPF do mesmo cliente em várias linhas para cadastrar mais de um veículo para ele."
-          >
-            Baixar modelo (+ veículos)
-          </button>
-          <button className="nexo-btn" disabled={importandoCombo} onClick={() => fileInputComboRef.current?.click()}>
-            <Upload size={13} /> {importandoCombo ? "Importando…" : "Importar clientes + veículos"}
-          </button>
           <input ref={fileInputComboRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoClientesVeiculos} />
-          <button
-            className="nexo-btn"
-            onClick={() =>
-              exportarCSV(
-                "clientes.csv",
-                [
-                  { titulo: "Nome", valor: (c) => c.nome },
-                  { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
-                  { titulo: "Nascimento", valor: (c) => c.nascimento },
-                  { titulo: "Sexo", valor: (c) => c.sexo },
-                  { titulo: "Telefone", valor: (c) => c.telefone },
-                  { titulo: "WhatsApp", valor: (c) => c.whatsapp },
-                  { titulo: "E-mail", valor: (c) => c.email },
-                  { titulo: "Endereço", valor: (c) => c.endereco },
-                  { titulo: "Status", valor: (c) => c.status },
-                ],
-                filtered
-              )
-            }
-          >
-            Exportar CSV
-          </button>
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
         </div>
       </div>
 
-      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
-        <Search size={15} color="var(--text-faint)" />
-        <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="nexo-searchbar">
+          <Search size={15} color="var(--text-faint)" />
+          <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <select className="nexo-select" style={{ width: 150 }} value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
+          <option value="Todos">Todos os status</option>
+          <option value="Ativo">Ativos</option>
+          <option value="Inativo">Inativos</option>
+        </select>
       </div>
 
       {db.clientes.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum cliente cadastrado" sub="Clique em “Novo cliente” para começar." /></div>
       ) : filtered.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro nome, CPF ou placa." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro nome, CPF ou placa, ou ajuste o filtro de status." /></div>
       ) : (
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Nome</th><th>CPF</th><th>Contato</th><th>Veículos</th><th>Status</th><th></th>
+                  <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Veículos</th><th>Última interação</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => {
                   const nVeiculos = db.veiculos.filter((v) => v.clienteId === c.id).length;
+                  const interacao = ultimaInteracao(c.id);
                   return (
                     <tr key={c.id} className="nexo-row-link" onClick={() => onOpenDetail(c.id)}>
-                      <td style={{ fontWeight: 600 }}>{c.nome}</td>
+                      <td>
+                        <div className="nexo-name-cell">
+                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(c.nome) }}>{getIniciais(c.nome)}</div>
+                          <span style={{ fontWeight: 600 }}>{c.nome}</span>
+                        </div>
+                      </td>
                       <td className="mono nexo-cell-muted">{c.cpf || "—"}</td>
                       <td className="nexo-cell-muted">{c.telefone || c.whatsapp || "—"}</td>
+                      <td className="nexo-cell-muted">{c.email || "—"}</td>
                       <td className="nexo-cell-muted">{nVeiculos}</td>
+                      <td className="nexo-cell-muted">{interacao ? formatDateBR(interacao) : "—"}</td>
                       <td><AtivoInativoBadge ativo={c.status} /></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
@@ -1860,7 +2262,7 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                             </a>
                           )}
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cliente", c)}><Pencil size={13} /></button>
-                          <button className="nexo-icon-btn" onClick={() => onDeleteCliente(c.id)}><Trash2 size={13} /></button>
+                          <button className="nexo-icon-btn danger" onClick={() => onDeleteCliente(c.id)}><Trash2 size={13} /></button>
                           <button className="nexo-icon-btn" onClick={() => onOpenDetail(c.id)}><Eye size={13} /></button>
                         </div>
                       </td>
@@ -1869,6 +2271,9 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="nexo-table-foot">
+            <span className="nexo-cell-muted">{filtered.length} de {db.clientes.length} cliente(s)</span>
           </div>
         </div>
       )}
@@ -1882,9 +2287,15 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
 
 function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
   const [query, setQuery] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState("Todos");
   const getCliente = (id) => db.clientes.find((c) => c.id === id);
 
+  const ativos = db.veiculos.filter((v) => v.status === "Ativo");
+  const valorMensalTotal = sum(db.veiculos.map((v) => v.valorMensal));
+  const valorFipeTotal = sum(db.veiculos.map((v) => v.valorFipe));
+
   const filtered = db.veiculos.filter((v) => {
+    if (statusFiltro !== "Todos" && v.status !== statusFiltro) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     const cliente = getCliente(v.clienteId);
@@ -1899,10 +2310,13 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
-        <div className="nexo-topbar-actions">
+        <div>
+          <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
+          <div className="nexo-section-sub">Frota segurada, valores mensais e situação por veículo</div>
+        </div>
+        <div className="nexo-section-actions">
           <button
-            className="nexo-btn"
+            className="nexo-btn nexo-btn-sm"
             onClick={() =>
               exportarCSV(
                 "veiculos.csv",
@@ -1925,15 +2339,33 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
               )
             }
           >
-            Exportar CSV
+            <Download size={13} /> Exportar CSV
           </button>
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
         </div>
       </div>
 
-      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
-        <Search size={15} color="var(--text-faint)" />
-        <input placeholder="Pesquisar por placa, modelo ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="nexo-kpi-grid">
+        <Kpi icon={Car} label="Veículos cadastrados" value={db.veiculos.length} tone="info" />
+        <Kpi icon={CheckCircle2} label="Veículos ativos" value={ativos.length} tone="success" />
+        <Kpi icon={Wallet} label="Valor mensal total" value={formatBRL(valorMensalTotal)} tone="accent" />
+        <Kpi icon={TrendingUp} label="Valor Fipe total" value={formatBRL(valorFipeTotal)} tone="neutral" />
+      </div>
+
+      <div className="nexo-filters">
+        <div className="nexo-filter-field" style={{ flex: "1 1 260px" }}>
+          <label>Buscar</label>
+          <div className="nexo-searchbar">
+            <Search size={14} />
+            <input placeholder="Placa, modelo, marca ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+        </div>
+        <div className="nexo-filter-field">
+          <label>Status</label>
+          <select className="nexo-select" value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
+            <option>Todos</option><option>Ativo</option><option>Inativo</option>
+          </select>
+        </div>
       </div>
 
       {db.veiculos.length === 0 ? (
@@ -1954,7 +2386,12 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
                   const cliente = getCliente(v.clienteId);
                   return (
                     <tr key={v.id} className="nexo-row-link" onClick={() => cliente && onOpenDetail(cliente.id)}>
-                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
+                      <td>
+                        <div className="nexo-name-cell">
+                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(cliente ? cliente.nome : "—") }}>{getIniciais(cliente ? cliente.nome : "—")}</div>
+                          <span style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</span>
+                        </div>
+                      </td>
                       <td>{v.marca} {v.modelo}</td>
                       <td className="mono nexo-cell-muted">{v.placa}</td>
                       <td className="nexo-cell-muted">{v.anoFabricacao || v.ano ? `${v.anoFabricacao || "—"}/${v.ano || "—"}` : "—"}</td>
@@ -1972,6 +2409,10 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="nexo-table-foot">
+            <span>{filtered.length} de {db.veiculos.length} veículos</span>
+            <span className="mono">Mensal no filtro: {formatBRL(sum(filtered.map((v) => v.valorMensal)))}</span>
           </div>
         </div>
       )}
@@ -2017,12 +2458,12 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
         }))
         .filter((r) => (r.nome || r.cpf) && r.valor);
       if (registros.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira as colunas Nome do Cliente/CPF-CNPJ, Placa, Nosso Número e Valor.");
+        showToast("Nenhuma linha válida encontrada. Confira as colunas Nome do Cliente/CPF-CNPJ, Placa, Nosso Número e Valor.", "warning");
       } else {
         await onImportarBoletos(registros);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      showToast("Não foi possível ler o arquivo: " + err.message, "error");
     } finally {
       setImportandoCadastro(false);
     }
@@ -2045,21 +2486,23 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
         }))
         .filter((r) => r.nossoNumero);
       if (registros.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.");
+        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.", "warning");
       } else {
         await onImportarBaixas(registros);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      showToast("Não foi possível ler o arquivo: " + err.message, "error");
     } finally {
       setImportandoBaixa(false);
     }
   }
 
+  const [menuImportExport, setMenuImportExport] = useState(false);
   const boletosComStatus = db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) }));
 
   const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
+  const vencidos = boletosComStatus.filter((b) => b.status === "Vencido");
   const valorEmAberto = sum(emAberto.map((b) => b.valor));
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
@@ -2093,57 +2536,63 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
-        <div className="nexo-topbar-actions">
-          <button
-            className="nexo-btn nexo-btn-sm"
-            onClick={() =>
-              exportarCSV(
-                "modelo-cadastro-boletos.csv",
-                [
-                  { titulo: "Nome do Cliente", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                  { titulo: "Placa(s) - separe com ; se for boleto único de vários veículos", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
-                  { titulo: "Valor", valor: () => "" }, { titulo: "Vencimento", valor: () => "" },
-                ],
-                [{}]
-              )
-            }
-          >
-            Modelo (cadastro)
-          </button>
-          <button className="nexo-btn nexo-btn-sm" disabled={importandoCadastro} onClick={() => inputCadastroRef.current?.click()}>
-            <Upload size={13} /> {importandoCadastro ? "Importando…" : "Importar boletos"}
-          </button>
+        <div>
+          <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
+          <div className="nexo-section-sub">Carteira de boletos, vencimentos e baixas de pagamento</div>
+        </div>
+        <div className="nexo-section-actions">
+          <div className="nexo-dropdown">
+            <button className="nexo-btn nexo-btn-sm" onClick={() => setMenuImportExport((v) => !v)}>
+              <SlidersHorizontal size={13} /> Importar <ChevronDown size={13} />
+            </button>
+            {menuImportExport && (
+              <div className="nexo-dropdown-menu" onMouseLeave={() => setMenuImportExport(false)}>
+                <button
+                  className="nexo-dropdown-item"
+                  onClick={() => {
+                    exportarCSV("modelo-cadastro-boletos.csv", [
+                      { titulo: "Nome do Cliente", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
+                      { titulo: "Placa(s) - separe com ; se for boleto único de vários veículos", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
+                      { titulo: "Valor", valor: () => "" }, { titulo: "Vencimento", valor: () => "" },
+                    ], [{}]);
+                    setMenuImportExport(false);
+                  }}
+                >
+                  <Download size={14} /> Modelo (cadastro)
+                </button>
+                <button className="nexo-dropdown-item" disabled={importandoCadastro} onClick={() => { inputCadastroRef.current?.click(); setMenuImportExport(false); }}>
+                  <Upload size={14} /> {importandoCadastro ? "Importando…" : "Importar boletos"}
+                </button>
+                <div className="nexo-dropdown-sep" />
+                <button
+                  className="nexo-dropdown-item"
+                  onClick={() => {
+                    exportarCSV("modelo-relatorio-baixa.csv", [
+                      { titulo: "Nome do cliente", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
+                      { titulo: "Situação", valor: () => "" }, { titulo: "Data do Pagamento", valor: () => "" },
+                      { titulo: "Voluntário", valor: () => "" },
+                    ], [{}]);
+                    setMenuImportExport(false);
+                  }}
+                >
+                  <Download size={14} /> Modelo (baixa)
+                </button>
+                <button className="nexo-dropdown-item" disabled={importandoBaixa} onClick={() => { inputBaixaRef.current?.click(); setMenuImportExport(false); }}>
+                  <Upload size={14} /> {importandoBaixa ? "Importando…" : "Importar baixa (relatório)"}
+                </button>
+              </div>
+            )}
+          </div>
           <input ref={inputCadastroRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoCadastro} />
-
-          <button
-            className="nexo-btn nexo-btn-sm"
-            onClick={() =>
-              exportarCSV(
-                "modelo-relatorio-baixa.csv",
-                [
-                  { titulo: "Nome do cliente", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
-                  { titulo: "Situação", valor: () => "" }, { titulo: "Data do Pagamento", valor: () => "" },
-                  { titulo: "Voluntário", valor: () => "" },
-                ],
-                [{}]
-              )
-            }
-          >
-            Modelo (baixa)
-          </button>
-          <button className="nexo-btn nexo-btn-sm" disabled={importandoBaixa} onClick={() => inputBaixaRef.current?.click()}>
-            <Upload size={13} /> {importandoBaixa ? "Importando…" : "Importar baixa (relatório)"}
-          </button>
           <input ref={inputBaixaRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoBaixa} />
-
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
         </div>
       </div>
 
-      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="nexo-kpi-grid">
         <Kpi icon={FileText} label="Boletos em aberto" value={emAberto.length} tone="info" />
         <Kpi icon={Clock} label="Boletos a vencer" value={aVencer.length} tone="warning" />
+        <Kpi icon={AlertTriangle} label="Boletos vencidos" value={vencidos.length} tone="danger" />
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
       </div>
@@ -2206,7 +2655,12 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                   const veiculosDoBoleto = idsVeiculosDoBoleto.map((id) => db.veiculos.find((v) => v.id === id)).filter(Boolean);
                   return (
                     <tr key={b.id}>
-                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
+                      <td>
+                        <div className="nexo-name-cell">
+                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(cliente ? cliente.nome : "—") }}>{getIniciais(cliente ? cliente.nome : "—")}</div>
+                          <span style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</span>
+                        </div>
+                      </td>
                       <td className="nexo-cell-muted">
                         {veiculosDoBoleto.length === 0 ? "—"
                           : veiculosDoBoleto.length === 1 ? `${veiculosDoBoleto[0].marca} ${veiculosDoBoleto[0].modelo}`
@@ -2237,6 +2691,10 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
               </tbody>
             </table>
           </div>
+          <div className="nexo-table-foot">
+            <span>{filtered.length} de {db.boletos.length} boletos</span>
+            <span className="mono">Total no filtro: {formatBRL(sum(filtered.map((b) => b.valor)))}</span>
+          </div>
         </div>
       )}
     </div>
@@ -2262,8 +2720,17 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
   const aVencer = boletosDoCliente.filter((b) => b.status === "A vencer");
   const totalEmAberto = sum(emAberto.map((b) => b.valor));
   const totalRecebido = sum(pagos.map((b) => b.valor));
+  const cotacoesDoCliente = db.cotacoes.filter((q) => q.clienteId === clienteId);
+  const comissoesDoCliente = db.comissoes.filter((cm) => cm.clienteId === clienteId);
 
-  const iniciais = cliente.nome.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
+  const [aba, setAba] = useState("resumo");
+  const abas = [
+    { key: "resumo", label: "Resumo" },
+    { key: "veiculos", label: `Veículos (${veiculosDoCliente.length})` },
+    { key: "financeiro", label: `Financeiro (${boletosDoCliente.length})` },
+    { key: "cotacoes", label: `Cotações (${cotacoesDoCliente.length})` },
+    { key: "comissoes", label: `Comissões (${comissoesDoCliente.length})` },
+  ];
 
   return (
     <div>
@@ -2272,7 +2739,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
       <div className="nexo-detail-grid">
         <div className="nexo-card">
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 14 }}>
-            <div className="nexo-avatar">{iniciais || "?"}</div>
+            <div className="nexo-avatar" style={{ background: getAvatarColor(cliente.nome), color: "#fff" }}>{getIniciais(cliente.nome)}</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15.5 }}>{cliente.nome}</div>
               <div style={{ marginTop: 4 }}><AtivoInativoBadge ativo={cliente.status} /></div>
@@ -2316,79 +2783,165 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
         </div>
 
         <div>
-          <div className="nexo-mini-kpis">
-            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos pagos</div><div className="nexo-mini-kpi-value">{pagos.length}</div></div>
-            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos em aberto</div><div className="nexo-mini-kpi-value">{emAberto.length}</div></div>
-            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total em aberto</div><div className="nexo-mini-kpi-value">{formatBRL(totalEmAberto)}</div></div>
-            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total recebido</div><div className="nexo-mini-kpi-value">{formatBRL(totalRecebido)}</div></div>
-          </div>
-
-          <div className="nexo-card" style={{ marginBottom: 14 }}>
-            <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-              <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Veículos vinculados</div>
-              <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
-            </div>
-            {veiculosDoCliente.length === 0 ? (
-              <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
-            ) : veiculosDoCliente.map((v) => (
-              <div key={v.id} className="nexo-veiculo-card">
-                <div className="nexo-veiculo-card-head">
-                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.marca} {v.modelo} {v.ano && `· ${v.ano}`}</div>
-                  <AtivoInativoBadge ativo={v.status} />
-                </div>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-dim)" }}>
-                  <span className="mono">{v.placa}</span>
-                  <span>Mensal: <strong className="mono">{formatBRL(v.valorMensal)}</strong></span>
-                  <span>Cadastro: {formatDateBR(v.dataCadastro)}</span>
-                  {v.codigoFipe && <span>Fipe: <strong className="mono">{v.codigoFipe}</strong> ({formatBRL(v.valorFipe)})</span>}
-                </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", v)}><Pencil size={12} /> Editar</button>
-                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteVeiculo(v.id)}><Trash2 size={12} /> Excluir</button>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId, v.id)}><Plus size={12} /> Novo boleto</button>
-                </div>
-              </div>
+          <div className="nexo-tabs">
+            {abas.map((t) => (
+              <div key={t.key} className={`nexo-tab ${aba === t.key ? "active" : ""}`} onClick={() => setAba(t.key)}>{t.label}</div>
             ))}
           </div>
 
-          <div className="nexo-card">
-            <div className="nexo-chart-title">Boletos do cliente</div>
-            <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
-            {boletosDoCliente.length === 0 ? (
-              <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
-            ) : (
-              <div className="nexo-table-scroll">
-                <table className="nexo-table">
-                  <thead><tr><th>Número</th><th>Veículos</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
-                  <tbody>
-                    {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => {
-                      const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
-                      const placasDoBoleto = idsVeiculosDoBoleto.map((id) => veiculosDoCliente.find((v) => v.id === id)?.placa).filter(Boolean);
-                      return (
-                      <tr key={b.id}>
-                        <td className="mono">{b.numero}</td>
-                        <td className="mono nexo-cell-muted" title={placasDoBoleto.length > 1 ? placasDoBoleto.join(", ") : undefined}>
-                          {placasDoBoleto.length === 0 ? "Direto no cliente"
-                            : placasDoBoleto.length <= 3 ? placasDoBoleto.join(", ")
-                            : `${placasDoBoleto.slice(0, 2).join(", ")} +${placasDoBoleto.length - 2}`}
-                        </td>
-                        <td>{formatDateBR(b.dataVencimento)}</td>
-                        <td className="mono">{formatBRL(b.valor)}</td>
-                        <td><StatusBadge status={b.status} /></td>
-                        <td>
-                          <div className="nexo-actions-cell">
-                            {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
-                            <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          {aba === "resumo" && (
+            <>
+              <div className="nexo-mini-kpis">
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos pagos</div><div className="nexo-mini-kpi-value">{pagos.length}</div></div>
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos em aberto</div><div className="nexo-mini-kpi-value">{emAberto.length}</div></div>
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total em aberto</div><div className="nexo-mini-kpi-value">{formatBRL(totalEmAberto)}</div></div>
+                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total recebido</div><div className="nexo-mini-kpi-value">{formatBRL(totalRecebido)}</div></div>
               </div>
-            )}
-          </div>
+              <div className="nexo-card">
+                <div className="nexo-chart-title">Veículos</div>
+                <div className="nexo-chart-sub">{veiculosDoCliente.length} vinculado(s) · veja a aba Veículos para detalhes</div>
+                {veiculosDoCliente.length === 0 ? (
+                  <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
+                ) : (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {veiculosDoCliente.map((v) => (
+                      <span key={v.id} className="nexo-badge" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>{v.marca} {v.modelo} · {v.placa}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {aba === "veiculos" && (
+            <div className="nexo-card">
+              <div className="nexo-section-head" style={{ marginBottom: 12 }}>
+                <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Veículos vinculados</div>
+                <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
+              </div>
+              {veiculosDoCliente.length === 0 ? (
+                <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
+              ) : veiculosDoCliente.map((v) => (
+                <div key={v.id} className="nexo-veiculo-card">
+                  <div className="nexo-veiculo-card-head">
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.marca} {v.modelo} {v.ano && `· ${v.ano}`}</div>
+                    <AtivoInativoBadge ativo={v.status} />
+                  </div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-dim)" }}>
+                    <span className="mono">{v.placa}</span>
+                    <span>Mensal: <strong className="mono">{formatBRL(v.valorMensal)}</strong></span>
+                    <span>Cadastro: {formatDateBR(v.dataCadastro)}</span>
+                    {v.codigoFipe && <span>Fipe: <strong className="mono">{v.codigoFipe}</strong> ({formatBRL(v.valorFipe)})</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", v)}><Pencil size={12} /> Editar</button>
+                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteVeiculo(v.id)}><Trash2 size={12} /> Excluir</button>
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId, v.id)}><Plus size={12} /> Novo boleto</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {aba === "financeiro" && (
+            <div className="nexo-card">
+              <div className="nexo-chart-title">Boletos do cliente</div>
+              <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
+              {boletosDoCliente.length === 0 ? (
+                <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
+              ) : (
+                <div className="nexo-table-scroll">
+                  <table className="nexo-table">
+                    <thead><tr><th>Número</th><th>Veículos</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => {
+                        const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
+                        const placasDoBoleto = idsVeiculosDoBoleto.map((id) => veiculosDoCliente.find((v) => v.id === id)?.placa).filter(Boolean);
+                        return (
+                        <tr key={b.id}>
+                          <td className="mono">{b.numero}</td>
+                          <td className="mono nexo-cell-muted" title={placasDoBoleto.length > 1 ? placasDoBoleto.join(", ") : undefined}>
+                            {placasDoBoleto.length === 0 ? "Direto no cliente"
+                              : placasDoBoleto.length <= 3 ? placasDoBoleto.join(", ")
+                              : `${placasDoBoleto.slice(0, 2).join(", ")} +${placasDoBoleto.length - 2}`}
+                          </td>
+                          <td>{formatDateBR(b.dataVencimento)}</td>
+                          <td className="mono">{formatBRL(b.valor)}</td>
+                          <td><StatusBadge status={b.status} /></td>
+                          <td>
+                            <div className="nexo-actions-cell">
+                              {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
+                              <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {aba === "cotacoes" && (
+            <div className="nexo-card">
+              <div className="nexo-section-head" style={{ marginBottom: 12 }}>
+                <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações do cliente</div>
+                <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("cotacao", null, clienteId)}><Plus size={13} /> Nova cotação</button>
+              </div>
+              {cotacoesDoCliente.length === 0 ? (
+                <div className="nexo-empty-sub">Nenhuma cotação registrada para este cliente ainda.</div>
+              ) : (
+                <div className="nexo-table-scroll">
+                  <table className="nexo-table">
+                    <thead><tr><th>Data</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th></th></tr></thead>
+                    <tbody>
+                      {cotacoesDoCliente.sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || "")).map((q) => {
+                        const seguradora = db.seguradoras.find((s) => s.id === q.seguradoraId);
+                        const plano = db.planos.find((p) => p.id === q.planoId);
+                        return (
+                          <tr key={q.id}>
+                            <td>{formatDateBR(q.dataCotacao)}</td>
+                            <td>{seguradora?.nome || "—"}</td>
+                            <td>{plano?.nome || "—"}</td>
+                            <td className="mono">{formatBRL(q.valor)}</td>
+                            <td><div className="nexo-actions-cell"><button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", q)}><Pencil size={13} /></button></div></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {aba === "comissoes" && (
+            <div className="nexo-card">
+              <div className="nexo-chart-title">Comissões geradas por este cliente</div>
+              <div className="nexo-chart-sub">{comissoesDoCliente.length} lançamento(s)</div>
+              {comissoesDoCliente.length === 0 ? (
+                <div className="nexo-empty-sub">Nenhuma comissão associada a este cliente ainda.</div>
+              ) : (
+                <div className="nexo-table-scroll">
+                  <table className="nexo-table">
+                    <thead><tr><th>Referência</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {comissoesDoCliente.map((cm) => (
+                        <tr key={cm.id}>
+                          <td>{cm.referencia || "—"}</td>
+                          <td className="nexo-cell-muted">{cm.tipo}</td>
+                          <td className="mono">{formatBRL(cm.valorComissao)}</td>
+                          <td><StatusPill status={cm.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2425,6 +2978,7 @@ function RelatoriosView({ db }) {
   const relatorios = [
     {
       titulo: "Clientes cadastrados",
+      icon: Users,
       total: db.clientes.length,
       arquivo: "relatorio-clientes.csv",
       colunas: [
@@ -2439,6 +2993,7 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos pagos",
+      icon: CheckCircle2,
       total: pagos.length,
       valor: formatBRL(sum(pagos.map((b) => b.valor))),
       arquivo: "relatorio-boletos-pagos.csv",
@@ -2448,6 +3003,7 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos em aberto",
+      icon: FileText,
       total: emAberto.length,
       valor: formatBRL(sum(emAberto.map((b) => b.valor))),
       arquivo: "relatorio-boletos-em-aberto.csv",
@@ -2457,6 +3013,7 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos a vencer",
+      icon: Clock,
       total: aVencer.length,
       valor: formatBRL(sum(aVencer.map((b) => b.valor))),
       arquivo: "relatorio-boletos-a-vencer.csv",
@@ -2466,16 +3023,27 @@ function RelatoriosView({ db }) {
     },
   ];
 
+  const toneVar = { accent: "var(--accent)", success: "var(--success)", info: "var(--info)", warning: "var(--warning)" };
+  const toneSoft = { accent: "var(--accent-soft)", success: "var(--success-soft)", info: "var(--info-soft)", warning: "var(--warning-soft)" };
+
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Relatórios</div>
+        <div>
+          <div className="nexo-section-title">Relatórios</div>
+          <div className="nexo-section-sub">Exportações prontas em CSV para planilhas e conferências</div>
+        </div>
       </div>
       <div className="nexo-kpi-grid">
         {relatorios.map((r) => (
-          <div key={r.titulo} className="nexo-card">
-            <div className="nexo-chart-title">{r.titulo}</div>
-            <div className="nexo-kpi-value" style={{ marginTop: 6 }}>{r.total}</div>
+          <div key={r.titulo} className="nexo-card" style={{ borderTop: `2px solid ${toneVar[r.tone]}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div className="nexo-kpi-icon" style={{ background: toneSoft[r.tone], color: toneVar[r.tone] }}>
+                <r.icon size={16} />
+              </div>
+              <div className="nexo-chart-title" style={{ margin: 0 }}>{r.titulo}</div>
+            </div>
+            <div className="nexo-kpi-value">{r.total}</div>
             {r.valor && <div className="nexo-cell-muted" style={{ marginBottom: 10 }}>{r.valor}</div>}
             <button
               className="nexo-btn nexo-btn-sm"
@@ -2483,7 +3051,7 @@ function RelatoriosView({ db }) {
               disabled={r.linhas.length === 0}
               onClick={() => exportarCSV(r.arquivo, r.colunas, r.linhas)}
             >
-              Exportar CSV
+              <Download size={13} /> Exportar CSV
             </button>
           </div>
         ))}
@@ -2629,7 +3197,7 @@ function gerarPdfCotacao(cotacao, db) {
   let y = 20;
 
   doc.setFontSize(16);
-  doc.text("Seu Seguro Corretora", 14, y);
+  doc.text("Nexo Gestão", 14, y);
   doc.setFontSize(11);
   y += 8;
   doc.text("Cotação de Seguro Automotivo", 14, y);
@@ -2700,7 +3268,9 @@ function gerarPdfCotacao(cotacao, db) {
 function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos }) {
   const [nomeSeguradora, setNomeSeguradora] = useState("");
   const [importando, setImportando] = useState(false);
+  const [buscaCotacao, setBuscaCotacao] = useState("");
   const fileInputRef = useRef(null);
+  const valorTotalCotado = sum(db.cotacoes.map((c) => c.valor));
 
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeVeiculo = (id) => {
@@ -2734,26 +3304,45 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         }))
         .filter((p) => p.seguradoraNome && p.planoNome);
       if (planosNovos.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.");
+        showToast("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.", "warning");
       } else {
         await onImportarPlanos(planosNovos);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      showToast("Não foi possível ler o arquivo: " + err.message, "error");
     } finally {
       setImportando(false);
     }
   }
 
+  const cotacoesFiltradas = db.cotacoes.filter((c) => {
+    if (!buscaCotacao) return true;
+    const q = buscaCotacao.toLowerCase();
+    return nomeCliente(c.clienteId).toLowerCase().includes(q) || nomeSeguradoraPorId(c.seguradoraId).toLowerCase().includes(q);
+  });
+
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Cotação de seguros</div>
+        <div>
+          <div className="nexo-section-title">Cotação de seguros</div>
+          <div className="nexo-section-sub">Tabela de seguradoras, planos e cotações geradas para seus clientes</div>
+        </div>
+      </div>
+
+      <div className="nexo-kpi-grid">
+        <Kpi icon={Shield} label="Seguradoras parceiras" value={db.seguradoras.length} tone="accent" />
+        <Kpi icon={FileText} label="Planos cadastrados" value={db.planos.length} tone="info" />
+        <Kpi icon={Wallet} label="Cotações registradas" value={db.cotacoes.length} tone="success" />
+        <Kpi icon={TrendingUp} label="Valor total cotado" value={formatBRL(valorTotalCotado)} tone="warning" />
       </div>
 
       <div className="nexo-card" style={{ marginBottom: 16 }}>
         <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Seguradoras e tabela de preços</div>
+          <div>
+            <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Seguradoras e tabela de preços</div>
+            <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Cadastre suas seguradoras parceiras e os planos que você oferece</div>
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               className="nexo-btn nexo-btn-sm"
@@ -2790,78 +3379,90 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         </div>
 
         {db.seguradoras.length === 0 ? (
-          <div className="nexo-empty-sub">Nenhuma seguradora cadastrada ainda. Adicione uma acima ou importe sua tabela em CSV.</div>
+          <EmptyState icon={Shield} title="Nenhuma seguradora cadastrada" sub="Adicione uma acima ou importe sua tabela em CSV." />
         ) : (
-          db.seguradoras.map((s) => {
-            const planosDaSeguradora = db.planos.filter((p) => p.seguradoraId === s.id);
-            return (
-              <div key={s.id} className="nexo-veiculo-card">
-                <div className="nexo-veiculo-card-head">
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{s.nome}</div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("plano", null, null, null, s.id)}>
-                      <Plus size={12} /> Novo plano
-                    </button>
-                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteSeguradora(s.id)}>
-                      <Trash2 size={12} /> Excluir
-                    </button>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+            {db.seguradoras.map((s) => {
+              const planosDaSeguradora = db.planos.filter((p) => p.seguradoraId === s.id);
+              return (
+                <div key={s.id} className="nexo-veiculo-card" style={{ margin: 0 }}>
+                  <div className="nexo-veiculo-card-head">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14 }}>
+                      <Shield size={14} color="var(--accent-2)" /> {s.nome}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="nexo-icon-btn" title="Novo plano" onClick={() => onOpenModal("plano", null, null, null, s.id)}><Plus size={13} /></button>
+                      <button className="nexo-icon-btn danger" title="Excluir seguradora" onClick={() => onDeleteSeguradora(s.id)}><Trash2 size={13} /></button>
+                    </div>
                   </div>
-                </div>
-                {planosDaSeguradora.length === 0 ? (
-                  <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>Nenhum plano cadastrado para esta seguradora.</div>
-                ) : (
-                  planosDaSeguradora.map((p) => (
-                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border-soft)" }}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
-                        <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                          Mensal: {formatBRL(p.valorMensal)} · Franquia: {formatBRL(p.valorFranquia)}
-                          {p.beneficios ? ` · ${p.beneficios}` : ""}
+                  {planosDaSeguradora.length === 0 ? (
+                    <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>Nenhum plano cadastrado para esta seguradora.</div>
+                  ) : (
+                    planosDaSeguradora.map((p) => (
+                      <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border-soft)" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
+                          <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                            {formatBRL(p.valorMensal)}/mês · Franquia {formatBRL(p.valorFranquia)}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
+                          <button className="nexo-icon-btn danger" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
-                        <button className="nexo-icon-btn" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            );
-          })
+                    ))
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
       <div className="nexo-card">
         <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações realizadas</div>
-          <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => onOpenModal("cotacao")}>
-            <Plus size={13} /> Nova cotação
-          </button>
+          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações realizadas<span className="nexo-section-count">{cotacoesFiltradas.length}</span></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div className="nexo-searchbar" style={{ maxWidth: 220 }}>
+              <Search size={14} color="var(--text-faint)" />
+              <input placeholder="Cliente ou seguradora" value={buscaCotacao} onChange={(e) => setBuscaCotacao(e.target.value)} />
+            </div>
+            <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => onOpenModal("cotacao")}>
+              <Plus size={13} /> Nova cotação
+            </button>
+          </div>
         </div>
         {db.cotacoes.length === 0 ? (
           <EmptyState icon={FileText} title="Nenhuma cotação registrada" sub="Clique em “Nova cotação” para gerar a primeira." />
+        ) : cotacoesFiltradas.length === 0 ? (
+          <EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro cliente ou seguradora." />
         ) : (
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th></th></tr></thead>
               <tbody>
-                {db.cotacoes
+                {cotacoesFiltradas
                   .slice()
                   .sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || ""))
                   .map((c) => (
                     <tr key={c.id}>
-                      <td style={{ fontWeight: 600 }}>{nomeCliente(c.clienteId)}</td>
+                      <td>
+                        <div className="nexo-name-cell">
+                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeCliente(c.clienteId)) }}>{getIniciais(nomeCliente(c.clienteId))}</div>
+                          <span style={{ fontWeight: 600 }}>{nomeCliente(c.clienteId)}</span>
+                        </div>
+                      </td>
                       <td className="nexo-cell-muted">{c.veiculoId ? nomeVeiculo(c.veiculoId) : "—"}</td>
                       <td>{nomeSeguradoraPorId(c.seguradoraId)}</td>
                       <td>{nomePlanoPorId(c.planoId)}</td>
-                      <td className="mono">{formatBRL(c.valor)}</td>
-                      <td>{formatDateBR(c.dataCotacao)}</td>
+                      <td className="mono nexo-cell-strong">{formatBRL(c.valor)}</td>
+                      <td className="nexo-cell-muted">{formatDateBR(c.dataCotacao)}</td>
                       <td>
                         <div className="nexo-actions-cell">
-                          <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}>Gerar PDF</button>
+                          <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}><FileDown size={12} /> PDF</button>
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", c)}><Pencil size={13} /></button>
-                          <button className="nexo-icon-btn" onClick={() => onDeleteCotacao(c.id)}><Trash2 size={13} /></button>
+                          <button className="nexo-icon-btn danger" onClick={() => onDeleteCotacao(c.id)}><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -3007,8 +3608,8 @@ function LoginScreen({ onEntrar }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Seguros para todos</div>
+                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
+                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -3029,7 +3630,7 @@ function LoginScreen({ onEntrar }) {
               <>
                 <div className="nexo-login-eyebrow">Bem-vindo</div>
                 <h1>Entre na sua conta</h1>
-                <p className="sub">Acesse o painel da Seu Seguro Corretora.</p>
+                <p className="sub">Acesse o painel do Nexo Gestão.</p>
                 <div className="nexo-login-fields">
                   <Field label="E-mail">
                     <input
@@ -3113,7 +3714,7 @@ function LoginScreen({ onEntrar }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Seu Seguro Corretora — Todos os direitos reservados.
+        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -3165,8 +3766,8 @@ function RedefinirSenhaScreen({ onConcluido }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Seguros para todos</div>
+                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
+                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -3239,7 +3840,7 @@ function RedefinirSenhaScreen({ onConcluido }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Seu Seguro Corretora — Todos os direitos reservados.
+        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -3302,8 +3903,8 @@ function MfaChallengeScreen({ onVerificado }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Seguros para todos</div>
+                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
+                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -3350,7 +3951,7 @@ function MfaChallengeScreen({ onVerificado }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Seu Seguro Corretora — Todos os direitos reservados.
+        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -3438,7 +4039,7 @@ function SegurancaModal({ onClose }) {
 
   async function handleDesativar() {
     if (!factorAtivo) return;
-    if (!window.confirm("Desativar a verificação em duas etapas? Sua conta ficará protegida só por senha.")) return;
+    if (!(await confirmDialog("Desativar a verificação em duas etapas? Sua conta ficará protegida só por senha."))) return;
     setCarregando(true);
     setErro("");
     try {
@@ -3602,45 +4203,58 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
 }
 
 function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
+  const ativasCount = db.consultoras.filter((c) => c.status === "Ativa").length;
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
+        <div>
+          <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
+          <div className="nexo-section-sub">Equipe comercial, adesões e comissões por consultora</div>
+        </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
       </div>
 
       {db.consultoras.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
       ) : (
-        <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-          {db.consultoras.map((c) => {
-            const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
-            const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
-            const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
-            const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
-            const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
-            return (
-              <div key={c.id} className="nexo-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
-                    <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
+        <>
+          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+            <Kpi icon={Users} label="Consultoras cadastradas" value={db.consultoras.length} tone="info" />
+            <Kpi icon={CheckCircle2} label="Consultoras ativas" value={ativasCount} tone="success" />
+          </div>
+          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+            {db.consultoras.map((c) => {
+              const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
+              const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
+              const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
+              const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
+              const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
+              return (
+                <div key={c.id} className="nexo-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, gap: 8 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <div className="nexo-avatar-sm" style={{ background: getAvatarColor(c.nome) }}>{getIniciais(c.nome)}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
+                        <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
+                      </div>
+                    </div>
+                    <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
                   </div>
-                  <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
+                  <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
+                    <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
+                    <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
+                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
-                  <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
-                  <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
-                </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
-                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -3694,14 +4308,20 @@ function LinksUteisView({ db, onOpenModal, onDeleteLink }) {
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Links Úteis<span className="nexo-section-count">{db.linksUteis.length} cadastrados</span></div>
+        <div>
+          <div className="nexo-section-title">Links Úteis<span className="nexo-section-count">{db.linksUteis.length} cadastrados</span></div>
+          <div className="nexo-section-sub">Atalhos para portais de seguradoras e sistemas parceiros</div>
+        </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("link")}><Plus size={15} /> Novo link</button>
       </div>
 
       <div className="nexo-filters">
-        <div className="nexo-filter-field" style={{ minWidth: 260 }}>
+        <div className="nexo-filter-field" style={{ flex: "1 1 260px" }}>
           <label>Buscar</label>
-          <input className="nexo-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nome, link ou observação" />
+          <div className="nexo-searchbar">
+            <Search size={14} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nome, link ou observação" />
+          </div>
         </div>
       </div>
 
@@ -3719,7 +4339,12 @@ function LinksUteisView({ db, onOpenModal, onDeleteLink }) {
               <tbody>
                 {filtered.map((l) => (
                   <tr key={l.id}>
-                    <td style={{ fontWeight: 600 }}>{l.nome}</td>
+                    <td>
+                      <div className="nexo-name-cell">
+                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(l.nome) }}><Link2 size={13} /></div>
+                        <span style={{ fontWeight: 600 }}>{l.nome}</span>
+                      </div>
+                    </td>
                     <td>
                       <a href={l.url} target="_blank" rel="noopener noreferrer" className="mono" style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4, wordBreak: "break-all" }}>
                         {l.url} <ExternalLink size={12} />
@@ -3824,7 +4449,10 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
+        <div>
+          <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
+          <div className="nexo-section-sub">Taxas de adesão de novos clientes por consultora</div>
+        </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("adesao")}><Plus size={15} /> Nova adesão</button>
       </div>
 
@@ -3853,7 +4481,12 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
               <tbody>
                 {filtradas.map((a) => (
                   <tr key={a.id}>
-                    <td style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</td>
+                    <td>
+                      <div className="nexo-name-cell">
+                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeCliente(a.clienteId)) }}>{getIniciais(nomeCliente(a.clienteId))}</div>
+                        <span style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</span>
+                      </div>
+                    </td>
                     <td className="nexo-cell-muted">{nomeConsultora(a.consultoraId)}</td>
                     <td>{formatDateBR(a.dataVenda)}</td>
                     <td className="mono">{formatBRL(a.valorAdesao)}</td>
@@ -3869,6 +4502,10 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="nexo-table-foot">
+            <span>{filtradas.length} de {db.adesoes.length} adesões</span>
+            <span className="mono">Total no filtro: {formatBRL(sum(filtradas.map((a) => a.valorAdesao)))}</span>
           </div>
         </div>
       )}
@@ -3977,12 +4614,24 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
 function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao }) {
   const [aba, setAba] = useState("lista"); // lista | fechamento
   const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [buscaComissao, setBuscaComissao] = useState("");
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
 
   const aPagar = db.comissoes.filter((c) => c.status === "A pagar");
   const pagas = db.comissoes.filter((c) => c.status === "Pago");
-  const filtradas = filtroStatus === "Todos" ? db.comissoes : db.comissoes.filter((c) => c.status === filtroStatus);
+  const producaoTotal = sum(db.comissoes.map((c) => c.valorBase));
+  const ticketMedio = db.comissoes.length ? sum(db.comissoes.map((c) => c.valorComissao)) / db.comissoes.length : 0;
+
+  const filtradas = db.comissoes.filter((c) => {
+    if (filtroStatus !== "Todos" && c.status !== filtroStatus) return false;
+    if (buscaComissao) {
+      const termo = buscaComissao.toLowerCase();
+      const texto = `${nomeConsultora(c.consultoraId)} ${nomeCliente(c.clienteId)} ${c.tipo} ${c.referencia}`.toLowerCase();
+      if (!texto.includes(termo)) return false;
+    }
+    return true;
+  });
 
   const fechamentoPorConsultora = db.consultoras.map((consultora) => {
     const comissoesDaConsultora = db.comissoes.filter((c) => c.consultoraId === consultora.id);
@@ -3993,18 +4642,23 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
       totalPago: sum(comissoesDaConsultora.filter((c) => c.status === "Pago").map((c) => c.valorComissao)),
       totalAPagar: sum(comissoesDaConsultora.filter((c) => c.status === "A pagar").map((c) => c.valorComissao)),
     };
-  }).filter((f) => f.totalContratos > 0);
+  }).filter((f) => f.totalContratos > 0).sort((a, b) => b.totalComissao - a.totalComissao);
 
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
+        <div>
+          <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
+          <div className="nexo-section-sub">Comissões de consultoras, produção e fechamento por período</div>
+        </div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Nova comissão</button>
       </div>
 
-      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-        <Kpi icon={Clock} label="Comissões a pagar" value={formatBRL(sum(aPagar.map((c) => c.valorComissao)))} tone="warning" />
-        <Kpi icon={CheckCircle2} label="Comissões pagas" value={formatBRL(sum(pagas.map((c) => c.valorComissao)))} tone="success" />
+      <div className="nexo-kpi-grid">
+        <Kpi icon={Clock} label="A pagar" value={formatBRL(sum(aPagar.map((c) => c.valorComissao)))} tone="warning" />
+        <Kpi icon={CheckCircle2} label="Pagas" value={formatBRL(sum(pagas.map((c) => c.valorComissao)))} tone="success" />
+        <Kpi icon={TrendingUp} label="Produção total" value={formatBRL(producaoTotal)} tone="info" />
+        <Kpi icon={Wallet} label="Ticket médio de comissão" value={formatBRL(ticketMedio)} tone="neutral" />
       </div>
 
       <div className="nexo-tabs">
@@ -4015,6 +4669,13 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
       {aba === "lista" ? (
         <>
           <div className="nexo-filters">
+            <div className="nexo-filter-field" style={{ flex: "1 1 220px" }}>
+              <label>Buscar</label>
+              <div className="nexo-searchbar">
+                <Search size={14} />
+                <input value={buscaComissao} onChange={(e) => setBuscaComissao(e.target.value)} placeholder="Consultora, cliente ou referência…" />
+              </div>
+            </div>
             <div className="nexo-filter-field">
               <label>Status</label>
               <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
@@ -4024,17 +4685,25 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
           </div>
           {db.comissoes.length === 0 ? (
             <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma comissão lançada" sub="Clique em “Nova comissão” para começar." /></div>
+          ) : filtradas.length === 0 ? (
+            <div className="nexo-table-wrap"><EmptyState icon={ListFilter} title="Nenhuma comissão encontrada" sub="Ajuste a busca ou os filtros para ver outros resultados." /></div>
           ) : (
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Referência</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {filtradas.map((c) => (
                       <tr key={c.id}>
-                        <td style={{ fontWeight: 600 }}>{nomeConsultora(c.consultoraId)}</td>
+                        <td>
+                          <div className="nexo-name-cell">
+                            <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeConsultora(c.consultoraId)) }}>{getIniciais(nomeConsultora(c.consultoraId))}</div>
+                            <span style={{ fontWeight: 600 }}>{nomeConsultora(c.consultoraId)}</span>
+                          </div>
+                        </td>
                         <td className="nexo-cell-muted">{nomeCliente(c.clienteId)}</td>
                         <td className="nexo-cell-muted">{c.tipo}</td>
+                        <td className="nexo-cell-muted">{c.referencia || "—"}</td>
                         <td className="mono">{formatBRL(c.valorBase)}</td>
                         <td className="mono">{c.percentual}%</td>
                         <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(c.valorComissao)}</td>
@@ -4051,29 +4720,49 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
                   </tbody>
                 </table>
               </div>
+              <div className="nexo-table-foot">
+                <span>{filtradas.length} de {db.comissoes.length} lançamentos</span>
+                <span className="mono">Total no filtro: {formatBRL(sum(filtradas.map((c) => c.valorComissao)))}</span>
+              </div>
             </div>
           )}
         </>
       ) : (
         <div className="nexo-table-wrap">
-          <div className="nexo-table-scroll">
-            <table className="nexo-table">
-              <thead><tr><th>Consultora</th><th>Total de contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th></tr></thead>
-              <tbody>
-                {fechamentoPorConsultora.length === 0 ? (
-                  <tr><td colSpan={5} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma comissão lançada ainda.</td></tr>
-                ) : fechamentoPorConsultora.map((f) => (
-                  <tr key={f.consultora.id}>
-                    <td style={{ fontWeight: 600 }}>{f.consultora.nome}</td>
-                    <td>{f.totalContratos}</td>
-                    <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(f.totalComissao)}</td>
-                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.totalPago)}</td>
-                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.totalAPagar)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {fechamentoPorConsultora.length === 0 ? (
+            <EmptyState icon={Users} title="Nenhum fechamento ainda" sub="Lance comissões para ver o total por consultora." />
+          ) : (
+            <div className="nexo-table-scroll">
+              <table className="nexo-table">
+                <thead><tr><th>Consultora</th><th>Contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th><th style={{ width: 160 }}>Progresso pago</th></tr></thead>
+                <tbody>
+                  {fechamentoPorConsultora.map((f) => {
+                    const pct = f.totalComissao > 0 ? Math.round((f.totalPago / f.totalComissao) * 100) : 0;
+                    return (
+                      <tr key={f.consultora.id}>
+                        <td>
+                          <div className="nexo-name-cell">
+                            <div className="nexo-avatar-sm" style={{ background: getAvatarColor(f.consultora.nome) }}>{getIniciais(f.consultora.nome)}</div>
+                            <span style={{ fontWeight: 600 }}>{f.consultora.nome}</span>
+                          </div>
+                        </td>
+                        <td>{f.totalContratos}</td>
+                        <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(f.totalComissao)}</td>
+                        <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.totalPago)}</td>
+                        <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.totalAPagar)}</td>
+                        <td>
+                          <div className="nexo-progress-track">
+                            <div className="nexo-progress-fill" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="nexo-cell-muted" style={{ fontSize: 11, marginTop: 3 }}>{pct}% pago</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -4085,16 +4774,16 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
 /* ------------------------------------------------------------------ */
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { key: "clientes", label: "Clientes", Icon: Users },
-  { key: "veiculos", label: "Veículos", Icon: Car },
-  { key: "financeiro", label: "Financeiro", Icon: Receipt },
-  { key: "relatorios", label: "Relatórios", Icon: FileText },
-  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet },
-  { key: "consultoras", label: "Consultoras", Icon: Users },
-  { key: "adesoes", label: "Adesões", Icon: FileDown },
-  { key: "comissoes", label: "Comissões", Icon: CreditCard },
-  { key: "links", label: "Links Úteis", Icon: Link2 },
+  { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard, group: "Visão geral" },
+  { key: "clientes", label: "Clientes", Icon: Users, group: "Operação" },
+  { key: "veiculos", label: "Veículos", Icon: Car, group: "Operação" },
+  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet, group: "Operação" },
+  { key: "financeiro", label: "Financeiro", Icon: Receipt, group: "Financeiro" },
+  { key: "comissoes", label: "Comissões", Icon: CreditCard, group: "Financeiro" },
+  { key: "adesoes", label: "Adesões", Icon: FileDown, group: "Financeiro" },
+  { key: "consultoras", label: "Consultoras", Icon: Users, group: "Equipe & recursos" },
+  { key: "relatorios", label: "Relatórios", Icon: FileText, group: "Equipe & recursos" },
+  { key: "links", label: "Links Úteis", Icon: Link2, group: "Equipe & recursos" },
 ];
 
 const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], linksUteis: [] };
@@ -4262,9 +4951,10 @@ function AssistenteIA({ db }) {
       <button
         onClick={() => setAberto((v) => !v)}
         title="Assistente de IA"
+        className="nexo-ai-fab"
         style={{
-          position: "fixed", right: 22, bottom: 22, width: 52, height: 52, borderRadius: "50%",
-          background: "var(--accent)", color: "#fff", border: "none", boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+          position: "fixed", right: 22, bottom: 22, width: 54, height: 54, borderRadius: "50%",
+          background: "linear-gradient(135deg, var(--accent-2), var(--accent))", color: "#fff", border: "none", boxShadow: "0 8px 24px rgba(62,134,191,0.4)",
           display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 60,
         }}
       >
@@ -4273,15 +4963,19 @@ function AssistenteIA({ db }) {
 
       {aberto && (
         <div
+          className="nexo-fade-in"
           style={{
-            position: "fixed", right: 22, bottom: 84, width: 340, maxWidth: "calc(100vw - 32px)", height: 460,
+            position: "fixed", right: 22, bottom: 86, width: 340, maxWidth: "calc(100vw - 32px)", height: 460,
             maxHeight: "calc(100vh - 120px)", background: "var(--surface)", border: "1px solid var(--border-soft)",
-            borderRadius: 14, boxShadow: "0 12px 32px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column",
+            borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column",
             overflow: "hidden", zIndex: 60,
           }}
         >
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-soft)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5 }}>
-            <Bot size={17} color="var(--accent)" /> Assistente Nexo
+          <div style={{ padding: "13px 14px", borderBottom: "1px solid var(--border-soft)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, background: "var(--surface-2)" }}>
+            <div style={{ width: 26, height: 26, borderRadius: 8, background: "linear-gradient(135deg, var(--accent-2), var(--accent))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Bot size={14} color="#fff" />
+            </div>
+            Assistente Nexo
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             {mensagens.length === 0 && (
@@ -4335,6 +5029,10 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
   const [mfaPendente, setMfaPendente] = useState(false);
   const [mostrarSeguranca, setMostrarSeguranca] = useState(false);
 
@@ -4431,7 +5129,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o cliente: " + e.message);
+      showToast("Não foi possível salvar o cliente: " + e.message, "error");
     }
   };
 
@@ -4469,7 +5167,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o veículo: " + e.message);
+      showToast("Não foi possível salvar o veículo: " + e.message, "error");
     }
   };
 
@@ -4506,12 +5204,12 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o boleto: " + e.message);
+      showToast("Não foi possível salvar o boleto: " + e.message, "error");
     }
   };
 
   const deleteCliente = async (id) => {
-    if (!window.confirm("Excluir este cliente? Os veículos e boletos vinculados também serão removidos.")) return;
+    if (!(await confirmDialog("Excluir este cliente? Os veículos e boletos vinculados também serão removidos."))) return;
     try {
       const { error } = await supabase.from("clientes").delete().eq("id", id);
       if (error) throw error;
@@ -4525,12 +5223,12 @@ export default function App() {
       });
       if (selectedClienteId === id) { setSelectedClienteId(null); setView("clientes"); }
     } catch (e) {
-      alert("Não foi possível excluir o cliente: " + e.message);
+      showToast("Não foi possível excluir o cliente: " + e.message, "error");
     }
   };
 
   const deleteVeiculo = async (id) => {
-    if (!window.confirm("Excluir este veículo? Boletos lançados só para ele serão removidos; boletos que cobrem vários veículos (inclusive este) serão mantidos, só tirando este veículo da lista.")) return;
+    if (!(await confirmDialog("Excluir este veículo? Boletos lançados só para ele serão removidos; boletos que cobrem vários veículos (inclusive este) serão mantidos, só tirando este veículo da lista."))) return;
     try {
       // Boletos que citam este veículo, via veiculo_ids (boleto de vários veículos) ou veiculo_id (boleto de 1 só)
       const afetados = db.boletos.filter((b) => b.veiculoId === id || (b.veiculoIds || []).includes(id));
@@ -4566,18 +5264,18 @@ export default function App() {
           }),
       }));
     } catch (e) {
-      alert("Não foi possível excluir o veículo: " + e.message);
+      showToast("Não foi possível excluir o veículo: " + e.message, "error");
     }
   };
 
   const deleteBoleto = async (id) => {
-    if (!window.confirm("Excluir este boleto?")) return;
+    if (!(await confirmDialog("Excluir este boleto?"))) return;
     try {
       const { error } = await supabase.from("boletos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.filter((b) => b.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir o boleto: " + e.message);
+      showToast("Não foi possível excluir o boleto: " + e.message, "error");
     }
   };
 
@@ -4587,7 +5285,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => (b.id === id ? rowToBoleto(data) : b)) }));
     } catch (e) {
-      alert("Não foi possível atualizar o boleto: " + e.message);
+      showToast("Não foi possível atualizar o boleto: " + e.message, "error");
     }
   };
 
@@ -4601,13 +5299,13 @@ export default function App() {
       setDb((prev) => ({ ...prev, seguradoras: [...prev.seguradoras, rowToSeguradora(data)] }));
       return data.id;
     } catch (e) {
-      alert("Não foi possível salvar a seguradora: " + e.message);
+      showToast("Não foi possível salvar a seguradora: " + e.message, "error");
       return null;
     }
   };
 
   const deleteSeguradora = async (id) => {
-    if (!window.confirm("Excluir esta seguradora? Os planos vinculados também serão removidos.")) return;
+    if (!(await confirmDialog("Excluir esta seguradora? Os planos vinculados também serão removidos."))) return;
     try {
       const { error } = await supabase.from("seguradoras").delete().eq("id", id);
       if (error) throw error;
@@ -4617,7 +5315,7 @@ export default function App() {
         planos: prev.planos.filter((p) => p.seguradoraId !== id),
       }));
     } catch (e) {
-      alert("Não foi possível excluir a seguradora: " + e.message);
+      showToast("Não foi possível excluir a seguradora: " + e.message, "error");
     }
   };
 
@@ -4634,18 +5332,18 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o plano: " + e.message);
+      showToast("Não foi possível salvar o plano: " + e.message, "error");
     }
   };
 
   const deletePlano = async (id) => {
-    if (!window.confirm("Excluir este plano?")) return;
+    if (!(await confirmDialog("Excluir este plano?"))) return;
     try {
       const { error } = await supabase.from("planos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, planos: prev.planos.filter((p) => p.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir o plano: " + e.message);
+      showToast("Não foi possível excluir o plano: " + e.message, "error");
     }
   };
 
@@ -4662,18 +5360,18 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a cotação: " + e.message);
+      showToast("Não foi possível salvar a cotação: " + e.message, "error");
     }
   };
 
   const deleteCotacao = async (id) => {
-    if (!window.confirm("Excluir esta cotação?")) return;
+    if (!(await confirmDialog("Excluir esta cotação?"))) return;
     try {
       const { error } = await supabase.from("cotacoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a cotação: " + e.message);
+      showToast("Não foi possível excluir a cotação: " + e.message, "error");
     }
   };
 
@@ -4691,17 +5389,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o link: " + e.message);
+      showToast("Não foi possível salvar o link: " + e.message, "error");
     }
   };
   const deleteLink = async (id) => {
-    if (!window.confirm("Excluir este link?")) return;
+    if (!(await confirmDialog("Excluir este link?"))) return;
     try {
       const { error } = await supabase.from("links_uteis").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, linksUteis: prev.linksUteis.filter((l) => l.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir o link: " + e.message);
+      showToast("Não foi possível excluir o link: " + e.message, "error");
     }
   };
 
@@ -4719,11 +5417,11 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a consultora: " + e.message);
+      showToast("Não foi possível salvar a consultora: " + e.message, "error");
     }
   };
   const deleteConsultora = async (id) => {
-    if (!window.confirm("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
+    if (!(await confirmDialog("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas."))) return;
     try {
       const { error } = await supabase.from("consultoras").delete().eq("id", id);
       if (error) throw error;
@@ -4734,7 +5432,7 @@ export default function App() {
         comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
       }));
     } catch (e) {
-      alert("Não foi possível excluir a consultora: " + e.message);
+      showToast("Não foi possível excluir a consultora: " + e.message, "error");
     }
   };
 
@@ -4752,17 +5450,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a adesão: " + e.message);
+      showToast("Não foi possível salvar a adesão: " + e.message, "error");
     }
   };
   const deleteAdesao = async (id) => {
-    if (!window.confirm("Excluir esta adesão?")) return;
+    if (!(await confirmDialog("Excluir esta adesão?"))) return;
     try {
       const { error } = await supabase.from("adesoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.filter((a) => a.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a adesão: " + e.message);
+      showToast("Não foi possível excluir a adesão: " + e.message, "error");
     }
   };
   const marcarRecebidaAdesao = async (id) => {
@@ -4777,7 +5475,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.map((a) => (a.id === id ? rowToAdesao(data) : a)) }));
     } catch (e) {
-      alert("Não foi possível atualizar a adesão: " + e.message);
+      showToast("Não foi possível atualizar a adesão: " + e.message, "error");
     }
   };
 
@@ -4795,17 +5493,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a comissão: " + e.message);
+      showToast("Não foi possível salvar a comissão: " + e.message, "error");
     }
   };
   const deleteComissao = async (id) => {
-    if (!window.confirm("Excluir esta comissão?")) return;
+    if (!(await confirmDialog("Excluir esta comissão?"))) return;
     try {
       const { error } = await supabase.from("comissoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a comissão: " + e.message);
+      showToast("Não foi possível excluir a comissão: " + e.message, "error");
     }
   };
   const marcarPagaComissao = async (id) => {
@@ -4814,7 +5512,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.map((c) => (c.id === id ? rowToComissao(data) : c)) }));
     } catch (e) {
-      alert("Não foi possível atualizar a comissão: " + e.message);
+      showToast("Não foi possível atualizar a comissão: " + e.message, "error");
     }
   };
 
@@ -4826,9 +5524,9 @@ export default function App() {
       const { data, error } = await supabase.from("clientes").insert(payload).select();
       if (error) throw error;
       setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
-      alert(`${data?.length || 0} cliente(s) importado(s) com sucesso.`);
+      showToast(`${data?.length || 0} cliente(s) importado(s) com sucesso.`, "success");
     } catch (e) {
-      alert("Não foi possível importar os clientes: " + e.message);
+      showToast("Não foi possível importar os clientes: " + e.message, "error");
     }
   };
 
@@ -4900,9 +5598,9 @@ export default function App() {
       let msg = `Importação concluída: ${clientesNovosCriados.length} cliente(s) novo(s), ${clientesReaproveitados} cliente(s) já existente(s) reaproveitado(s), ${veiculosNovosCriados.length} veículo(s) novo(s).`;
       if (ignoradas.length) msg += `\n\n${ignoradas.length} linha(s) sem nome/CPF ignorada(s):\n` + ignoradas.join("\n");
       if (veiculosIgnorados.length) msg += `\n\n${veiculosIgnorados.length} veículo(s) não importado(s):\n` + veiculosIgnorados.join("\n");
-      alert(msg);
+      showToast(msg, ignoradas.length || veiculosIgnorados.length ? "warning" : "success");
     } catch (e) {
-      alert("Não foi possível importar clientes e veículos: " + e.message);
+      showToast("Não foi possível importar clientes e veículos: " + e.message, "error");
     }
   };
 
@@ -4936,9 +5634,9 @@ export default function App() {
         seguradoras: [...prev.seguradoras, ...seguradorasNovasCriadas.map(rowToSeguradora)],
         planos: [...prev.planos, ...(planosData || []).map(rowToPlano)],
       }));
-      alert(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`);
+      showToast(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`, "success");
     } catch (e) {
-      alert("Não foi possível importar a tabela de preços: " + e.message);
+      showToast("Não foi possível importar a tabela de preços: " + e.message, "error");
     }
   };
 
@@ -4986,7 +5684,7 @@ export default function App() {
         );
       });
       if (payload.length === 0) {
-        alert("Nenhuma linha pôde ser importada.\n\n" + rejeitadas.join("\n"));
+        showToast("Nenhuma linha pôde ser importada.\n\n" + rejeitadas.join("\n"), "warning");
         return;
       }
       const { data, error } = await supabase.from("boletos").insert(payload).select();
@@ -4994,9 +5692,9 @@ export default function App() {
       setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
       let msg = `${data?.length || 0} boleto(s) importado(s) com sucesso.`;
       if (rejeitadas.length) msg += `\n\n${rejeitadas.length} linha(s) não importada(s):\n` + rejeitadas.join("\n");
-      alert(msg);
+      showToast(msg, rejeitadas.length ? "warning" : "success");
     } catch (e) {
-      alert("Não foi possível importar os boletos: " + e.message);
+      showToast("Não foi possível importar os boletos: " + e.message, "error");
     }
   };
 
@@ -5033,9 +5731,9 @@ export default function App() {
       }
       let msg = `Importação do relatório concluída: ${baixados} boleto(s) baixado(s), ${mantidosAbertos} confirmado(s) em aberto.`;
       if (naoEncontrados.length) msg += `\n\n${naoEncontrados.length} Nosso Número não encontrado(s) no Nexo:\n` + naoEncontrados.join("\n");
-      alert(msg);
+      showToast(msg, naoEncontrados.length ? "warning" : "success");
     } catch (e) {
-      alert("Não foi possível importar o relatório de baixa: " + e.message);
+      showToast("Não foi possível importar o relatório de baixa: " + e.message, "error");
     }
   };
 
@@ -5046,6 +5744,40 @@ export default function App() {
     cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões",
     links: "Links Úteis",
     clienteDetail: "Detalhes do cliente",
+  };
+
+  const saudacao = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  })();
+  const primeiroNome = (sessao?.user?.email || "").split("@")[0].split(".")[0];
+  const nomeExibicao = primeiroNome ? primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1) : "";
+  const iniciaisUsuario = (nomeExibicao || sessao?.user?.email || "U").slice(0, 2).toUpperCase();
+
+  const cnhAlertas = useMemo(() => cnhsVencendo(db.clientes, 30), [db.clientes]);
+  const boletosVencendoAlerta = useMemo(() => {
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    return db.boletos
+      .filter((b) => !b.dataPagamento && b.dataVencimento)
+      .map((b) => ({ ...b, dias: Math.round((parseISODate(b.dataVencimento) - hoje) / 86400000) }))
+      .filter((b) => b.dias >= 0 && b.dias <= 7)
+      .sort((a, b) => a.dias - b.dias);
+  }, [db.boletos]);
+  const totalNotificacoes = cnhAlertas.length + boletosVencendoAlerta.length;
+
+  const handleGlobalSearchKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    const termo = normalizarTexto(globalSearch.trim());
+    if (!termo) return;
+    const alvo = db.clientes.find((c) => normalizarTexto(c.nome).includes(termo) || (c.cpf || "").includes(termo));
+    if (alvo) {
+      openDetail(alvo.id);
+    } else {
+      setView("clientes");
+    }
+    setGlobalSearch("");
   };
 
   if (sessao === undefined) {
@@ -5104,52 +5836,126 @@ export default function App() {
       ) : (
         <div className="nexo-shell">
           <div className={`nexo-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
-          <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""}`}>
+          <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
             <div className="nexo-brand">
-              <div className="nexo-brand-mark">SS</div>
-              <div>
-                <div className="nexo-brand-name">Seu Seguro Corretora</div>
+              <div className="nexo-brand-mark">NG</div>
+              <div className="nexo-brand-text">
+                <div className="nexo-brand-name">Nexo Gestão</div>
                 <div className="nexo-brand-tag">Clientes · Veículos · Financeiro</div>
               </div>
             </div>
-            <nav className="nexo-nav">
-              {NAV_ITEMS.map(({ key, label, Icon }) => (
-                <div
-                  key={key}
-                  className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
-                  onClick={() => goTo(key)}
-                >
-                  <Icon size={16} /> {label}
-                </div>
+            <div className="nexo-sidebar-scroll">
+              {["Visão geral", "Operação", "Financeiro", "Equipe & recursos"].map((grupo) => (
+                <nav className="nexo-nav" key={grupo}>
+                  <div className="nexo-sidebar-group-label">{grupo}</div>
+                  {NAV_ITEMS.filter((item) => item.group === grupo).map(({ key, label, Icon }) => (
+                    <div
+                      key={key}
+                      className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
+                      onClick={() => goTo(key)}
+                    >
+                      <Icon size={16} />
+                      <span>{label}</span>
+                      {sidebarCollapsed && <div className="nexo-nav-tooltip">{label}</div>}
+                    </div>
+                  ))}
+                </nav>
               ))}
-            </nav>
+            </div>
+            <button className="nexo-collapse-btn" onClick={() => setSidebarCollapsed((v) => !v)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}>
+              {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+              <span>Recolher menu</span>
+            </button>
             <div className="nexo-sidebar-foot">
-              <div style={{ marginBottom: 8, wordBreak: "break-all" }}>{sessao?.user?.email}</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setMostrarSeguranca(true)}>
-                  <Shield size={13} /> Segurança
-                </button>
-                <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
-                  Sair
-                </button>
-              </div>
+              <div className="nexo-sidebar-foot-info">v1.0 · Nexo Gestão</div>
             </div>
           </aside>
 
-          <div className="nexo-main">
+          <div className={`nexo-main ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
             <header className="nexo-topbar">
-              <div className="nexo-topbar-title">
+              <div className="nexo-topbar-left">
                 <button className="nexo-hamburger" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
-                {titleMap[view]}
+                <div className="nexo-topbar-title">
+                  {titleMap[view]}
+                  <span className="nexo-topbar-greeting">{saudacao}{nomeExibicao ? `, ${nomeExibicao}` : ""}</span>
+                </div>
+                <div className="nexo-topbar-search hide-mobile">
+                  <Search size={14} />
+                  <input
+                    placeholder="Buscar cliente por nome ou CPF…"
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    onKeyDown={handleGlobalSearchKeyDown}
+                  />
+                </div>
               </div>
-              <div className="nexo-topbar-actions hide-mobile">
-                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
-                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
-                <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
+              <div className="nexo-topbar-actions">
+                <div className="nexo-topbar-actions hide-mobile" style={{ marginRight: 4 }}>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
+                  <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
+                </div>
+
+                <div className="nexo-dropdown">
+                  <button className="nexo-topbar-iconbtn" onClick={() => { setNotifOpen((v) => !v); setUserMenuOpen(false); }} title="Notificações">
+                    <Bell size={16} />
+                    {totalNotificacoes > 0 && <span className="nexo-notif-dot" />}
+                  </button>
+                  {notifOpen && (
+                    <div className="nexo-dropdown-menu" style={{ minWidth: 300 }} onMouseLeave={() => setNotifOpen(false)}>
+                      <div style={{ padding: "6px 8px 8px", fontSize: 12.5, fontWeight: 700, borderBottom: "1px solid var(--border-soft)", marginBottom: 4 }}>
+                        Notificações {totalNotificacoes > 0 ? `(${totalNotificacoes})` : ""}
+                      </div>
+                      {totalNotificacoes === 0 && (
+                        <div style={{ padding: "14px 8px", fontSize: 12.5, color: "var(--text-faint)", textAlign: "center" }}>Tudo em dia por aqui 👍</div>
+                      )}
+                      {boletosVencendoAlerta.slice(0, 4).map((b) => {
+                        const cliente = db.clientes.find((c) => c.id === b.clienteId);
+                        return (
+                          <button key={b.id} className="nexo-dropdown-item" onClick={() => { setView("financeiro"); setNotifOpen(false); }}>
+                            <Clock size={14} />
+                            <span>{cliente?.nome || "Cliente"} · boleto vence {b.dias === 0 ? "hoje" : `em ${b.dias}d`}</span>
+                          </button>
+                        );
+                      })}
+                      {cnhAlertas.slice(0, 4).map((c) => (
+                        <button key={c.id} className="nexo-dropdown-item" onClick={() => { openDetail(c.id); setNotifOpen(false); }}>
+                          <AlertTriangle size={14} />
+                          <span>CNH de {c.nome.split(" ")[0]} vencendo</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="nexo-dropdown">
+                  <div className="nexo-user-chip" onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}>
+                    <div className="nexo-avatar-xs" style={{ background: "linear-gradient(135deg, var(--accent-2), var(--accent-dim))" }}>{iniciaisUsuario}</div>
+                    <div className="hide-mobile">
+                      <div className="nexo-user-chip-name">{nomeExibicao || "Usuário"}</div>
+                      <div className="nexo-user-chip-role">Corretora</div>
+                    </div>
+                    <ChevronDown size={14} className="hide-mobile" />
+                  </div>
+                  {userMenuOpen && (
+                    <div className="nexo-dropdown-menu" onMouseLeave={() => setUserMenuOpen(false)}>
+                      <div style={{ padding: "6px 10px 10px", fontSize: 12, color: "var(--text-faint)", wordBreak: "break-all", borderBottom: "1px solid var(--border-soft)", marginBottom: 4 }}>
+                        {sessao?.user?.email}
+                      </div>
+                      <button className="nexo-dropdown-item" onClick={() => { setMostrarSeguranca(true); setUserMenuOpen(false); }}>
+                        <Shield size={14} /> Segurança e senha
+                      </button>
+                      <div className="nexo-dropdown-sep" />
+                      <button className="nexo-dropdown-item" onClick={() => supabase.auth.signOut()}>
+                        <LogOut size={14} /> Sair
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </header>
 
-            <main className="nexo-content">
+            <main className="nexo-content nexo-fade-in" key={view}>
               {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} />}
               {view === "clientes" && (
                 <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} onImportarClientesEVeiculos={importarClientesEVeiculosCSV} />
@@ -5273,6 +6079,9 @@ export default function App() {
           <ComissaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveComissao} onCancel={closeModal} />
         </Modal>
       )}
+
+      <ToastHost />
+      <ConfirmHost />
     </div>
   );
 }
