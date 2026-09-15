@@ -11,7 +11,7 @@ import {
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, TrendingDown, ChevronRight, ChevronDown,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
   Link2, ExternalLink, PartyPopper, Bell, Bot, Send, LogOut, PanelLeftClose, PanelLeftOpen,
-  ArrowUpRight, Sparkles, UserCircle2, Download, SlidersHorizontal, Info
+  ArrowUpRight, Sparkles, UserCircle2, Download, SlidersHorizontal, Info, Sun, Moon
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -62,6 +62,36 @@ const STYLE = `
   position: relative;
   -webkit-font-smoothing: antialiased;
 }
+.nexo[data-theme="branco"] {
+  --ink: #F3F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7FA;
+  --surface-3: #EAEFF4;
+  --surface-raised: #FFFFFF;
+  --border: #DFE6ED;
+  --border-soft: #E9EEF3;
+  --border-strong: #C4D0DC;
+  --text: #15202B;
+  --text-dim: #57697B;
+  --text-faint: #8A99A8;
+  --accent: #2E6DA4;
+  --accent-2: #3E86BF;
+  --accent-dim: #1F5079;
+  --accent-soft: rgba(46,109,164,0.10);
+  --accent-ring: rgba(46,109,164,0.35);
+  --success: #1E9760;
+  --success-soft: rgba(30,151,96,0.12);
+  --warning: #B87C1E;
+  --warning-soft: rgba(184,124,30,0.12);
+  --danger: #C8503F;
+  --danger-soft: rgba(200,80,63,0.12);
+  --info: #5A6B85;
+  --info-soft: rgba(90,107,133,0.12);
+  --shadow-sm: 0 1px 2px rgba(15,23,32,0.06);
+  --shadow-md: 0 8px 24px -8px rgba(15,23,32,0.12);
+  --shadow-lg: 0 20px 48px -16px rgba(15,23,32,0.16);
+  --shadow-glow: 0 8px 22px -6px rgba(46,109,164,0.28);
+}
 .nexo * { box-sizing: border-box; }
 .nexo .mono { font-family: 'JetBrains Mono', monospace; }
 .nexo ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -97,7 +127,7 @@ const STYLE = `
 .nexo-sidebar.collapsed .nexo-collapse-btn span { display: none; }
 .nexo-sidebar.collapsed .nexo-brand { justify-content: center; }
 .nexo-sidebar.collapsed .nexo-nav-item { justify-content: center; padding: 10px; }
-.nexo-brand-name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; line-height: 1.2; white-space: nowrap; }
+.nexo-brand-name { font-weight: 700; font-size: 14px; letter-spacing: -0.2px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; white-space: nowrap; }
 .nexo-sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 14px; margin: 0 -4px; padding: 0 4px; }
 .nexo-sidebar-group-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--text-dim); font-weight: 800; padding: 8px 12px 6px; white-space: nowrap; opacity: .85; }
@@ -381,6 +411,11 @@ const STYLE = `
 .nexo-login-page { min-height: 100vh; width: 100%; display: flex; flex-direction: column; background: var(--ink); }
 .nexo-login-body { flex: 1; display: flex; min-height: 0; }
 .nexo-login-hero {
+  /* Este painel de marca é sempre escuro, em qualquer tema — por isso fixa
+     as cores de texto aqui em vez de herdar --text/--text-dim do tema ativo
+     (que ficariam escuras demais no modo "branco" e sumiriam neste fundo). */
+  --text: #EDF1F5;
+  --text-dim: #92A2B2;
   flex: 1.15; position: relative; overflow: hidden; display: flex; flex-direction: column;
   justify-content: space-between; padding: 56px 60px 44px;
   background:
@@ -1750,7 +1785,7 @@ function Dashboard({ db, onOpenModal }) {
             {aniversariantesHoje.map((c) => {
               const idade = c.nascimento ? new Date().getFullYear() - Number(c.nascimento.slice(0, 4)) : null;
               const contato = c.whatsapp || c.telefone;
-              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe do Nexo Gestão deseja a você um feliz aniversário e muitas felicidades!`;
+              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe da Corretora Seu Seguro deseja a você um feliz aniversário e muitas felicidades!`;
               return (
                 <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div>
@@ -3276,7 +3311,7 @@ function gerarPdfCotacao(cotacao, db) {
   let y = 20;
 
   doc.setFontSize(16);
-  doc.text("Nexo Gestão", 14, y);
+  doc.text("Corretora Seu Seguro", 14, y);
   doc.setFontSize(11);
   y += 8;
   doc.text("Cotação de Seguro Automotivo", 14, y);
@@ -3711,8 +3746,8 @@ function LoginScreen({ onEntrar }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
-                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
+                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
+                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -3733,7 +3768,7 @@ function LoginScreen({ onEntrar }) {
               <>
                 <div className="nexo-login-eyebrow">Bem-vindo</div>
                 <h1>Entre na sua conta</h1>
-                <p className="sub">Acesse o painel do Nexo Gestão.</p>
+                <p className="sub">Acesse o painel da Corretora Seu Seguro.</p>
                 <div className="nexo-login-fields">
                   <Field label="E-mail">
                     <input
@@ -3817,7 +3852,7 @@ function LoginScreen({ onEntrar }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
+        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -3869,8 +3904,8 @@ function RedefinirSenhaScreen({ onConcluido }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
-                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
+                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
+                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -3943,7 +3978,7 @@ function RedefinirSenhaScreen({ onConcluido }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
+        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -4006,8 +4041,8 @@ function MfaChallengeScreen({ onVerificado }) {
             <div className="nexo-login-brand">
               <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
               <div>
-                <div className="nexo-login-brand-name">NEXO GESTÃO</div>
-                <div className="nexo-login-brand-tagline">Gestão para corretoras</div>
+                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
+                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
               </div>
             </div>
             <div className="nexo-login-hero-mid">
@@ -4054,7 +4089,7 @@ function MfaChallengeScreen({ onVerificado }) {
       </div>
       <div className="nexo-login-page-foot">
         Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Nexo Gestão — Todos os direitos reservados.
+        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
       </div>
     </div>
   );
@@ -4102,7 +4137,7 @@ function SegurancaModal({ onClose }) {
       for (const f of pendentes) {
         await supabase.auth.mfa.unenroll({ factorId: f.id });
       }
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Nexo Gestão" });
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Corretora Seu Seguro" });
       if (error) throw error;
       setFactorPendente({ id: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
       setEtapa("ativando");
@@ -5331,6 +5366,21 @@ export default function App() {
   const [mfaPendente, setMfaPendente] = useState(false);
   const [mostrarSeguranca, setMostrarSeguranca] = useState(false);
   const [perfil, setPerfil] = useState(undefined); // undefined = carregando, null = sem perfil, objeto = { role, nome }
+  const [tema, setTema] = useState(() => {
+    try {
+      return localStorage.getItem("nexo_tema") === "branco" ? "branco" : "padrao";
+    } catch {
+      return "padrao";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("nexo_tema", tema);
+    } catch {}
+  }, [tema]);
+
+  const alternarTema = () => setTema((t) => (t === "branco" ? "padrao" : "branco"));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -6084,7 +6134,7 @@ export default function App() {
         }
       }
       let msg = `Importação do relatório concluída: ${baixados} boleto(s) baixado(s), ${mantidosAbertos} confirmado(s) em aberto.`;
-      if (naoEncontrados.length) msg += `\n\n${naoEncontrados.length} Nosso Número não encontrado(s) no Nexo:\n` + naoEncontrados.join("\n");
+      if (naoEncontrados.length) msg += `\n\n${naoEncontrados.length} Nosso Número não encontrado(s) no sistema:\n` + naoEncontrados.join("\n");
       showToast(msg, naoEncontrados.length ? "warning" : "success");
     } catch (e) {
       showToast("Não foi possível importar o relatório de baixa: " + e.message, "error");
@@ -6136,7 +6186,7 @@ export default function App() {
 
   if (sessao === undefined) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme={tema}>
         <style>{STYLE}</style>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13 }}>
           Verificando acesso…
@@ -6147,7 +6197,7 @@ export default function App() {
 
   if (recuperandoSenha) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme={tema}>
         <style>{STYLE}</style>
         <RedefinirSenhaScreen onConcluido={() => setRecuperandoSenha(false)} />
       </div>
@@ -6156,7 +6206,7 @@ export default function App() {
 
   if (!sessao) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme={tema}>
         <style>{STYLE}</style>
         <LoginScreen onEntrar={() => {}} />
       </div>
@@ -6165,7 +6215,7 @@ export default function App() {
 
   if (mfaPendente) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme={tema}>
         <style>{STYLE}</style>
         <MfaChallengeScreen onVerificado={() => setMfaPendente(false)} />
       </div>
@@ -6173,7 +6223,7 @@ export default function App() {
   }
 
   return (
-    <div className="nexo">
+    <div className="nexo" data-theme={tema}>
       <style>{STYLE}</style>
 
       {loading ? (
@@ -6192,9 +6242,9 @@ export default function App() {
           <div className={`nexo-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
             <div className="nexo-brand">
-              <div className="nexo-brand-mark">NG</div>
+              <div className="nexo-brand-mark">CS</div>
               <div className="nexo-brand-text">
-                <div className="nexo-brand-name">Nexo Gestão</div>
+                <div className="nexo-brand-name">Corretora Seu Seguro</div>
                 <div className="nexo-brand-tag">Clientes · Veículos · Financeiro</div>
               </div>
             </div>
@@ -6225,7 +6275,7 @@ export default function App() {
               <span>Recolher menu</span>
             </button>
             <div className="nexo-sidebar-foot">
-              <div className="nexo-sidebar-foot-info">v1.0 · Nexo Gestão</div>
+              <div className="nexo-sidebar-foot-info">v1.0 · Corretora Seu Seguro</div>
             </div>
           </aside>
 
@@ -6253,6 +6303,14 @@ export default function App() {
                   <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
                   <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
                 </div>
+
+                <button
+                  className="nexo-topbar-iconbtn"
+                  onClick={alternarTema}
+                  title={tema === "branco" ? "Usar cor padrão" : "Usar cor branca"}
+                >
+                  {tema === "branco" ? <Moon size={16} /> : <Sun size={16} />}
+                </button>
 
                 <div className="nexo-dropdown">
                   <button className="nexo-topbar-iconbtn" onClick={() => { setNotifOpen((v) => !v); setUserMenuOpen(false); }} title="Notificações">
