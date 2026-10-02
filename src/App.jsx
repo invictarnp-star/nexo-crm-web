@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { supabase } from "./supabaseClient";
 import jsPDF from "jspdf";
 import {
@@ -8,10 +8,8 @@ import {
 import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
-  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, TrendingDown, ChevronRight, ChevronDown,
-  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Link2, ExternalLink, PartyPopper, Bell, Bot, Send, LogOut, PanelLeftClose, PanelLeftOpen,
-  ArrowUpRight, Sparkles, UserCircle2, Download, SlidersHorizontal, Info, Sun, Moon
+  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
+  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -22,22 +20,18 @@ const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 .nexo {
-  --ink: #0A0E14;
+  --ink: #0B1015;
   --surface: #121922;
   --surface-2: #19222D;
   --surface-3: #202B38;
-  --surface-raised: #1B2530;
   --border: #263241;
   --border-soft: #1D2732;
-  --border-strong: #324256;
-  --text: #EDF1F5;
+  --text: #E9EEF3;
   --text-dim: #92A2B2;
   --text-faint: #56646F;
   --accent: #3E86BF;
-  --accent-2: #5AA7DC;
   --accent-dim: #2C5F87;
   --accent-soft: rgba(62,134,191,0.14);
-  --accent-ring: rgba(62,134,191,0.35);
   --success: #34B172;
   --success-soft: rgba(52,177,114,0.14);
   --warning: #DB9B3D;
@@ -46,467 +40,176 @@ const STYLE = `
   --danger-soft: rgba(221,95,82,0.14);
   --info: #7A8FB0;
   --info-soft: rgba(122,143,176,0.16);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.24);
-  --shadow-md: 0 8px 24px -8px rgba(0,0,0,0.45);
-  --shadow-lg: 0 20px 48px -16px rgba(0,0,0,0.55);
-  --shadow-glow: 0 8px 22px -6px rgba(62,134,191,0.45);
   font-family: 'Inter', -apple-system, sans-serif;
   background: var(--ink);
   color: var(--text);
   min-height: 100vh;
   width: 100%;
   position: relative;
-  -webkit-font-smoothing: antialiased;
-}
-.nexo[data-theme="branco"] {
-  --ink: #F3F5F8;
-  --surface: #FFFFFF;
-  --surface-2: #F5F7FA;
-  --surface-3: #EAEFF4;
-  --surface-raised: #FFFFFF;
-  --border: #DFE6ED;
-  --border-soft: #E9EEF3;
-  --border-strong: #C4D0DC;
-  --text: #15202B;
-  --text-dim: #57697B;
-  --text-faint: #8A99A8;
-  --accent: #2E6DA4;
-  --accent-2: #3E86BF;
-  --accent-dim: #1F5079;
-  --accent-soft: rgba(46,109,164,0.10);
-  --accent-ring: rgba(46,109,164,0.35);
-  --success: #1E9760;
-  --success-soft: rgba(30,151,96,0.12);
-  --warning: #B87C1E;
-  --warning-soft: rgba(184,124,30,0.12);
-  --danger: #C8503F;
-  --danger-soft: rgba(200,80,63,0.12);
-  --info: #5A6B85;
-  --info-soft: rgba(90,107,133,0.12);
-  --shadow-sm: 0 1px 2px rgba(15,23,32,0.06);
-  --shadow-md: 0 8px 24px -8px rgba(15,23,32,0.12);
-  --shadow-lg: 0 20px 48px -16px rgba(15,23,32,0.16);
-  --shadow-glow: 0 8px 22px -6px rgba(46,109,164,0.28);
 }
 .nexo * { box-sizing: border-box; }
 .nexo .mono { font-family: 'JetBrains Mono', monospace; }
-.nexo ::-webkit-scrollbar { width: 10px; height: 10px; }
-.nexo ::-webkit-scrollbar-track { background: transparent; }
-.nexo ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 20px; border: 2px solid var(--ink); }
-.nexo *:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-@keyframes nexoFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.nexo-fade-in { animation: nexoFadeUp .28s cubic-bezier(.16,1,.3,1) both; }
-@media (prefers-reduced-motion: reduce) { .nexo-fade-in { animation: none; } }
 
 /* Layout */
 .nexo-shell { display: flex; min-height: 100vh; }
 .nexo-sidebar {
-  width: 240px; flex-shrink: 0; background: var(--surface);
-  border-right: 1px solid var(--border-soft); padding: 18px 12px;
-  display: flex; flex-direction: column; gap: 14px;
+  width: 232px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border-soft); padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 18px;
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
-  transition: transform .25s ease, width .2s ease;
+  transition: transform .25s ease;
 }
-.nexo-sidebar.collapsed { width: 72px; }
-.nexo-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 12px; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px; }
+.nexo-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 10px; }
 .nexo-brand-mark {
-  width: 36px; height: 36px; border-radius: var(--radius-md); flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent-2), var(--accent-dim));
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 14.5px; color: #fff; letter-spacing: -0.5px;
-  box-shadow: var(--shadow-glow);
+  font-weight: 800; font-size: 15px; color: #fff; letter-spacing: -0.5px;
 }
-.nexo-brand-text { min-width: 0; overflow: hidden; }
-.nexo-sidebar.collapsed .nexo-brand-text, .nexo-sidebar.collapsed .nexo-sidebar-group-label,
-.nexo-sidebar.collapsed .nexo-nav-item span, .nexo-sidebar.collapsed .nexo-sidebar-foot-info,
-.nexo-sidebar.collapsed .nexo-collapse-btn span { display: none; }
-.nexo-sidebar.collapsed .nexo-brand { justify-content: center; }
-.nexo-sidebar.collapsed .nexo-nav-item { justify-content: center; padding: 10px; }
-.nexo-brand-name { font-weight: 700; font-size: 14px; letter-spacing: -0.2px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; white-space: nowrap; }
-.nexo-sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 14px; margin: 0 -4px; padding: 0 4px; }
-.nexo-sidebar-group-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--text-dim); font-weight: 800; padding: 8px 12px 6px; white-space: nowrap; opacity: .85; }
-.nexo-nav { display: flex; flex-direction: column; gap: 2px; }
+.nexo-brand-name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; line-height: 1.1;}
+.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+.nexo-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .nexo-nav-item {
-  position: relative; display: flex; align-items: center; gap: 11px; padding: 9px 12px;
-  border-radius: var(--radius-sm); color: var(--text-dim); font-size: 13.5px; font-weight: 500;
-  cursor: pointer; border: 1px solid transparent; user-select: none; white-space: nowrap;
-  transition: background .12s ease, color .12s ease;
+  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
+  border-radius: 8px; color: var(--text-dim); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; border: 1px solid transparent; user-select: none;
 }
-.nexo-nav-item svg { flex-shrink: 0; }
 .nexo-nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); border-color: var(--accent-ring); }
-.nexo-nav-item.active::before { content: ""; position: absolute; left: -12px; top: 6px; bottom: 6px; width: 3px; border-radius: 4px; background: var(--accent-2); }
-.nexo-sidebar.collapsed .nexo-nav-item.active::before { display: none; }
-.nexo-nav-item.active svg { color: var(--accent-2); }
-.nexo-nav-tooltip {
-  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
-  background: var(--surface-3); color: var(--text); font-size: 12px; font-weight: 600;
-  padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
-  white-space: nowrap; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none;
-  transition: opacity .12s ease; z-index: 50;
-}
-.nexo-sidebar.collapsed .nexo-nav-item:hover .nexo-nav-tooltip { opacity: 1; }
-.nexo-collapse-btn {
-  display: flex; align-items: center; gap: 8px; justify-content: center; margin: 0 4px;
-  padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-soft); background: var(--surface-2);
-  color: var(--text-faint); cursor: pointer; font-size: 11.5px; font-weight: 600;
-}
-.nexo-collapse-btn:hover { color: var(--text); border-color: var(--border-strong); }
-.nexo-sidebar-foot { font-size: 10.5px; color: var(--text-faint); padding: 10px 6px 2px; border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 8px; }
-.nexo-sidebar-foot-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); border-color: rgba(62,134,191,0.35); }
+.nexo-nav-item.active svg { color: var(--accent); }
+.nexo-sidebar-foot { font-size: 10.5px; color: var(--text-faint); padding: 8px; border-top: 1px solid var(--border-soft); padding-top: 12px;}
 
-.nexo-main { margin-left: 240px; flex: 1; min-width: 0; display: flex; flex-direction: column; transition: margin-left .2s ease; }
-.nexo-main.sidebar-collapsed { margin-left: 72px; }
+.nexo-main { margin-left: 232px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .nexo-topbar {
-  height: 64px; border-bottom: 1px solid var(--border-soft); background: rgba(10,14,20,0.78);
-  backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; position: sticky; top: 0; z-index: 30; gap: 16px;
+  height: 60px; border-bottom: 1px solid var(--border-soft); background: rgba(18,25,34,0.7);
+  backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; position: sticky; top: 0; z-index: 30; gap: 12px;
 }
-.nexo-topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.nexo-topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; display:flex; flex-direction: column; line-height: 1.25;}
-.nexo-topbar-greeting { font-size: 11px; color: var(--text-faint); font-weight: 500; }
-.nexo-topbar-search {
-  display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 8px 12px; width: 280px; max-width: 32vw; color: var(--text-faint);
-  transition: border-color .15s, background .15s;
-}
-.nexo-topbar-search:focus-within { border-color: var(--accent-dim); background: var(--surface-3); }
-.nexo-topbar-search input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
-.nexo-topbar-search input::placeholder { color: var(--text-faint); }
-.nexo-topbar-search kbd { font-size: 10.5px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: inherit; }
-.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center;}
+.nexo-topbar-title { font-size: 15.5px; font-weight: 700; display:flex; align-items:center; gap:10px;}
+.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
 .nexo-hamburger { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 6px;}
-.nexo-content { padding: 26px 28px 64px; flex: 1; }
+.nexo-content { padding: 24px 26px 60px; flex: 1; }
 .nexo-overlay { display:none; }
-
-.nexo-topbar-iconbtn { position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); cursor: pointer; }
-.nexo-topbar-iconbtn:hover { color: var(--text); border-color: var(--border-strong); }
-.nexo-notif-dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface-2); }
-.nexo-user-chip { display: flex; align-items: center; gap: 9px; padding: 5px 10px 5px 5px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; }
-.nexo-user-chip:hover { border-color: var(--border-strong); }
-.nexo-user-chip-name { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
-.nexo-user-chip-role { font-size: 10.5px; color: var(--text-faint); line-height: 1.2; }
 
 /* Buttons */
 .nexo-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit;
-  font-size: 13px; font-weight: 600; padding: 9px 15px; border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; gap: 7px; font-family: inherit;
+  font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
-  cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s, transform .08s, box-shadow .15s;
+  cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s;
 }
-.nexo-btn:hover { border-color: var(--accent-dim); background: var(--surface-3); }
-.nexo-btn:active { transform: translateY(1px); }
-.nexo-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.nexo-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset; }
-.nexo-btn-primary:hover { background: #3679AC; border-color: #3679AC; box-shadow: var(--shadow-glow); }
+.nexo-btn:hover { border-color: var(--accent-dim); }
+.nexo-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.nexo-btn-primary:hover { background: #3679AC; }
 .nexo-btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
-.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); border-color: transparent; }
+.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .nexo-btn-danger { color: var(--danger); }
-.nexo-btn-danger:hover { border-color: var(--danger); background: var(--danger-soft); }
-.nexo-btn-success { background: var(--success); border-color: var(--success); color: #fff; }
-.nexo-btn-success:hover { background: #2C9A63; border-color: #2C9A63; }
-.nexo-btn-sm { padding: 6px 11px; font-size: 12px; }
-.nexo-btn-block { width: 100%; }
-.nexo-btn .nexo-spinner { animation: nexoSpin .7s linear infinite; }
-.nexo-btn.is-loading { color: transparent !important; pointer-events: none; position: relative; }
-.nexo-btn.is-loading::after {
-  content: ""; position: absolute; width: 15px; height: 15px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: nexoSpin .7s linear infinite;
-}
-.nexo-btn-ghost.is-loading::after, .nexo-btn:not(.nexo-btn-primary):not(.nexo-btn-success).is-loading::after { border: 2px solid var(--border-strong); border-top-color: var(--text); }
-@keyframes nexoSpin { to { transform: rotate(360deg); } }
+.nexo-btn-sm { padding: 6px 10px; font-size: 12px; }
 .nexo-icon-btn {
-  width: 31px; height: 31px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
-  cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+  cursor: pointer;
 }
-.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); background: var(--surface-3); }
-.nexo-icon-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
-.nexo-btn-group { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
-.nexo-btn-group .nexo-btn { border: none; border-radius: 0; border-right: 1px solid var(--border); }
-.nexo-btn-group .nexo-btn:last-child { border-right: none; }
-
-/* Dropdown menu */
-.nexo-dropdown { position: relative; display: inline-block; }
-.nexo-dropdown-menu {
-  position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; background: var(--surface-3);
-  border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 45;
-  padding: 6px; display: flex; flex-direction: column; gap: 1px;
-}
-.nexo-dropdown-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-dim); cursor: pointer; background: none; border: none; text-align: left; font-family: inherit; width: 100%; }
-.nexo-dropdown-item:hover { background: var(--surface-2); color: var(--text); }
-.nexo-dropdown-item svg { color: var(--text-faint); flex-shrink: 0; }
-.nexo-dropdown-sep { height: 1px; background: var(--border-soft); margin: 5px 2px; }
+.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); }
 
 /* Cards */
-.nexo-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); }
-.nexo-card-title { font-size: 13.5px; font-weight: 700; }
-.nexo-card-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
-.nexo-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.nexo-kpi {
-  background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg);
-  padding: 17px 18px 16px; position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
-  transition: border-color .15s, transform .15s;
-}
-.nexo-kpi:hover { border-color: var(--border-strong); transform: translateY(-1px); }
-.nexo-kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-.nexo-kpi-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink: 0;}
-.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;}
-.nexo-kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; line-height: 1; }
-.nexo-kpi-foot { margin-top: 8px; font-size: 11px; color: var(--text-faint); }
-.nexo-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px 2px 5px; border-radius: 999px; }
-.nexo-trend.up { color: var(--success); background: var(--success-soft); }
-.nexo-trend.down { color: var(--danger); background: var(--danger-soft); }
-.nexo-trend.flat { color: var(--text-faint); background: var(--surface-2); }
-.nexo-charts-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin-bottom: 14px;}
-.nexo-charts-grid > * { min-width: 0; }
-.nexo-chart-title { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
-.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 16px; }
+.nexo-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 18px; }
+.nexo-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.nexo-kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 16px 14px; position: relative; overflow: hidden;}
+.nexo-kpi-icon { width: 32px; height: 32px; border-radius: 8px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;}
+.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 500; margin-bottom: 4px;}
+.nexo-kpi-value { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
+.nexo-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;}
+.nexo-chart-title { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 14px; }
 
 /* Section header */
-.nexo-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;}
-.nexo-section-title { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; }
-.nexo-section-sub { font-size: 12.5px; color: var(--text-faint); margin-top: 3px; font-weight: 500; }
+.nexo-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;}
+.nexo-section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .nexo-section-count { font-size: 12.5px; color: var(--text-faint); font-weight: 500; margin-left: 8px;}
-.nexo-section-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Search & filters */
-.nexo-searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 9px 12px; max-width: 380px; flex: 1; transition: border-color .15s;}
-.nexo-searchbar:focus-within { border-color: var(--accent-dim); }
-.nexo-searchbar svg { color: var(--text-faint); flex-shrink: 0; }
+.nexo-searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; max-width: 380px; flex: 1; }
 .nexo-searchbar input { background:none; border:none; outline:none; color: var(--text); font-size: 13px; width: 100%; font-family:inherit;}
 .nexo-searchbar input::placeholder { color: var(--text-faint); }
-.nexo-filters { background: var(--surface); border:1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px; display:flex; flex-wrap:wrap; gap: 12px; align-items:flex-end;}
+.nexo-filters { background: var(--surface); border:1px solid var(--border-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display:flex; flex-wrap:wrap; gap: 12px; align-items:flex-end;}
 .nexo-filter-field { display:flex; flex-direction:column; gap:5px; min-width: 130px; flex:1;}
 .nexo-filter-field label { font-size: 10.5px; text-transform:uppercase; letter-spacing:.4px; color: var(--text-faint); font-weight:600;}
-.nexo-filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-2); border: 1px solid var(--accent-ring); }
-.nexo-filter-chip button { background: none; border: none; color: inherit; cursor: pointer; display: flex; padding: 0; }
 
 /* Inputs */
 .nexo-input, .nexo-select, .nexo-textarea {
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: var(--radius-sm); padding: 9px 11px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
-  transition: border-color .12s, background .12s;
+  border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
 }
-.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); background: var(--surface-3); }
-.nexo-input:disabled, .nexo-select:disabled, .nexo-textarea:disabled { opacity: .55; cursor: not-allowed; }
+.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); }
 .nexo-textarea { resize: vertical; min-height: 60px; }
 .nexo-field { display:flex; flex-direction:column; gap: 6px; }
-.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 600; }
-.nexo-field-error { font-size: 11px; color: var(--danger); display: flex; align-items: center; gap: 4px; }
+.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+.nexo-field-error { font-size: 11px; color: var(--danger); }
 .nexo-field-row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .nexo-field-row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.nexo-checkbox { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--surface-2); accent-color: var(--accent); cursor: pointer; }
 
 /* Table */
-.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
 .nexo-table-scroll { overflow-x: auto; }
 .nexo-table { width: 100%; border-collapse: collapse; min-width: 640px; }
 .nexo-table th {
-  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px;
-  color: var(--text-faint); font-weight: 700; padding: 13px 16px; border-bottom: 1px solid var(--border-soft);
-  white-space: nowrap; background: var(--surface-2);
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-faint); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
 }
-.nexo-table td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.nexo-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 .nexo-table tr:last-child td { border-bottom: none; }
-.nexo-table tbody tr { transition: background .1s; }
 .nexo-table tbody tr:hover { background: var(--surface-2); }
 .nexo-row-link { cursor: pointer; }
 .nexo-cell-muted { color: var(--text-faint); font-size: 12px; }
-.nexo-cell-strong { font-weight: 600; }
 .nexo-actions-cell { display:flex; gap: 6px; justify-content:flex-end; }
-.nexo-table-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border-soft); background: var(--surface-2); }
-.nexo-pagination { display: flex; align-items: center; gap: 4px; }
-.nexo-pagination button { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-3); color: var(--text-dim); cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.nexo-pagination button:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
-.nexo-pagination button:disabled { opacity: .4; cursor: not-allowed; }
-.nexo-progress-track { width: 100%; height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-.nexo-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--success), var(--accent-2)); transition: width .3s ease; }
-.nexo-ai-fab { transition: transform .15s ease, box-shadow .15s ease; }
-.nexo-ai-fab:hover { transform: translateY(-2px) scale(1.04); }
-.nexo-pagination button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* Badges */
-.nexo-badge { display:inline-flex; align-items:center; gap:5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.nexo-badge { display:inline-flex; align-items:center; gap:5px; font-size: 11.5px; font-weight: 600; padding: 4px 9px; border-radius: 20px; }
 .nexo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink:0; }
-.nexo-avatar { width: 52px; height: 52px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--accent-2); display:flex; align-items:center; justify-content:center; font-weight: 700; font-size: 19px; flex-shrink: 0; }
-.nexo-avatar-sm { width: 34px; height: 34px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; display:flex; align-items:center; justify-content:center; flex-shrink: 0; color: #fff; }
-.nexo-avatar-xs { width: 27px; height: 27px; border-radius: 50%; font-size: 11px; font-weight: 700; display:flex; align-items:center; justify-content:center; flex-shrink: 0; color: #fff; }
-.nexo-name-cell { display: flex; align-items: center; gap: 11px; }
-
-/* Skeleton */
-@keyframes nexoShimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
-.nexo-skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%); background-size: 400px 100%; animation: nexoShimmer 1.4s ease infinite; border-radius: var(--radius-sm); }
-.nexo-skeleton-line { height: 12px; margin-bottom: 8px; }
-.nexo-skeleton-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.nexo-skeleton-card { height: 106px; border-radius: var(--radius-lg); }
 
 /* Empty state */
 .nexo-empty { text-align:center; padding: 60px 20px; color: var(--text-faint); }
 .nexo-empty svg { margin-bottom: 12px; opacity: .5; }
-.nexo-empty-title { color: var(--text-dim); font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.nexo-empty-title { color: var(--text-dim); font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .nexo-empty-sub { font-size: 12.5px; }
 
-/* Toasts */
-.nexo-toast-wrap { position: fixed; top: 18px; right: 18px; z-index: 200; display: flex; flex-direction: column; gap: 10px; max-width: min(360px, calc(100vw - 32px)); }
-@keyframes nexoToastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-.nexo-toast { display: flex; align-items: flex-start; gap: 10px; background: var(--surface-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow-lg); font-size: 13px; animation: nexoToastIn .22s cubic-bezier(.16,1,.3,1) both; }
-.nexo-toast svg { flex-shrink: 0; margin-top: 1px; }
-.nexo-toast.success { border-left: 3px solid var(--success); }
-.nexo-toast.success svg { color: var(--success); }
-.nexo-toast.error { border-left: 3px solid var(--danger); }
-.nexo-toast.error svg { color: var(--danger); }
-.nexo-toast.info { border-left: 3px solid var(--info); }
-.nexo-toast.info svg { color: var(--info); }
-.nexo-toast.warning { border-left: 3px solid var(--warning); }
-.nexo-toast.warning svg { color: var(--warning); }
-.nexo-toast-close { margin-left: auto; background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; display: flex; }
-.nexo-toast-close:hover { color: var(--text); }
-
-/* Confirm dialog */
-.nexo-confirm-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-
 /* Modal */
-.nexo-modal-overlay { position: fixed; inset: 0; background: rgba(4,6,9,0.65); z-index: 100; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding: 40px 16px; backdrop-filter: blur(2px); }
-@keyframes nexoModalIn { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
-.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); animation: nexoModalIn .2s cubic-bezier(.16,1,.3,1) both; }
+.nexo-modal-overlay { position: fixed; inset: 0; background: rgba(5,8,11,0.6); z-index: 100; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding: 40px 16px; }
+.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
 .nexo-modal.wide { max-width: 620px; }
 .nexo-modal-head { display:flex; align-items:center; justify-content:space-between; padding: 18px 20px; border-bottom: 1px solid var(--border-soft); }
 .nexo-modal-head h3 { font-size: 15.5px; font-weight: 700; margin: 0; }
 .nexo-modal-body { padding: 20px; display:flex; flex-direction:column; gap: 14px; }
 .nexo-modal-foot { display:flex; justify-content:flex-end; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border-soft); }
 
-/* Tooltip (generic) */
-.nexo-tt { position: relative; display: inline-flex; }
-.nexo-tt-bubble { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border); color: var(--text); font-size: 11.5px; font-weight: 500; padding: 6px 9px; border-radius: var(--radius-sm); white-space: nowrap; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .12s ease; z-index: 50; }
-.nexo-tt:hover .nexo-tt-bubble { opacity: 1; }
-
 /* Client detail */
 .nexo-detail-grid { display:grid; grid-template-columns: 300px 1fr; gap: 16px; align-items:start; }
-.nexo-detail-grid > * { min-width: 0; }
-.nexo-info-row { display:flex; align-items:center; gap: 9px; font-size: 13px; color: var(--text-dim); padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.nexo-info-row { display:flex; align-items:center; gap: 9px; font-size: 13px; color: var(--text-dim); padding: 7px 0; border-bottom: 1px solid var(--border-soft); }
 .nexo-info-row:last-child { border-bottom: none; }
 .nexo-info-row svg { color: var(--text-faint); flex-shrink:0; }
-.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); transition: border-color .12s; }
-.nexo-veiculo-card:hover { border-color: var(--border-strong); }
+.nexo-avatar { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display:flex; align-items:center; justify-content:center; font-weight: 700; font-size: 19px; }
+.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); }
 .nexo-veiculo-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
-.nexo-mini-kpis { display:grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
-.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; }
+.nexo-mini-kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; }
 .nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 .nexo-mini-kpi-value { font-size: 16px; font-weight: 700; }
-.nexo-tabs { display:flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px; overflow-x: auto; }
-.nexo-tab { padding: 9px 4px; margin-right: 20px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .12s; }
-.nexo-tab:hover { color: var(--text-dim); }
-.nexo-tab.active { color: var(--text); border-color: var(--accent-2); }
-
-/* ------------------------------------------------------------------ */
-/* Tela de login                                                        */
-/* ------------------------------------------------------------------ */
-.nexo-login-page { min-height: 100vh; width: 100%; display: flex; flex-direction: column; background: var(--ink); }
-.nexo-login-body { flex: 1; display: flex; min-height: 0; }
-.nexo-login-hero {
-  /* Este painel de marca é sempre escuro, em qualquer tema — por isso fixa
-     as cores de texto aqui em vez de herdar --text/--text-dim do tema ativo
-     (que ficariam escuras demais no modo "branco" e sumiriam neste fundo). */
-  --text: #EDF1F5;
-  --text-dim: #92A2B2;
-  flex: 1.15; position: relative; overflow: hidden; display: flex; flex-direction: column;
-  justify-content: space-between; padding: 56px 60px 44px;
-  background:
-    radial-gradient(1100px 760px at 18% 12%, rgba(62,134,191,0.32), transparent 58%),
-    radial-gradient(900px 680px at 88% 90%, rgba(52,177,114,0.16), transparent 55%),
-    linear-gradient(160deg, #0B1015 0%, #0F1822 46%, #14263A 100%);
-}
-.nexo-login-hero-blob {
-  position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; pointer-events: none;
-}
-.nexo-login-hero-blob.b1 { width: 340px; height: 340px; background: var(--accent); top: -120px; left: -100px; }
-.nexo-login-hero-blob.b2 { width: 300px; height: 300px; background: var(--success); bottom: -140px; right: -80px; opacity: 0.28; }
-.nexo-login-skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 130px; display: flex; align-items: flex-end; gap: 3px; padding: 0 0 0 0; opacity: 0.5; }
-.nexo-login-skyline span { display: block; flex: 1; background: linear-gradient(180deg, rgba(233,238,243,0.14), rgba(233,238,243,0.03)); border-top: 1px solid rgba(233,238,243,0.12); }
-.nexo-login-hero-content { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
-.nexo-login-brand { display: flex; align-items: center; gap: 14px; animation: nexoLoginFade .7s ease both; }
-.nexo-login-brand-mark {
-  width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent-dim)); box-shadow: 0 10px 26px rgba(62,134,191,0.45);
-}
-.nexo-login-brand-name { font-size: 25px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
-.nexo-login-brand-tagline { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
-.nexo-login-hero-mid { margin: auto 0; max-width: 520px; animation: nexoLoginFade .8s ease .1s both; }
-.nexo-login-quote { font-size: 36px; font-weight: 700; line-height: 1.3; letter-spacing: -0.5px; color: var(--text); }
-.nexo-login-quote span { color: var(--accent-2); }
-.nexo-login-hero-icons { display: flex; align-items: center; gap: 18px; margin-top: 26px; color: var(--text-dim); flex-wrap: wrap; }
-.nexo-login-hero-icons .item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
-.nexo-login-hero-icons svg { color: var(--accent-2); }
-.nexo-login-hero-foot { position: relative; z-index: 2; font-size: 12px; color: var(--text-dim); animation: nexoLoginFade .9s ease .15s both; }
-
-.nexo-login-panel {
-  flex: 0 0 460px; display: flex; align-items: center; justify-content: center; padding: 40px 44px; position: relative;
-  background: radial-gradient(600px 500px at 50% 40%, rgba(62,134,191,0.07), transparent 65%), var(--ink);
-}
-.nexo-login-card {
-  width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: 20px; padding: 40px 34px 32px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65);
-  animation: nexoLoginUp .6s cubic-bezier(.16,1,.3,1) .05s both;
-}
-.nexo-login-eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
-.nexo-login-card h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; margin: 0 0 6px; }
-.nexo-login-card p.sub { font-size: 13.5px; color: var(--text-dim); margin: 0 0 26px; }
-.nexo-login-fields { display: flex; flex-direction: column; gap: 16px; }
-.nexo-login-forgot-row { display: flex; justify-content: flex-end; margin-top: 12px; }
-.nexo-login-link { font-size: 12.5px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
-.nexo-login-link:hover { text-decoration: underline; }
-.nexo-login-submit { width: 100%; justify-content: center; margin-top: 22px; padding: 12px; font-size: 13.5px; letter-spacing: .6px; text-transform: uppercase; }
-.nexo-login-alert { border-radius: 9px; padding: 10px 12px; font-size: 12.5px; margin-top: 16px; line-height: 1.5; }
-.nexo-login-alert.err { background: var(--danger-soft); color: var(--danger); }
-.nexo-login-alert.ok { background: var(--success-soft); color: var(--success); }
-.nexo-login-back { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: inherit; margin-bottom: 18px; padding: 0; }
-.nexo-login-back:hover { color: var(--text); }
-.nexo-login-page-foot { text-align: center; font-size: 11px; color: var(--text-faint); padding: 16px 20px 20px; line-height: 1.7; border-top: 1px solid var(--border-soft); background: var(--ink); }
-
-@keyframes nexoLoginFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@keyframes nexoLoginUp { from { opacity: 0; transform: translateY(22px) scale(.98); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .nexo-login-card, .nexo-login-brand, .nexo-login-hero-mid, .nexo-login-hero-foot { animation: none; }
-}
+.nexo-tabs { display:flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px; }
+.nexo-tab { padding: 8px 4px; margin-right: 18px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; }
+.nexo-tab.active { color: var(--text); border-color: var(--accent); }
 
 /* Responsive */
-@media (max-width: 1180px) {
-  .nexo-topbar-search { width: 200px; }
-}
 @media (max-width: 1024px) {
+  .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .nexo-charts-grid { grid-template-columns: 1fr; }
   .nexo-detail-grid { grid-template-columns: 1fr; }
-  .nexo-login-hero { padding: 44px 40px; }
-  .nexo-login-panel { flex-basis: 400px; padding: 32px; }
-}
-@media (max-width: 860px) {
-  .nexo-login-body { flex-direction: column; }
-  .nexo-login-hero { flex: none; min-height: 240px; padding: 30px 26px; }
-  .nexo-login-hero-mid { margin: 16px 0; }
-  .nexo-login-quote { font-size: 21px; }
-  .nexo-login-hero-icons { display: none; }
-  .nexo-login-skyline { height: 70px; }
-  .nexo-login-panel { flex: 1; padding: 26px 20px 34px; }
-  .nexo-login-card { padding: 30px 24px 26px; border-radius: 16px; }
-}
-@media (max-width: 900px) {
-  .nexo-topbar-search { display: none; }
 }
 @media (max-width: 768px) {
-  .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); width: 240px !important; }
+  .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); }
   .nexo-sidebar.open { transform: translateX(0); }
-  .nexo-sidebar .nexo-brand-text, .nexo-sidebar .nexo-sidebar-group-label, .nexo-sidebar .nexo-nav-item span, .nexo-sidebar .nexo-sidebar-foot-info { display: block !important; }
-  .nexo-sidebar .nexo-nav-item { justify-content: flex-start !important; padding: 9px 12px !important; }
-  .nexo-sidebar .nexo-brand { justify-content: flex-start !important; }
-  .nexo-collapse-btn { display: none; }
-  .nexo-main, .nexo-main.sidebar-collapsed { margin-left: 0; }
+  .nexo-main { margin-left: 0; }
   .nexo-hamburger { display: inline-flex; align-items:center; justify-content:center; }
   .nexo-content { padding: 16px 14px 40px; }
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -514,13 +217,7 @@ const STYLE = `
   .nexo-field-row, .nexo-field-row3 { grid-template-columns: 1fr; }
   .nexo-overlay.open { display:block; position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 39; }
   .nexo-topbar { padding: 0 14px; }
-  .nexo-topbar-greeting { display: none; }
-  .nexo-user-chip-role { display: none; }
-  .hide-mobile { display: none !important; }
-}
-@media (max-width: 420px) {
-  .nexo-login-card { padding: 26px 18px 22px; }
-  .nexo-login-brand-name { font-size: 21px; }
+  .nexo-topbar-title span.hide-mobile { display:none; }
 }
 `;
 
@@ -537,24 +234,11 @@ function formatBRL(v) {
   const n = Number(v) || 0;
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
-const AVATAR_HUES = ["#3E86BF", "#34B172", "#DB9B3D", "#B08BF0", "#DD5F52", "#5AA7DC", "#3FB8AF"];
-function getIniciais(nome) {
-  return (nome || "").split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase() || "?";
-}
-function getAvatarColor(nome) {
-  const s = nome || "";
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
-  return AVATAR_HUES[hash % AVATAR_HUES.length];
-}
 function formatDateBR(iso) {
   if (!iso) return "—";
   const d = parseISODate(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("pt-BR");
-}
-function capitalizar(texto) {
-  return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
 }
 function maskCPF(v) {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -581,72 +265,6 @@ function maskCpfCnpj(v) {
   if (d.length <= 11) return maskCPF(d);
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
-/** Monta o link do WhatsApp Web/App a partir de um telefone (com ou sem DDI/máscara).
- * Números brasileiros sem o "55" na frente recebem o DDI automaticamente.
- * "mensagem" (opcional) já vem preenchida na conversa, pronta para revisar e enviar. */
-function linkWhatsApp(numero, mensagem) {
-  const digitos = (numero || "").replace(/\D/g, "");
-  if (!digitos) return "";
-  const comDDI = digitos.length > 11 ? digitos : `55${digitos}`;
-  const base = `https://wa.me/${comDDI}`;
-  return mensagem ? `${base}?text=${encodeURIComponent(mensagem)}` : base;
-}
-
-/** Retorna os clientes cujo aniversário (dia e mês do campo "nascimento") é hoje. */
-function aniversariantesDeHoje(clientes) {
-  const hoje = new Date();
-  const diaHoje = hoje.getDate();
-  const mesHoje = hoje.getMonth() + 1;
-  return (clientes || []).filter((c) => {
-    if (!c.nascimento) return false;
-    const [, mes, dia] = c.nascimento.split("-").map(Number);
-    return dia === diaHoje && mes === mesHoje;
-  });
-}
-
-/** Retorna os clientes com CNH cadastrada que já venceu ou vai vencer nos
- * próximos `dias` dias (padrão 30 — dá tempo do cliente providenciar a
- * renovação), do mais urgente pro menos urgente. */
-function cnhsVencendo(clientes, dias = 30) {
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  return (clientes || [])
-    .filter((c) => c.cnhValidade)
-    .map((c) => {
-      const venc = parseISODate(c.cnhValidade);
-      const diasRestantes = Math.round((venc - hoje) / 86400000);
-      return { ...c, diasRestantes };
-    })
-    .filter((c) => c.diasRestantes <= dias)
-    .sort((a, b) => a.diasRestantes - b.diasRestantes);
-}
-
-/** Monta um resumo em texto, só com contagens e totais (SEM nenhum dado
- * pessoal de cliente), para dar contexto ao assistente de IA sem que
- * informação sensível saia do sistema. */
-function montarContextoAssistente(db) {
-  const boletosComStatus = (db.boletos || []).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
-  const pagos = boletosComStatus.filter((b) => b.status === "Pago").length;
-  const emAberto = boletosComStatus.filter((b) => b.status === "Em aberto").length;
-  const aVencer = boletosComStatus.filter((b) => b.status === "A vencer").length;
-  const vencidos = boletosComStatus.filter((b) => b.status === "Vencido").length;
-  const valorEmAberto = sum(boletosComStatus.filter((b) => b.status !== "Pago").map((b) => b.valor));
-  const clientesAtivos = (db.clientes || []).filter((c) => c.status === "Ativo").length;
-  const clientesInativos = (db.clientes || []).length - clientesAtivos;
-  const veiculosAtivos = (db.veiculos || []).filter((v) => v.status === "Ativo").length;
-  const veiculosInativos = (db.veiculos || []).length - veiculosAtivos;
-  const qtdAniversariantesHoje = aniversariantesDeHoje(db.clientes).length;
-  const qtdCnhVencendo = cnhsVencendo(db.clientes, 30).length;
-
-  return [
-    `Clientes: ${(db.clientes || []).length} cadastrados (${clientesAtivos} ativos, ${clientesInativos} inativos).`,
-    `Veículos: ${(db.veiculos || []).length} cadastrados (${veiculosAtivos} ativos, ${veiculosInativos} inativos).`,
-    `Boletos: ${boletosComStatus.length} no total — ${pagos} pagos, ${emAberto} em aberto, ${aVencer} a vencer nos próximos 7 dias, ${vencidos} vencidos.`,
-    `Valor total em aberto (não pago, soma de tudo que não é "Pago"): ${formatBRL(valorEmAberto)}.`,
-    qtdAniversariantesHoje > 0 ? `${qtdAniversariantesHoje} cliente(s) fazendo aniversário hoje.` : null,
-    qtdCnhVencendo > 0 ? `${qtdCnhVencendo} CNH(s) vencida(s) ou vencendo nos próximos 30 dias.` : null,
-  ].filter(Boolean).join("\n");
-}
-
 function computeBoletoStatus(b) {
   if (b.dataPagamento) return "Pago";
   if (!b.dataVencimento) return "Em aberto";
@@ -766,33 +384,6 @@ const STATUS_META = {
   "Em aberto": { color: "var(--info)", bg: "var(--info-soft)", Icon: FileText },
 };
 
-/* Esteira de status da cotação. O valor salvo no banco não tem acento
-   (evita qualquer problema de codificação) — o rótulo exibido na tela é
-   que leva o acento. */
-const COTACAO_STATUS = ["Nova", "Em analise", "Enviada", "Negociacao", "Aprovada", "Recusada", "Convertida"];
-const COTACAO_STATUS_LABELS = {
-  Nova: "Nova", "Em analise": "Em análise", Enviada: "Enviada", Negociacao: "Negociação",
-  Aprovada: "Aprovada", Recusada: "Recusada", Convertida: "Convertida",
-};
-const COTACAO_STATUS_META = {
-  Nova: { color: "var(--text-dim)", bg: "var(--surface-3)", Icon: FileText },
-  "Em analise": { color: "var(--info)", bg: "var(--info-soft)", Icon: Search },
-  Enviada: { color: "var(--accent-2)", bg: "var(--accent-soft)", Icon: Send },
-  Negociacao: { color: "var(--warning)", bg: "var(--warning-soft)", Icon: MessageCircle },
-  Aprovada: { color: "var(--success)", bg: "var(--success-soft)", Icon: CheckCircle2 },
-  Recusada: { color: "var(--danger)", bg: "var(--danger-soft)", Icon: XCircle },
-  Convertida: { color: "#B08BF0", bg: "rgba(176,139,240,0.16)", Icon: PartyPopper },
-};
-function CotacaoStatusBadge({ status }) {
-  const meta = COTACAO_STATUS_META[status] || COTACAO_STATUS_META.Nova;
-  const Icon = meta.Icon;
-  return (
-    <span className="nexo-badge" style={{ color: meta.color, background: meta.bg }}>
-      <Icon size={12} /> {COTACAO_STATUS_LABELS[status] || status}
-    </span>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Small UI primitives                                                 */
 /* ------------------------------------------------------------------ */
@@ -848,96 +439,6 @@ function Modal({ title, onClose, children, wide, footer }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Notificações (toast) e confirmação — substituem alert()/confirm()   */
-/* Bus global simples: qualquer função do app pode chamar showToast()  */
-/* ou confirmDialog() sem precisar receber props, já que só existe um  */
-/* <ToastHost/> e um <ConfirmHost/>, montados uma vez na raiz do app.  */
-/* ------------------------------------------------------------------ */
-let _setToasts = null;
-let _toastSeq = 1;
-function showToast(message, type = "info") {
-  if (!_setToasts) return;
-  const id = _toastSeq++;
-  _setToasts((prev) => [...prev, { id, message, type }]);
-  setTimeout(() => {
-    if (_setToasts) _setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, 5500);
-}
-
-function ToastHost() {
-  const [toasts, setToasts] = useState([]);
-  useEffect(() => {
-    _setToasts = setToasts;
-    return () => { _setToasts = null; };
-  }, []);
-  if (toasts.length === 0) return null;
-  const iconFor = { success: CheckCircle2, error: XCircle, info: Info, warning: AlertTriangle };
-  return (
-    <div className="nexo-toast-wrap">
-      {toasts.map((t) => {
-        const Icon = iconFor[t.type] || Info;
-        return (
-          <div key={t.id} className={`nexo-toast ${t.type}`}>
-            <Icon size={17} />
-            <div style={{ flex: 1, whiteSpace: "pre-wrap", lineHeight: 1.45 }}>{t.message}</div>
-            <button className="nexo-toast-close" onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}>
-              <X size={14} />
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-let _setConfirmRequest = null;
-function confirmDialog(message, opts) {
-  opts = opts || {};
-  return new Promise((resolve) => {
-    if (!_setConfirmRequest) { resolve(window.confirm(message)); return; }
-    _setConfirmRequest({ message, opts, resolve });
-  });
-}
-
-function ConfirmHost() {
-  const [request, setRequest] = useState(null);
-  useEffect(() => {
-    _setConfirmRequest = setRequest;
-    return () => { _setConfirmRequest = null; };
-  }, []);
-  if (!request) return null;
-  const { message, opts, resolve } = request;
-  const finish = (result) => { setRequest(null); resolve(result); };
-  const perigoso = opts.tone !== "neutral";
-  return (
-    <div className="nexo-modal-overlay" onClick={() => finish(false)}>
-      <div className="nexo-modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
-        <div className="nexo-modal-body" style={{ textAlign: "center", paddingTop: 30, paddingBottom: 6 }}>
-          <div
-            className="nexo-confirm-icon"
-            style={{
-              margin: "0 auto 14px",
-              background: perigoso ? "var(--danger-soft)" : "var(--info-soft)",
-              color: perigoso ? "var(--danger)" : "var(--info)",
-            }}
-          >
-            {perigoso ? <AlertTriangle size={20} /> : <Info size={20} />}
-          </div>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{opts.title || "Confirmar ação"}</div>
-          <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.55 }}>{message}</div>
-        </div>
-        <div className="nexo-modal-foot" style={{ justifyContent: "center" }}>
-          <button className="nexo-btn" onClick={() => finish(false)}>Cancelar</button>
-          <button className={`nexo-btn ${perigoso ? "nexo-btn-danger" : "nexo-btn-primary"}`} onClick={() => finish(true)}>
-            {opts.confirmLabel || "Confirmar"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ImportCSVButton({ label, onArquivoSelecionado, disabled }) {
   const inputRef = React.useRef(null);
   return (
@@ -979,7 +480,6 @@ function Kpi({ icon, label, value, tone }) {
     warning: ["var(--warning)", "var(--warning-soft)"],
     danger: ["var(--danger)", "var(--danger-soft)"],
     info: ["var(--info)", "var(--info-soft)"],
-    neutral: ["var(--text-dim)", "var(--surface-2)"],
   }[tone || "accent"];
   return (
     <div className="nexo-kpi">
@@ -1512,35 +1012,16 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
   );
 }
 
-function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, defaultVeiculoId, onSave, onCancel }) {
-  const [f, setF] = useState(() => {
-    if (initial) {
-      const veiculoIdsIniciais = initial.veiculoIds && initial.veiculoIds.length
-        ? initial.veiculoIds
-        : (initial.veiculoId ? [initial.veiculoId] : []);
-      return { ...initial, veiculoIds: veiculoIdsIniciais };
-    }
-    return {
-      clienteId: defaultClienteId || "", veiculoIds: defaultVeiculoId ? [defaultVeiculoId] : [], numero: "", nossoNumero: "",
+function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeiculoId, onSave, onCancel }) {
+  const [f, setF] = useState(
+    initial || {
+      clienteId: defaultClienteId || "", veiculoId: defaultVeiculoId || "", numero: "",
       dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "", parcelas: 1,
-    };
-  });
+    }
+  );
   const [errors, setErrors] = useState({});
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const veiculosDoCliente = veiculos.filter((v) => v.clienteId === f.clienteId);
-
-  function toggleVeiculo(id) {
-    setF((prev) => {
-      const jaTem = prev.veiculoIds.includes(id);
-      return { ...prev, veiculoIds: jaTem ? prev.veiculoIds.filter((v) => v !== id) : [...prev.veiculoIds, id] };
-    });
-  }
-  function marcarTodosVeiculos() {
-    setF((prev) => ({ ...prev, veiculoIds: veiculosDoCliente.map((v) => v.id) }));
-  }
-  function limparVeiculos() {
-    setF((prev) => ({ ...prev, veiculoIds: [] }));
-  }
 
   function submit() {
     const errs = {};
@@ -1548,10 +1029,6 @@ function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, de
     if (!f.numero.trim()) errs.numero = "Informe o número do boleto.";
     if (!f.dataVencimento) errs.dataVencimento = "Informe o vencimento.";
     if (!f.valor || Number(f.valor) <= 0) errs.valor = "Informe um valor válido.";
-    const nossoNumeroTrim = (f.nossoNumero || "").trim();
-    if (nossoNumeroTrim && (boletos || []).some((b) => b.id !== initial?.id && (b.nossoNumero || "").trim() === nossoNumeroTrim)) {
-      errs.nossoNumero = "Já existe outro boleto com esse Nosso Número.";
-    }
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id, parcelas: initial ? 1 : Number(f.parcelas) || 1 });
   }
@@ -1560,50 +1037,21 @@ function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, de
     <>
       <div className="nexo-field-row">
         <Field label="Cliente *" error={errors.clienteId}>
-          <select className="nexo-select" value={f.clienteId} onChange={(e) => setF({ ...f, clienteId: e.target.value, veiculoIds: [] })}>
+          <select className="nexo-select" value={f.clienteId} onChange={(e) => setF({ ...f, clienteId: e.target.value, veiculoId: "" })}>
             <option value="">Selecione</option>
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
+        <Field label="Veículo (opcional)">
+          <select className="nexo-select" value={f.veiculoId} onChange={set("veiculoId")} disabled={!f.clienteId}>
+            <option value="">{f.clienteId ? "Nenhum (boleto direto no cliente)" : "Escolha o cliente primeiro"}</option>
+            {veiculosDoCliente.map((v) => <option key={v.id} value={v.id}>{v.marca} {v.modelo} · {v.placa}</option>)}
+          </select>
+        </Field>
       </div>
-
-      <Field label="Veículos cobertos por este boleto (opcional)">
-        {!f.clienteId ? (
-          <div className="nexo-empty-sub">Escolha o cliente primeiro.</div>
-        ) : veiculosDoCliente.length === 0 ? (
-          <div className="nexo-empty-sub">Este cliente não tem veículos cadastrados — o boleto ficará direto no cliente.</div>
-        ) : (
-          <div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-              <button type="button" className="nexo-btn nexo-btn-sm" onClick={marcarTodosVeiculos}>Marcar todos ({veiculosDoCliente.length})</button>
-              <button type="button" className="nexo-btn nexo-btn-sm" onClick={limparVeiculos}>Nenhum (boleto direto no cliente)</button>
-            </div>
-            <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8 }}>
-              {veiculosDoCliente.map((v) => (
-                <label key={v.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", fontSize: 13, cursor: "pointer" }}>
-                  <input type="checkbox" checked={f.veiculoIds.includes(v.id)} onChange={() => toggleVeiculo(v.id)} />
-                  <span className="mono">{v.placa}</span>
-                  <span style={{ color: "var(--text-dim)" }}>{v.marca} {v.modelo}</span>
-                </label>
-              ))}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 4 }}>
-              {f.veiculoIds.length === 0
-                ? "Nenhum veículo selecionado — este boleto ficará lançado direto no cliente."
-                : `${f.veiculoIds.length} veículo(s) selecionado(s) — use isso para um boleto único que cobre vários veículos do mesmo cliente.`}
-            </div>
-          </div>
-        )}
+      <Field label="Número do boleto *" error={errors.numero}>
+        <input className="nexo-input mono" value={f.numero} onChange={set("numero")} placeholder="Ex.: 000123" />
       </Field>
-
-      <div className="nexo-field-row">
-        <Field label="Número do boleto *" error={errors.numero}>
-          <input className="nexo-input mono" value={f.numero} onChange={set("numero")} placeholder="Ex.: 000123" />
-        </Field>
-        <Field label="Nosso Número (controle/conciliação)" error={errors.nossoNumero}>
-          <input className="nexo-input mono" value={f.nossoNumero || ""} onChange={set("nossoNumero")} placeholder="Ex.: 00012345678" />
-        </Field>
-      </div>
       <div className="nexo-field-row3">
         <Field label="Data de emissão">
           <input type="date" className="nexo-input" value={f.dataEmissao} onChange={set("dataEmissao")} />
@@ -1611,7 +1059,7 @@ function BoletoForm({ initial, clientes, veiculos, boletos, defaultClienteId, de
         <Field label="1º vencimento *" error={errors.dataVencimento}>
           <input type="date" className="nexo-input" value={f.dataVencimento} onChange={set("dataVencimento")} />
         </Field>
-        <Field label={f.veiculoIds.length > 1 ? "Valor total do boleto (R$) *" : "Valor de cada parcela (R$) *"} error={errors.valor}>
+        <Field label="Valor de cada parcela (R$) *" error={errors.valor}>
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valor} onChange={set("valor")} placeholder="0,00" />
         </Field>
       </div>
@@ -1643,77 +1091,15 @@ const COMISSAO_CORRETORA_PERCENTUAL = 10; // ajuste aqui se o percentual de reco
 
 function Dashboard({ db, onOpenModal }) {
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
-  const aniversariantesHoje = useMemo(() => aniversariantesDeHoje(db.clientes), [db.clientes]);
-  const cnhVencendoLista = useMemo(() => cnhsVencendo(db.clientes, 30), [db.clientes]);
 
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
   const veiculosAtivos = db.veiculos.filter((v) => v.status === "Ativo").length;
   const veiculosInativos = db.veiculos.filter((v) => v.status === "Inativo").length;
   const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
-
-  // Boletos que vencem nos próximos dias (mesma regra do KPI "Boletos a vencer"),
-  // já com o cliente encontrado e os dias restantes calculados, pra montar o
-  // lembrete de WhatsApp — do mais urgente pro menos urgente.
-  const boletosVencendoComCliente = aVencer
-    .map((b) => {
-      const cliente = db.clientes.find((c) => c.id === b.clienteId);
-      const venc = parseISODate(b.dataVencimento);
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-      const diasRestantes = Math.round((venc - hoje) / 86400000);
-      return { ...b, cliente, diasRestantes };
-    })
-    .filter((b) => b.cliente)
-    .sort((a, b) => a.diasRestantes - b.diasRestantes);
   const valorEmAberto = sum(emAberto.map((b) => b.valor));
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
-  const cotacoesRegistradas = db.cotacoes.length;
-
-  // Atividades recentes: um feed unificado a partir de eventos que já existem
-  // no banco (sem inventar dado novo) — pagamento de boleto, nova cotação,
-  // veículo cadastrado, adesão recebida e comissão paga, ordenados por data.
-  const atividadesRecentes = useMemo(() => {
-    const eventos = [];
-    db.boletos.forEach((b) => {
-      if (b.dataPagamento) {
-        const cliente = db.clientes.find((c) => c.id === b.clienteId);
-        eventos.push({ tipo: "pagamento", icon: Wallet, tone: "success", data: b.dataPagamento, titulo: "Pagamento recebido", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(b.valor)}` });
-      }
-    });
-    db.cotacoes.forEach((q) => {
-      if (q.dataCotacao) {
-        const cliente = db.clientes.find((c) => c.id === q.clienteId);
-        eventos.push({ tipo: "cotacao", icon: FileText, tone: "info", data: q.dataCotacao, titulo: "Nova cotação", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(q.valor)}` });
-      }
-    });
-    db.veiculos.forEach((v) => {
-      if (v.dataCadastro) {
-        const cliente = db.clientes.find((c) => c.id === v.clienteId);
-        eventos.push({ tipo: "veiculo", icon: Car, tone: "accent", data: v.dataCadastro, titulo: "Veículo cadastrado", sub: `${v.marca} ${v.modelo} · ${cliente?.nome || "Cliente"}` });
-      }
-    });
-    db.adesoes.forEach((a) => {
-      if (a.dataRecebimento) {
-        const cliente = db.clientes.find((c) => c.id === a.clienteId);
-        eventos.push({ tipo: "adesao", icon: FileDown, tone: "success", data: a.dataRecebimento, titulo: "Adesão recebida", sub: `${cliente?.nome || "Cliente"} · ${formatBRL(a.valorRecebido || a.valorAdesao)}` });
-      }
-    });
-    db.comissoes.forEach((cm) => {
-      if (cm.dataEfetivaPagamento) {
-        eventos.push({ tipo: "comissao", icon: CreditCard, tone: "warning", data: cm.dataEfetivaPagamento, titulo: "Comissão paga", sub: `${formatBRL(cm.valorComissao)} · ${cm.referencia || ""}` });
-      }
-    });
-    return eventos.filter((e) => e.data).sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 8);
-  }, [db.boletos, db.cotacoes, db.veiculos, db.adesoes, db.comissoes, db.clientes]);
-
-  const relativeDate = (iso) => {
-    const dias = Math.round((new Date().setHours(0, 0, 0, 0) - parseISODate(iso)) / 86400000);
-    if (dias <= 0) return "hoje";
-    if (dias === 1) return "ontem";
-    if (dias < 30) return `há ${dias} dias`;
-    return formatDateBR(iso);
-  };
 
   // Comissão recorrente da corretora: 10% sobre os boletos que vencem
   // (serão baixados) NO MÊS ATUAL — não sobre o total acumulado de todos
@@ -1770,157 +1156,6 @@ function Dashboard({ db, onOpenModal }) {
         </div>
       </div>
 
-      {aniversariantesHoje.length > 0 && (
-        <div
-          className="nexo-card"
-          style={{ marginBottom: 20, borderColor: "var(--warning)", background: "linear-gradient(135deg, rgba(219,155,61,0.10), var(--surface))" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <PartyPopper size={20} color="var(--warning)" />
-            <div style={{ fontWeight: 700, fontSize: 15 }}>
-              {aniversariantesHoje.length === 1 ? "Aniversariante de hoje 🎉" : `Aniversariantes de hoje 🎉 (${aniversariantesHoje.length})`}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {aniversariantesHoje.map((c) => {
-              const idade = c.nascimento ? new Date().getFullYear() - Number(c.nascimento.slice(0, 4)) : null;
-              const contato = c.whatsapp || c.telefone;
-              const mensagem = `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe da Corretora Seu Seguro deseja a você um feliz aniversário e muitas felicidades!`;
-              return (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.nome}</div>
-                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>{idade ? `Fazendo ${idade} anos hoje` : "Aniversário hoje"}</div>
-                  </div>
-                  {contato ? (
-                    <a
-                      className="nexo-btn nexo-btn-sm"
-                      style={{ background: "var(--success)", borderColor: "var(--success)", color: "#fff" }}
-                      href={linkWhatsApp(contato, mensagem)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle size={13} /> Mandar parabéns
-                    </a>
-                  ) : (
-                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {boletosVencendoComCliente.length > 0 && (
-        <div
-          className="nexo-card"
-          style={{ marginBottom: 20, borderColor: "var(--info)", background: "linear-gradient(135deg, rgba(122,143,176,0.12), var(--surface))" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <Bell size={20} color="var(--info)" />
-            <div style={{ fontWeight: 700, fontSize: 15 }}>
-              {boletosVencendoComCliente.length === 1
-                ? "1 boleto vence nos próximos dias 📅"
-                : `${boletosVencendoComCliente.length} boletos vencem nos próximos dias 📅`}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {boletosVencendoComCliente.slice(0, 6).map((b) => {
-              const contato = b.cliente.whatsapp || b.cliente.telefone;
-              const quando = b.diasRestantes <= 0 ? "vence hoje" : b.diasRestantes === 1 ? "vence amanhã" : `vence em ${b.diasRestantes} dias`;
-              const mensagem = `Olá, ${b.cliente.nome.split(" ")[0]}! Passando para lembrar que seu boleto de ${formatBRL(b.valor)} vence em ${formatDateBR(b.dataVencimento)}. Qualquer dúvida, estou à disposição!`;
-              return (
-                <div key={b.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{b.cliente.nome}</div>
-                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                      {formatBRL(b.valor)} · {quando} ({formatDateBR(b.dataVencimento)})
-                    </div>
-                  </div>
-                  {contato ? (
-                    <a
-                      className="nexo-btn nexo-btn-sm"
-                      style={{ background: "var(--info)", borderColor: "var(--info)", color: "#fff" }}
-                      href={linkWhatsApp(contato, mensagem)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle size={13} /> Lembrar
-                    </a>
-                  ) : (
-                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
-                  )}
-                </div>
-              );
-            })}
-            {boletosVencendoComCliente.length > 6 && (
-              <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                +{boletosVencendoComCliente.length - 6} outro(s) boleto(s) a vencer — veja em Financeiro.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {cnhVencendoLista.length > 0 && (
-        <div
-          className="nexo-card"
-          style={{ marginBottom: 20, borderColor: "var(--danger)", background: "linear-gradient(135deg, rgba(221,95,82,0.10), var(--surface))" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <AlertTriangle size={20} color="var(--danger)" />
-            <div style={{ fontWeight: 700, fontSize: 15 }}>
-              {cnhVencendoLista.length === 1
-                ? "1 CNH vencida ou vencendo"
-                : `${cnhVencendoLista.length} CNHs vencidas ou vencendo`}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {cnhVencendoLista.slice(0, 6).map((c) => {
-              const contato = c.whatsapp || c.telefone;
-              const quando =
-                c.diasRestantes < 0
-                  ? `venceu há ${Math.abs(c.diasRestantes)} dia(s)`
-                  : c.diasRestantes === 0
-                  ? "vence hoje"
-                  : c.diasRestantes === 1
-                  ? "vence amanhã"
-                  : `vence em ${c.diasRestantes} dias`;
-              const mensagem = `Olá, ${c.nome.split(" ")[0]}! Passando para lembrar que sua CNH ${c.diasRestantes < 0 ? "venceu" : "vence"} em ${formatDateBR(c.cnhValidade)}. Se precisar de ajuda para renovar, é só chamar!`;
-              return (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.nome}</div>
-                    <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                      CNH {quando} ({formatDateBR(c.cnhValidade)})
-                    </div>
-                  </div>
-                  {contato ? (
-                    <a
-                      className="nexo-btn nexo-btn-sm"
-                      style={{ background: "var(--danger)", borderColor: "var(--danger)", color: "#fff" }}
-                      href={linkWhatsApp(contato, mensagem)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle size={13} /> Avisar
-                    </a>
-                  ) : (
-                    <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
-                  )}
-                </div>
-              );
-            })}
-            {cnhVencendoLista.length > 6 && (
-              <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                +{cnhVencendoLista.length - 6} outro(s) — veja em Clientes.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="nexo-kpi-grid">
         <Kpi icon={Users} label="Clientes ativos" value={clientesAtivos} tone="accent" />
         <Kpi icon={Car} label="Veículos ativos" value={veiculosAtivos} tone="success" />
@@ -1930,8 +1165,6 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={Wallet} label="Cotações registradas" value={cotacoesRegistradas} tone="info" />
-        <Kpi icon={TrendingUp} label="Produção do mês" value={formatBRL(valorBoletosDoMesAtual)} tone="success" />
         <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`} value={formatBRL(comissaoCorretora)} tone="accent" />
       </div>
 
@@ -2020,44 +1253,19 @@ function Dashboard({ db, onOpenModal }) {
         </div>
       </div>
 
-      <div className="nexo-charts-grid">
-        <div className="nexo-card">
-          <div className="nexo-chart-title">Evolução mensal dos recebimentos</div>
-          <div className="nexo-chart-sub">Total pago por mês, últimos 6 meses</div>
-          <div style={{ height: 240 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={evolucao} margin={{ left: 0, right: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
-                <XAxis dataKey="label" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
-                <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} formatter={(v) => formatBRL(v)} />
-                <Line type="monotone" dataKey="total" stroke="#3E86BF" strokeWidth={2.5} dot={{ r: 3, fill: "#3E86BF" }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="nexo-card">
-          <div className="nexo-chart-title">Atividades recentes</div>
-          <div className="nexo-chart-sub">Últimos eventos registrados no sistema</div>
-          {atividadesRecentes.length === 0 ? (
-            <EmptyState icon={Clock} title="Nenhuma atividade ainda" sub="Assim que houver pagamentos, cotações ou cadastros, eles aparecem aqui." />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 260, overflowY: "auto" }}>
-              {atividadesRecentes.map((a, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 2px", borderBottom: i < atividadesRecentes.length - 1 ? "1px solid var(--border-soft)" : "none" }}>
-                  <div className="nexo-kpi-icon" style={{ width: 28, height: 28, background: `var(--${a.tone}-soft)`, flexShrink: 0 }}>
-                    <a.icon size={14} color={`var(--${a.tone})`} />
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>{a.titulo}</div>
-                    <div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{a.sub}</div>
-                  </div>
-                  <div className="nexo-cell-muted" style={{ fontSize: 11, whiteSpace: "nowrap" }}>{relativeDate(a.data)}</div>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="nexo-card">
+        <div className="nexo-chart-title">Evolução mensal dos recebimentos</div>
+        <div className="nexo-chart-sub">Total pago por mês, últimos 6 meses</div>
+        <div style={{ height: 240 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={evolucao} margin={{ left: 0, right: 16 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
+              <XAxis dataKey="label" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
+              <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} formatter={(v) => formatBRL(v)} />
+              <Line type="monotone" dataKey="total" stroke="#3E86BF" strokeWidth={2.5} dot={{ r: 3, fill: "#3E86BF" }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
@@ -2068,25 +1276,12 @@ function Dashboard({ db, onOpenModal }) {
 /* Clientes                                                             */
 /* ------------------------------------------------------------------ */
 
-function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImportarClientes, onImportarClientesEVeiculos }) {
+function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImportarClientes }) {
   const [query, setQuery] = useState("");
-  const [statusFiltro, setStatusFiltro] = useState("Todos");
   const [importando, setImportando] = useState(false);
-  const [importandoCombo, setImportandoCombo] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
   const fileInputRef = useRef(null);
-  const fileInputComboRef = useRef(null);
-
-  const ultimaInteracao = (clienteId) => {
-    const datas = [
-      ...db.boletos.filter((b) => b.clienteId === clienteId).flatMap((b) => [b.dataPagamento, b.dataVencimento]),
-      ...db.cotacoes.filter((q) => q.clienteId === clienteId).map((q) => q.dataCotacao),
-    ].filter(Boolean).sort();
-    return datas.length ? datas[datas.length - 1] : null;
-  };
 
   const filtered = db.clientes.filter((c) => {
-    if (statusFiltro !== "Todos" && c.status !== statusFiltro) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     const nomeMatch = c.nome.toLowerCase().includes(q);
@@ -2118,216 +1313,102 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
         }))
         .filter((c) => c.nome && c.cpf);
       if (clientesNovos.length === 0) {
-        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.", "warning");
+        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
       } else {
         await onImportarClientes(clientesNovos);
       }
     } catch (err) {
-      showToast("Não foi possível ler o arquivo: " + err.message, "error");
+      alert("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportando(false);
-    }
-  }
-
-  async function handleArquivoClientesVeiculos(e) {
-    const arquivo = e.target.files?.[0];
-    e.target.value = "";
-    if (!arquivo) return;
-    setImportandoCombo(true);
-    try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
-      const registros = linhas
-        .map((linha) => ({
-          nome: valorDaColuna(cabecalhos, linha, ["nome", "nomecompleto"]),
-          cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
-          nascimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["nascimento", "datadenascimento"])),
-          sexo: valorDaColuna(cabecalhos, linha, ["sexo"]),
-          telefone: valorDaColuna(cabecalhos, linha, ["telefone"]),
-          whatsapp: valorDaColuna(cabecalhos, linha, ["whatsapp"]),
-          email: valorDaColuna(cabecalhos, linha, ["email"]),
-          cep: valorDaColuna(cabecalhos, linha, ["cep"]),
-          endereco: valorDaColuna(cabecalhos, linha, ["endereco"]),
-          status: valorDaColuna(cabecalhos, linha, ["status"]) || "Ativo",
-          placa: valorDaColuna(cabecalhos, linha, ["placa"]),
-          marca: valorDaColuna(cabecalhos, linha, ["marca"]),
-          modelo: valorDaColuna(cabecalhos, linha, ["modelo"]),
-          ano: valorDaColuna(cabecalhos, linha, ["ano", "anomodelo"]),
-          anoFabricacao: valorDaColuna(cabecalhos, linha, ["anofabricacao", "anodefabricacao"]),
-          tipoVeiculo: valorDaColuna(cabecalhos, linha, ["tipodeveiculo", "tipoveiculo", "tipo"]),
-          renavam: valorDaColuna(cabecalhos, linha, ["renavam"]),
-          chassi: valorDaColuna(cabecalhos, linha, ["chassi"]),
-          cor: valorDaColuna(cabecalhos, linha, ["cor"]),
-        }))
-        .filter((r) => r.nome && r.cpf);
-      if (registros.length === 0) {
-        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.", "warning");
-      } else {
-        await onImportarClientesEVeiculos(registros);
-      }
-    } catch (err) {
-      showToast("Não foi possível ler o arquivo: " + err.message, "error");
-    } finally {
-      setImportandoCombo(false);
     }
   }
 
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
-          <div className="nexo-section-sub">Sua carteira de clientes e o histórico de cada um</div>
-        </div>
-        <div className="nexo-section-actions">
-          <div className="nexo-dropdown">
-            <button className="nexo-btn" onClick={() => setMenuAberto((v) => !v)}>
-              <SlidersHorizontal size={13} /> Importar / Exportar <ChevronDown size={13} />
-            </button>
-            {menuAberto && (
-              <div className="nexo-dropdown-menu" onMouseLeave={() => setMenuAberto(false)}>
-                <button
-                  className="nexo-dropdown-item"
-                  onClick={() => {
-                    exportarCSV(
-                      "modelo-clientes.csv",
-                      [
-                        { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                        { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
-                        { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
-                        { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
-                        { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
-                      ],
-                      [{}]
-                    );
-                    setMenuAberto(false);
-                  }}
-                >
-                  <Download size={14} /> Baixar modelo (clientes)
-                </button>
-                <button className="nexo-dropdown-item" disabled={importando} onClick={() => { fileInputRef.current?.click(); setMenuAberto(false); }}>
-                  <Upload size={14} /> {importando ? "Importando…" : "Importar CSV de clientes"}
-                </button>
-                <div className="nexo-dropdown-sep" />
-                <button
-                  className="nexo-dropdown-item"
-                  onClick={() => {
-                    exportarCSV(
-                      "modelo-clientes-e-veiculos.csv",
-                      [
-                        { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                        { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
-                        { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
-                        { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
-                        { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
-                        { titulo: "Placa", valor: () => "" }, { titulo: "Marca", valor: () => "" },
-                        { titulo: "Modelo", valor: () => "" }, { titulo: "Ano", valor: () => "" },
-                        { titulo: "Ano Fabricação", valor: () => "" }, { titulo: "Tipo de veículo", valor: () => "" },
-                        { titulo: "Renavam", valor: () => "" }, { titulo: "Chassi", valor: () => "" }, { titulo: "Cor", valor: () => "" },
-                      ],
-                      [{}]
-                    );
-                    setMenuAberto(false);
-                  }}
-                  title="Cada linha é um veículo. Repita o CPF do mesmo cliente em várias linhas para cadastrar mais de um veículo para ele."
-                >
-                  <Download size={14} /> Baixar modelo (+ veículos)
-                </button>
-                <button className="nexo-dropdown-item" disabled={importandoCombo} onClick={() => { fileInputComboRef.current?.click(); setMenuAberto(false); }}>
-                  <Upload size={14} /> {importandoCombo ? "Importando…" : "Importar clientes + veículos"}
-                </button>
-                <div className="nexo-dropdown-sep" />
-                <button
-                  className="nexo-dropdown-item"
-                  onClick={() => {
-                    exportarCSV(
-                      "clientes.csv",
-                      [
-                        { titulo: "Nome", valor: (c) => c.nome },
-                        { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
-                        { titulo: "Nascimento", valor: (c) => c.nascimento },
-                        { titulo: "Sexo", valor: (c) => c.sexo },
-                        { titulo: "Telefone", valor: (c) => c.telefone },
-                        { titulo: "WhatsApp", valor: (c) => c.whatsapp },
-                        { titulo: "E-mail", valor: (c) => c.email },
-                        { titulo: "Endereço", valor: (c) => c.endereco },
-                        { titulo: "Status", valor: (c) => c.status },
-                      ],
-                      filtered
-                    );
-                    setMenuAberto(false);
-                  }}
-                >
-                  <FileText size={14} /> Exportar CSV
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="nexo-section-title">Clientes<span className="nexo-section-count">{db.clientes.length} cadastrados</span></div>
+        <div className="nexo-topbar-actions">
+          <button
+            className="nexo-btn"
+            onClick={() =>
+              exportarCSV(
+                "modelo-clientes.csv",
+                [
+                  { titulo: "Nome", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
+                  { titulo: "Nascimento", valor: () => "" }, { titulo: "Sexo", valor: () => "" },
+                  { titulo: "Telefone", valor: () => "" }, { titulo: "WhatsApp", valor: () => "" },
+                  { titulo: "E-mail", valor: () => "" }, { titulo: "CEP", valor: () => "" },
+                  { titulo: "Endereço", valor: () => "" }, { titulo: "Status", valor: () => "" },
+                ],
+                [{}]
+              )
+            }
+          >
+            Baixar modelo
+          </button>
+          <button className="nexo-btn" disabled={importando} onClick={() => fileInputRef.current?.click()}>
+            {importando ? "Importando…" : "Importar CSV"}
+          </button>
           <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
-          <input ref={fileInputComboRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoClientesVeiculos} />
+          <button
+            className="nexo-btn"
+            onClick={() =>
+              exportarCSV(
+                "clientes.csv",
+                [
+                  { titulo: "Nome", valor: (c) => c.nome },
+                  { titulo: "CPF/CNPJ", valor: (c) => c.cpf },
+                  { titulo: "Nascimento", valor: (c) => c.nascimento },
+                  { titulo: "Sexo", valor: (c) => c.sexo },
+                  { titulo: "Telefone", valor: (c) => c.telefone },
+                  { titulo: "WhatsApp", valor: (c) => c.whatsapp },
+                  { titulo: "E-mail", valor: (c) => c.email },
+                  { titulo: "Endereço", valor: (c) => c.endereco },
+                  { titulo: "Status", valor: (c) => c.status },
+                ],
+                filtered
+              )
+            }
+          >
+            Exportar CSV
+          </button>
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <div className="nexo-searchbar">
-          <Search size={15} color="var(--text-faint)" />
-          <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-        <select className="nexo-select" style={{ width: 150 }} value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
-          <option value="Todos">Todos os status</option>
-          <option value="Ativo">Ativos</option>
-          <option value="Inativo">Inativos</option>
-        </select>
+      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
+        <Search size={15} color="var(--text-faint)" />
+        <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       {db.clientes.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum cliente cadastrado" sub="Clique em “Novo cliente” para começar." /></div>
       ) : filtered.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro nome, CPF ou placa, ou ajuste o filtro de status." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro nome, CPF ou placa." /></div>
       ) : (
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Veículos</th><th>Última interação</th><th>Status</th><th></th>
+                  <th>Nome</th><th>CPF</th><th>Contato</th><th>Veículos</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => {
                   const nVeiculos = db.veiculos.filter((v) => v.clienteId === c.id).length;
-                  const interacao = ultimaInteracao(c.id);
                   return (
                     <tr key={c.id} className="nexo-row-link" onClick={() => onOpenDetail(c.id)}>
-                      <td>
-                        <div className="nexo-name-cell">
-                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(c.nome) }}>{getIniciais(c.nome)}</div>
-                          <span style={{ fontWeight: 600 }}>{c.nome}</span>
-                        </div>
-                      </td>
+                      <td style={{ fontWeight: 600 }}>{c.nome}</td>
                       <td className="mono nexo-cell-muted">{c.cpf || "—"}</td>
                       <td className="nexo-cell-muted">{c.telefone || c.whatsapp || "—"}</td>
-                      <td className="nexo-cell-muted">{c.email || "—"}</td>
                       <td className="nexo-cell-muted">{nVeiculos}</td>
-                      <td className="nexo-cell-muted">{interacao ? formatDateBR(interacao) : "—"}</td>
                       <td><AtivoInativoBadge ativo={c.status} /></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
-                          {(c.whatsapp || c.telefone) && (
-                            <a
-                              className="nexo-icon-btn"
-                              style={{ color: "var(--success)" }}
-                              href={linkWhatsApp(c.whatsapp || c.telefone)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Conversar no WhatsApp"
-                            >
-                              <MessageCircle size={13} />
-                            </a>
-                          )}
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cliente", c)}><Pencil size={13} /></button>
-                          <button className="nexo-icon-btn danger" onClick={() => onDeleteCliente(c.id)}><Trash2 size={13} /></button>
+                          <button className="nexo-icon-btn" onClick={() => onDeleteCliente(c.id)}><Trash2 size={13} /></button>
                           <button className="nexo-icon-btn" onClick={() => onOpenDetail(c.id)}><Eye size={13} /></button>
                         </div>
                       </td>
@@ -2336,9 +1417,6 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                 })}
               </tbody>
             </table>
-          </div>
-          <div className="nexo-table-foot">
-            <span className="nexo-cell-muted">{filtered.length} de {db.clientes.length} cliente(s)</span>
           </div>
         </div>
       )}
@@ -2352,15 +1430,9 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
 
 function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
   const [query, setQuery] = useState("");
-  const [statusFiltro, setStatusFiltro] = useState("Todos");
   const getCliente = (id) => db.clientes.find((c) => c.id === id);
 
-  const ativos = db.veiculos.filter((v) => v.status === "Ativo");
-  const valorMensalTotal = sum(db.veiculos.map((v) => v.valorMensal));
-  const valorFipeTotal = sum(db.veiculos.map((v) => v.valorFipe));
-
   const filtered = db.veiculos.filter((v) => {
-    if (statusFiltro !== "Todos" && v.status !== statusFiltro) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     const cliente = getCliente(v.clienteId);
@@ -2375,13 +1447,10 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
-          <div className="nexo-section-sub">Frota segurada, valores mensais e situação por veículo</div>
-        </div>
-        <div className="nexo-section-actions">
+        <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
+        <div className="nexo-topbar-actions">
           <button
-            className="nexo-btn nexo-btn-sm"
+            className="nexo-btn"
             onClick={() =>
               exportarCSV(
                 "veiculos.csv",
@@ -2404,33 +1473,15 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
               )
             }
           >
-            <Download size={13} /> Exportar CSV
+            Exportar CSV
           </button>
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
         </div>
       </div>
 
-      <div className="nexo-kpi-grid">
-        <Kpi icon={Car} label="Veículos cadastrados" value={db.veiculos.length} tone="info" />
-        <Kpi icon={CheckCircle2} label="Veículos ativos" value={ativos.length} tone="success" />
-        <Kpi icon={Wallet} label="Valor mensal total" value={formatBRL(valorMensalTotal)} tone="accent" />
-        <Kpi icon={TrendingUp} label="Valor Fipe total" value={formatBRL(valorFipeTotal)} tone="neutral" />
-      </div>
-
-      <div className="nexo-filters">
-        <div className="nexo-filter-field" style={{ flex: "1 1 260px" }}>
-          <label>Buscar</label>
-          <div className="nexo-searchbar">
-            <Search size={14} />
-            <input placeholder="Placa, modelo, marca ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
-        </div>
-        <div className="nexo-filter-field">
-          <label>Status</label>
-          <select className="nexo-select" value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
-            <option>Todos</option><option>Ativo</option><option>Inativo</option>
-          </select>
-        </div>
+      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
+        <Search size={15} color="var(--text-faint)" />
+        <input placeholder="Pesquisar por placa, modelo ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       {db.veiculos.length === 0 ? (
@@ -2451,12 +1502,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
                   const cliente = getCliente(v.clienteId);
                   return (
                     <tr key={v.id} className="nexo-row-link" onClick={() => cliente && onOpenDetail(cliente.id)}>
-                      <td>
-                        <div className="nexo-name-cell">
-                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(cliente ? cliente.nome : "—") }}>{getIniciais(cliente ? cliente.nome : "—")}</div>
-                          <span style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</span>
-                        </div>
-                      </td>
+                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
                       <td>{v.marca} {v.modelo}</td>
                       <td className="mono nexo-cell-muted">{v.placa}</td>
                       <td className="nexo-cell-muted">{v.anoFabricacao || v.ano ? `${v.anoFabricacao || "—"}/${v.ano || "—"}` : "—"}</td>
@@ -2475,10 +1521,6 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
               </tbody>
             </table>
           </div>
-          <div className="nexo-table-foot">
-            <span>{filtered.length} de {db.veiculos.length} veículos</span>
-            <span className="mono">Mensal no filtro: {formatBRL(sum(filtered.map((v) => v.valorMensal)))}</span>
-          </div>
         </div>
       )}
     </div>
@@ -2489,7 +1531,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
 /* Financeiro                                                           */
 /* ------------------------------------------------------------------ */
 
-function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImportarBoletos, onImportarBaixas }) {
+function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
   const [fCliente, setFCliente] = useState("");
   const [fCpf, setFCpf] = useState("");
   const [fPlaca, setFPlaca] = useState("");
@@ -2497,88 +1539,21 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
   const [fDe, setFDe] = useState("");
   const [fAte, setFAte] = useState("");
   const [fVencimento, setFVencimento] = useState("Todos");
-  const [importandoCadastro, setImportandoCadastro] = useState(false);
-  const [importandoBaixa, setImportandoBaixa] = useState(false);
-  const inputCadastroRef = useRef(null);
-  const inputBaixaRef = useRef(null);
 
-  async function handleArquivoCadastro(e) {
-    const arquivo = e.target.files?.[0];
-    e.target.value = "";
-    if (!arquivo) return;
-    setImportandoCadastro(true);
-    try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
-      const registros = linhas
-        .map((linha) => ({
-          nome: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
-          cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
-          // Aceita mais de uma placa na mesma linha (separadas por , ; ou /) para um boleto único que
-          // cobre vários veículos do mesmo cliente (ex.: cliente com frota, boleto único mensal).
-          placa: valorDaColuna(cabecalhos, linha, ["placas", "placa"]),
-          nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nnumero", "nosso"]),
-          valor: paraNumero(valorDaColuna(cabecalhos, linha, ["valor", "valorboleto"])),
-          dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datavencimento", "datadevencimento"])),
-        }))
-        .filter((r) => (r.nome || r.cpf) && r.valor);
-      if (registros.length === 0) {
-        showToast("Nenhuma linha válida encontrada. Confira as colunas Nome do Cliente/CPF-CNPJ, Placa, Nosso Número e Valor.", "warning");
-      } else {
-        await onImportarBoletos(registros);
-      }
-    } catch (err) {
-      showToast("Não foi possível ler o arquivo: " + err.message, "error");
-    } finally {
-      setImportandoCadastro(false);
-    }
-  }
-
-  async function handleArquivoBaixa(e) {
-    const arquivo = e.target.files?.[0];
-    e.target.value = "";
-    if (!arquivo) return;
-    setImportandoBaixa(true);
-    try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
-      const registros = linhas
-        .map((linha) => ({
-          nome: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
-          nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nnumero", "nosso"]),
-          situacao: valorDaColuna(cabecalhos, linha, ["situacao", "status"]),
-          dataPagamento: paraDataISO(valorDaColuna(cabecalhos, linha, ["datadopagamento", "datapagamento", "datapgto"])),
-        }))
-        .filter((r) => r.nossoNumero);
-      if (registros.length === 0) {
-        showToast("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.", "warning");
-      } else {
-        await onImportarBaixas(registros);
-      }
-    } catch (err) {
-      showToast("Não foi possível ler o arquivo: " + err.message, "error");
-    } finally {
-      setImportandoBaixa(false);
-    }
-  }
-
-  const [menuImportExport, setMenuImportExport] = useState(false);
   const boletosComStatus = db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) }));
 
   const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
-  const vencidos = boletosComStatus.filter((b) => b.status === "Vencido");
   const valorEmAberto = sum(emAberto.map((b) => b.valor));
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
   const filtered = boletosComStatus.filter((b) => {
     const cliente = db.clientes.find((c) => c.id === b.clienteId);
-    const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
-    const veiculosDoBoleto = idsVeiculosDoBoleto.map((id) => db.veiculos.find((v) => v.id === id)).filter(Boolean);
+    const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
     if (fCliente && !(cliente && cliente.nome.toLowerCase().includes(fCliente.toLowerCase()))) return false;
     if (fCpf && !(cliente && cliente.cpf.replace(/\D/g, "").includes(fCpf.replace(/\D/g, "")))) return false;
-    if (fPlaca && !veiculosDoBoleto.some((v) => v.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
+    if (fPlaca && !(veiculo && veiculo.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
     if (fStatus !== "Todos" && b.status !== fStatus) return false;
     if (fDe && b.dataVencimento && b.dataVencimento < fDe) return false;
     if (fAte && b.dataVencimento && b.dataVencimento > fAte) return false;
@@ -2601,63 +1576,13 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
-          <div className="nexo-section-sub">Carteira de boletos, vencimentos e baixas de pagamento</div>
-        </div>
-        <div className="nexo-section-actions">
-          <div className="nexo-dropdown">
-            <button className="nexo-btn nexo-btn-sm" onClick={() => setMenuImportExport((v) => !v)}>
-              <SlidersHorizontal size={13} /> Importar <ChevronDown size={13} />
-            </button>
-            {menuImportExport && (
-              <div className="nexo-dropdown-menu" onMouseLeave={() => setMenuImportExport(false)}>
-                <button
-                  className="nexo-dropdown-item"
-                  onClick={() => {
-                    exportarCSV("modelo-cadastro-boletos.csv", [
-                      { titulo: "Nome do Cliente", valor: () => "" }, { titulo: "CPF/CNPJ", valor: () => "" },
-                      { titulo: "Placa(s) - separe com ; se for boleto único de vários veículos", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
-                      { titulo: "Valor", valor: () => "" }, { titulo: "Vencimento", valor: () => "" },
-                    ], [{}]);
-                    setMenuImportExport(false);
-                  }}
-                >
-                  <Download size={14} /> Modelo (cadastro)
-                </button>
-                <button className="nexo-dropdown-item" disabled={importandoCadastro} onClick={() => { inputCadastroRef.current?.click(); setMenuImportExport(false); }}>
-                  <Upload size={14} /> {importandoCadastro ? "Importando…" : "Importar boletos"}
-                </button>
-                <div className="nexo-dropdown-sep" />
-                <button
-                  className="nexo-dropdown-item"
-                  onClick={() => {
-                    exportarCSV("modelo-relatorio-baixa.csv", [
-                      { titulo: "Nome do cliente", valor: () => "" }, { titulo: "Nosso Número", valor: () => "" },
-                      { titulo: "Situação", valor: () => "" }, { titulo: "Data do Pagamento", valor: () => "" },
-                      { titulo: "Voluntário", valor: () => "" },
-                    ], [{}]);
-                    setMenuImportExport(false);
-                  }}
-                >
-                  <Download size={14} /> Modelo (baixa)
-                </button>
-                <button className="nexo-dropdown-item" disabled={importandoBaixa} onClick={() => { inputBaixaRef.current?.click(); setMenuImportExport(false); }}>
-                  <Upload size={14} /> {importandoBaixa ? "Importando…" : "Importar baixa (relatório)"}
-                </button>
-              </div>
-            )}
-          </div>
-          <input ref={inputCadastroRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoCadastro} />
-          <input ref={inputBaixaRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoBaixa} />
-          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
-        </div>
+        <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
       </div>
 
-      <div className="nexo-kpi-grid">
+      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <Kpi icon={FileText} label="Boletos em aberto" value={emAberto.length} tone="info" />
         <Kpi icon={Clock} label="Boletos a vencer" value={aVencer.length} tone="warning" />
-        <Kpi icon={AlertTriangle} label="Boletos vencidos" value={vencidos.length} tone="danger" />
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
       </div>
@@ -2711,33 +1636,17 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
-                <tr><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Nosso Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
+                <tr><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
                 {filtered.map((b) => {
                   const cliente = db.clientes.find((c) => c.id === b.clienteId);
-                  const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
-                  const veiculosDoBoleto = idsVeiculosDoBoleto.map((id) => db.veiculos.find((v) => v.id === id)).filter(Boolean);
+                  const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
                   return (
                     <tr key={b.id}>
-                      <td>
-                        <div className="nexo-name-cell">
-                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(cliente ? cliente.nome : "—") }}>{getIniciais(cliente ? cliente.nome : "—")}</div>
-                          <span style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</span>
-                        </div>
-                      </td>
-                      <td className="nexo-cell-muted">
-                        {veiculosDoBoleto.length === 0 ? "—"
-                          : veiculosDoBoleto.length === 1 ? `${veiculosDoBoleto[0].marca} ${veiculosDoBoleto[0].modelo}`
-                          : `${veiculosDoBoleto.length} veículos`}
-                      </td>
-                      <td className="mono nexo-cell-muted" title={veiculosDoBoleto.length > 1 ? veiculosDoBoleto.map((v) => v.placa).join(", ") : undefined}>
-                        {veiculosDoBoleto.length === 0 ? "—"
-                          : veiculosDoBoleto.length === 1 ? veiculosDoBoleto[0].placa
-                          : veiculosDoBoleto.length <= 3 ? veiculosDoBoleto.map((v) => v.placa).join(", ")
-                          : `${veiculosDoBoleto.slice(0, 2).map((v) => v.placa).join(", ")} +${veiculosDoBoleto.length - 2}`}
-                      </td>
-                      <td className="mono nexo-cell-muted">{b.nossoNumero || "—"}</td>
+                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
+                      <td className="nexo-cell-muted">{veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "—"}</td>
+                      <td className="mono nexo-cell-muted">{veiculo ? veiculo.placa : "—"}</td>
                       <td>{formatDateBR(b.dataVencimento)}</td>
                       <td className="mono">{formatBRL(b.valor)}</td>
                       <td><StatusBadge status={b.status} /></td>
@@ -2756,10 +1665,6 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
               </tbody>
             </table>
           </div>
-          <div className="nexo-table-foot">
-            <span>{filtered.length} de {db.boletos.length} boletos</span>
-            <span className="mono">Total no filtro: {formatBRL(sum(filtered.map((b) => b.valor)))}</span>
-          </div>
         </div>
       )}
     </div>
@@ -2776,53 +1681,15 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
 
   const veiculosDoCliente = db.veiculos.filter((v) => v.clienteId === clienteId);
   const veiculoIds = veiculosDoCliente.map((v) => v.id);
-  const boletosDoCliente = db.boletos
-    .filter((b) => b.clienteId === clienteId || veiculoIds.includes(b.veiculoId) || (b.veiculoIds || []).some((vid) => veiculoIds.includes(vid)))
-    .map((b) => ({ ...b, status: computeBoletoStatus(b) }));
+  const boletosDoCliente = db.boletos.filter((b) => b.clienteId === clienteId || veiculoIds.includes(b.veiculoId)).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
 
   const pagos = boletosDoCliente.filter((b) => b.status === "Pago");
   const emAberto = boletosDoCliente.filter((b) => b.status !== "Pago");
   const aVencer = boletosDoCliente.filter((b) => b.status === "A vencer");
   const totalEmAberto = sum(emAberto.map((b) => b.valor));
   const totalRecebido = sum(pagos.map((b) => b.valor));
-  const cotacoesDoCliente = db.cotacoes.filter((q) => q.clienteId === clienteId);
-  const comissoesDoCliente = db.comissoes.filter((cm) => cm.clienteId === clienteId);
 
-  // Total do mês atual: soma os boletos do cliente (de todos os veículos)
-  // que vencem no mesmo mês — útil pra ver de uma vez quanto o cliente
-  // paga no mês somando as parcelas de cada veículo.
-  const agora = new Date();
-  const mesAtualKey = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
-  const boletosMesAtual = boletosDoCliente.filter((b) => (b.dataVencimento || "").slice(0, 7) === mesAtualKey);
-  const totalMesAtual = sum(boletosMesAtual.map((b) => b.valor));
-  const nomeMesAtual = capitalizar(agora.toLocaleDateString("pt-BR", { month: "long" }));
-
-  // Mesmo total, mas quebrado por mês de vencimento — cobre os outros
-  // meses além do atual (ex.: um veículo que vence em outubro).
-  const totaisPorMes = {};
-  boletosDoCliente.forEach((b) => {
-    if (!b.dataVencimento) return;
-    const key = b.dataVencimento.slice(0, 7);
-    if (!totaisPorMes[key]) totaisPorMes[key] = { key, total: 0, qtd: 0 };
-    totaisPorMes[key].total += Number(b.valor) || 0;
-    totaisPorMes[key].qtd += 1;
-  });
-  const totaisPorMesOrdenados = Object.values(totaisPorMes)
-    .sort((a, b) => a.key.localeCompare(b.key))
-    .map((g) => {
-      const [ano, mesNum] = g.key.split("-");
-      const label = capitalizar(new Date(Number(ano), Number(mesNum) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }));
-      return { ...g, label };
-    });
-
-  const [aba, setAba] = useState("resumo");
-  const abas = [
-    { key: "resumo", label: "Resumo" },
-    { key: "veiculos", label: `Veículos (${veiculosDoCliente.length})` },
-    { key: "financeiro", label: `Financeiro (${boletosDoCliente.length})` },
-    { key: "cotacoes", label: `Cotações (${cotacoesDoCliente.length})` },
-    { key: "comissoes", label: `Comissões (${comissoesDoCliente.length})` },
-  ];
+  const iniciais = cliente.nome.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
 
   return (
     <div>
@@ -2831,7 +1698,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
       <div className="nexo-detail-grid">
         <div className="nexo-card">
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 14 }}>
-            <div className="nexo-avatar" style={{ background: getAvatarColor(cliente.nome), color: "#fff" }}>{getIniciais(cliente.nome)}</div>
+            <div className="nexo-avatar">{iniciais || "?"}</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15.5 }}>{cliente.nome}</div>
               <div style={{ marginTop: 4 }}><AtivoInativoBadge ativo={cliente.status} /></div>
@@ -2846,211 +1713,79 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             </div>
           )}
           <div className="nexo-info-row"><Phone size={14} /> {cliente.telefone || "—"}</div>
-          <div className="nexo-info-row">
-            <MessageCircle size={14} />
-            {cliente.whatsapp ? (
-              <a href={linkWhatsApp(cliente.whatsapp)} target="_blank" rel="noopener noreferrer" style={{ color: "var(--success)" }}>
-                {cliente.whatsapp}
-              </a>
-            ) : (
-              "—"
-            )}
-          </div>
+          <div className="nexo-info-row"><MessageCircle size={14} /> {cliente.whatsapp || "—"}</div>
           <div className="nexo-info-row"><Mail size={14} /> {cliente.email || "—"}</div>
           <div className="nexo-info-row"><MapPin size={14} /> {cliente.endereco || "—"}{cliente.cep ? ` · CEP ${cliente.cep}` : ""}</div>
-          {(cliente.whatsapp || cliente.telefone) && (
-            <a
-              className="nexo-btn"
-              style={{ width: "100%", justifyContent: "center", marginTop: 14, background: "var(--success)", borderColor: "var(--success)", color: "#fff" }}
-              href={linkWhatsApp(cliente.whatsapp || cliente.telefone)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MessageCircle size={14} /> Conversar no WhatsApp
-            </a>
-          )}
-          <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => onOpenModal("cliente", cliente)}>
+          <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 14 }} onClick={() => onOpenModal("cliente", cliente)}>
             <Pencil size={14} /> Editar dados pessoais
           </button>
         </div>
 
         <div>
-          <div className="nexo-tabs">
-            {abas.map((t) => (
-              <div key={t.key} className={`nexo-tab ${aba === t.key ? "active" : ""}`} onClick={() => setAba(t.key)}>{t.label}</div>
+          <div className="nexo-mini-kpis">
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos pagos</div><div className="nexo-mini-kpi-value">{pagos.length}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos em aberto</div><div className="nexo-mini-kpi-value">{emAberto.length}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total em aberto</div><div className="nexo-mini-kpi-value">{formatBRL(totalEmAberto)}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total recebido</div><div className="nexo-mini-kpi-value">{formatBRL(totalRecebido)}</div></div>
+          </div>
+
+          <div className="nexo-card" style={{ marginBottom: 14 }}>
+            <div className="nexo-section-head" style={{ marginBottom: 12 }}>
+              <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Veículos vinculados</div>
+              <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
+            </div>
+            {veiculosDoCliente.length === 0 ? (
+              <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
+            ) : veiculosDoCliente.map((v) => (
+              <div key={v.id} className="nexo-veiculo-card">
+                <div className="nexo-veiculo-card-head">
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.marca} {v.modelo} {v.ano && `· ${v.ano}`}</div>
+                  <AtivoInativoBadge ativo={v.status} />
+                </div>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-dim)" }}>
+                  <span className="mono">{v.placa}</span>
+                  <span>Mensal: <strong className="mono">{formatBRL(v.valorMensal)}</strong></span>
+                  <span>Cadastro: {formatDateBR(v.dataCadastro)}</span>
+                  {v.codigoFipe && <span>Fipe: <strong className="mono">{v.codigoFipe}</strong> ({formatBRL(v.valorFipe)})</span>}
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", v)}><Pencil size={12} /> Editar</button>
+                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteVeiculo(v.id)}><Trash2 size={12} /> Excluir</button>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId, v.id)}><Plus size={12} /> Novo boleto</button>
+                </div>
+              </div>
             ))}
           </div>
 
-          {aba === "resumo" && (
-            <>
-              <div className="nexo-mini-kpis">
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Veículos</div><div className="nexo-mini-kpi-value">{veiculosDoCliente.length}</div></div>
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Vence em {nomeMesAtual}</div><div className="nexo-mini-kpi-value">{formatBRL(totalMesAtual)}</div></div>
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos pagos</div><div className="nexo-mini-kpi-value">{pagos.length}</div></div>
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos em aberto</div><div className="nexo-mini-kpi-value">{emAberto.length}</div></div>
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total em aberto</div><div className="nexo-mini-kpi-value">{formatBRL(totalEmAberto)}</div></div>
-                <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total recebido</div><div className="nexo-mini-kpi-value">{formatBRL(totalRecebido)}</div></div>
-              </div>
-              <div className="nexo-card">
-                <div className="nexo-chart-title">Veículos</div>
-                <div className="nexo-chart-sub">{veiculosDoCliente.length} vinculado(s) · veja a aba Veículos para detalhes</div>
-                {veiculosDoCliente.length === 0 ? (
-                  <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {veiculosDoCliente.map((v) => (
-                      <span key={v.id} className="nexo-badge" style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}>{v.marca} {v.modelo} · {v.placa}</span>
+          <div className="nexo-card">
+            <div className="nexo-chart-title">Boletos do cliente</div>
+            <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
+            {boletosDoCliente.length === 0 ? (
+              <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
+            ) : (
+              <div className="nexo-table-scroll">
+                <table className="nexo-table">
+                  <thead><tr><th>Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                  <tbody>
+                    {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => (
+                      <tr key={b.id}>
+                        <td className="mono">{b.numero}</td>
+                        <td>{formatDateBR(b.dataVencimento)}</td>
+                        <td className="mono">{formatBRL(b.valor)}</td>
+                        <td><StatusBadge status={b.status} /></td>
+                        <td>
+                          <div className="nexo-actions-cell">
+                            {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
+                            <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-                )}
+                  </tbody>
+                </table>
               </div>
-            </>
-          )}
-
-          {aba === "veiculos" && (
-            <div className="nexo-card">
-              <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-                <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Veículos vinculados</div>
-                <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
-              </div>
-              {veiculosDoCliente.length === 0 ? (
-                <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
-              ) : veiculosDoCliente.map((v) => (
-                <div key={v.id} className="nexo-veiculo-card">
-                  <div className="nexo-veiculo-card-head">
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.marca} {v.modelo} {v.ano && `· ${v.ano}`}</div>
-                    <AtivoInativoBadge ativo={v.status} />
-                  </div>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-dim)" }}>
-                    <span className="mono">{v.placa}</span>
-                    <span>Mensal: <strong className="mono">{formatBRL(v.valorMensal)}</strong></span>
-                    <span>Cadastro: {formatDateBR(v.dataCadastro)}</span>
-                    {v.codigoFipe && <span>Fipe: <strong className="mono">{v.codigoFipe}</strong> ({formatBRL(v.valorFipe)})</span>}
-                  </div>
-                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", v)}><Pencil size={12} /> Editar</button>
-                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteVeiculo(v.id)}><Trash2 size={12} /> Excluir</button>
-                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId, v.id)}><Plus size={12} /> Novo boleto</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {aba === "financeiro" && (
-            <div className="nexo-card">
-              <div className="nexo-chart-title">Boletos do cliente</div>
-              <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
-              {totaisPorMesOrdenados.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 4px" }}>
-                  {totaisPorMesOrdenados.map((g) => (
-                    <span
-                      key={g.key}
-                      className="nexo-badge"
-                      style={{ background: g.key === mesAtualKey ? "var(--accent-soft)" : "var(--surface-2)", color: g.key === mesAtualKey ? "var(--accent-2)" : "var(--text-dim)" }}
-                      title={`${g.qtd} boleto(s) vencendo em ${g.label}`}
-                    >
-                      {g.label}: <strong className="mono">{formatBRL(g.total)}</strong> ({g.qtd})
-                    </span>
-                  ))}
-                </div>
-              )}
-              {boletosDoCliente.length === 0 ? (
-                <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
-              ) : (
-                <div className="nexo-table-scroll">
-                  <table className="nexo-table">
-                    <thead><tr><th>Número</th><th>Veículos</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                      {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => {
-                        const idsVeiculosDoBoleto = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
-                        const placasDoBoleto = idsVeiculosDoBoleto.map((id) => veiculosDoCliente.find((v) => v.id === id)?.placa).filter(Boolean);
-                        return (
-                        <tr key={b.id}>
-                          <td className="mono">{b.numero}</td>
-                          <td className="mono nexo-cell-muted" title={placasDoBoleto.length > 1 ? placasDoBoleto.join(", ") : undefined}>
-                            {placasDoBoleto.length === 0 ? "Direto no cliente"
-                              : placasDoBoleto.length <= 3 ? placasDoBoleto.join(", ")
-                              : `${placasDoBoleto.slice(0, 2).join(", ")} +${placasDoBoleto.length - 2}`}
-                          </td>
-                          <td>{formatDateBR(b.dataVencimento)}</td>
-                          <td className="mono">{formatBRL(b.valor)}</td>
-                          <td><StatusBadge status={b.status} /></td>
-                          <td>
-                            <div className="nexo-actions-cell">
-                              {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
-                              <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {aba === "cotacoes" && (
-            <div className="nexo-card">
-              <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-                <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações do cliente</div>
-                <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("cotacao", null, clienteId)}><Plus size={13} /> Nova cotação</button>
-              </div>
-              {cotacoesDoCliente.length === 0 ? (
-                <div className="nexo-empty-sub">Nenhuma cotação registrada para este cliente ainda.</div>
-              ) : (
-                <div className="nexo-table-scroll">
-                  <table className="nexo-table">
-                    <thead><tr><th>Data</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                      {cotacoesDoCliente.sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || "")).map((q) => {
-                        const seguradora = db.seguradoras.find((s) => s.id === q.seguradoraId);
-                        const plano = db.planos.find((p) => p.id === q.planoId);
-                        return (
-                          <tr key={q.id}>
-                            <td>{formatDateBR(q.dataCotacao)}</td>
-                            <td>{seguradora?.nome || "—"}</td>
-                            <td>{plano?.nome || "—"}</td>
-                            <td className="mono">{formatBRL(q.valor)}</td>
-                            <td><CotacaoStatusBadge status={q.status || "Nova"} /></td>
-                            <td><div className="nexo-actions-cell"><button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", q)}><Pencil size={13} /></button></div></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {aba === "comissoes" && (
-            <div className="nexo-card">
-              <div className="nexo-chart-title">Comissões geradas por este cliente</div>
-              <div className="nexo-chart-sub">{comissoesDoCliente.length} lançamento(s)</div>
-              {comissoesDoCliente.length === 0 ? (
-                <div className="nexo-empty-sub">Nenhuma comissão associada a este cliente ainda.</div>
-              ) : (
-                <div className="nexo-table-scroll">
-                  <table className="nexo-table">
-                    <thead><tr><th>Referência</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {comissoesDoCliente.map((cm) => (
-                        <tr key={cm.id}>
-                          <td>{cm.referencia || "—"}</td>
-                          <td className="nexo-cell-muted">{cm.tipo}</td>
-                          <td className="mono">{formatBRL(cm.valorComissao)}</td>
-                          <td><StatusPill status={cm.status} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -3068,15 +1803,11 @@ function RelatoriosView({ db }) {
   const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
 
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
-  const placasVeiculoBoleto = (b) => {
-    const ids = b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : []);
-    const placas = ids.map((id) => db.veiculos.find((v) => v.id === id)?.placa).filter(Boolean);
-    return placas.length ? placas.join(" | ") : "—";
-  };
+  const placaVeiculo = (id) => db.veiculos.find((v) => v.id === id)?.placa || "—";
 
   const colunasBoleto = [
     { titulo: "Cliente", valor: (b) => nomeCliente(b.clienteId) },
-    { titulo: "Placa(s)", valor: (b) => placasVeiculoBoleto(b) },
+    { titulo: "Placa", valor: (b) => placaVeiculo(b.veiculoId) },
     { titulo: "Número", valor: (b) => b.numero },
     { titulo: "Vencimento", valor: (b) => formatDateBR(b.dataVencimento) },
     { titulo: "Valor", valor: (b) => b.valor },
@@ -3087,7 +1818,6 @@ function RelatoriosView({ db }) {
   const relatorios = [
     {
       titulo: "Clientes cadastrados",
-      icon: Users,
       total: db.clientes.length,
       arquivo: "relatorio-clientes.csv",
       colunas: [
@@ -3102,7 +1832,6 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos pagos",
-      icon: CheckCircle2,
       total: pagos.length,
       valor: formatBRL(sum(pagos.map((b) => b.valor))),
       arquivo: "relatorio-boletos-pagos.csv",
@@ -3112,7 +1841,6 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos em aberto",
-      icon: FileText,
       total: emAberto.length,
       valor: formatBRL(sum(emAberto.map((b) => b.valor))),
       arquivo: "relatorio-boletos-em-aberto.csv",
@@ -3122,7 +1850,6 @@ function RelatoriosView({ db }) {
     },
     {
       titulo: "Boletos a vencer",
-      icon: Clock,
       total: aVencer.length,
       valor: formatBRL(sum(aVencer.map((b) => b.valor))),
       arquivo: "relatorio-boletos-a-vencer.csv",
@@ -3132,27 +1859,16 @@ function RelatoriosView({ db }) {
     },
   ];
 
-  const toneVar = { accent: "var(--accent)", success: "var(--success)", info: "var(--info)", warning: "var(--warning)" };
-  const toneSoft = { accent: "var(--accent-soft)", success: "var(--success-soft)", info: "var(--info-soft)", warning: "var(--warning-soft)" };
-
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Relatórios</div>
-          <div className="nexo-section-sub">Exportações prontas em CSV para planilhas e conferências</div>
-        </div>
+        <div className="nexo-section-title">Relatórios</div>
       </div>
       <div className="nexo-kpi-grid">
         {relatorios.map((r) => (
-          <div key={r.titulo} className="nexo-card" style={{ borderTop: `2px solid ${toneVar[r.tone]}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <div className="nexo-kpi-icon" style={{ background: toneSoft[r.tone], color: toneVar[r.tone] }}>
-                <r.icon size={16} />
-              </div>
-              <div className="nexo-chart-title" style={{ margin: 0 }}>{r.titulo}</div>
-            </div>
-            <div className="nexo-kpi-value">{r.total}</div>
+          <div key={r.titulo} className="nexo-card">
+            <div className="nexo-chart-title">{r.titulo}</div>
+            <div className="nexo-kpi-value" style={{ marginTop: 6 }}>{r.total}</div>
             {r.valor && <div className="nexo-cell-muted" style={{ marginBottom: 10 }}>{r.valor}</div>}
             <button
               className="nexo-btn nexo-btn-sm"
@@ -3160,7 +1876,7 @@ function RelatoriosView({ db }) {
               disabled={r.linhas.length === 0}
               onClick={() => exportarCSV(r.arquivo, r.colunas, r.linhas)}
             >
-              <Download size={13} /> Exportar CSV
+              Exportar CSV
             </button>
           </div>
         ))}
@@ -3225,7 +1941,7 @@ function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, default
   const [f, setF] = useState(
     initial || {
       clienteId: defaultClienteId || "", veiculoId: "", seguradoraId: "", planoId: "",
-      valor: "", dataCotacao: todayISO(), observacoes: "", status: "Nova",
+      valor: "", dataCotacao: todayISO(), observacoes: "",
     }
   );
   const [errors, setErrors] = useState({});
@@ -3285,11 +2001,6 @@ function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, default
           <input type="date" className="nexo-input" value={f.dataCotacao} onChange={set("dataCotacao")} />
         </Field>
       </div>
-      <Field label="Status da cotação">
-        <select className="nexo-select" value={f.status || "Nova"} onChange={set("status")}>
-          {COTACAO_STATUS.map((s) => <option key={s} value={s}>{COTACAO_STATUS_LABELS[s]}</option>)}
-        </select>
-      </Field>
       <Field label="Observações">
         <textarea className="nexo-textarea" value={f.observacoes} onChange={set("observacoes")} placeholder="Notas internas sobre esta cotação" />
       </Field>
@@ -3311,7 +2022,7 @@ function gerarPdfCotacao(cotacao, db) {
   let y = 20;
 
   doc.setFontSize(16);
-  doc.text("Corretora Seu Seguro", 14, y);
+  doc.text("Seu Seguro Corretora", 14, y);
   doc.setFontSize(11);
   y += 8;
   doc.text("Cotação de Seguro Automotivo", 14, y);
@@ -3379,24 +2090,11 @@ function gerarPdfCotacao(cotacao, db) {
   doc.save(`cotacao-${(cliente?.nome || "cliente").replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
 
-function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos, onAlterarStatusCotacao }) {
+function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos, onAtualizarLinkPortal }) {
   const [nomeSeguradora, setNomeSeguradora] = useState("");
+  const [linkPortalNovo, setLinkPortalNovo] = useState("");
   const [importando, setImportando] = useState(false);
-  const [buscaCotacao, setBuscaCotacao] = useState("");
-  const [alterandoStatus, setAlterandoStatus] = useState(null);
   const fileInputRef = useRef(null);
-  const valorTotalCotado = sum(db.cotacoes.map((c) => c.valor));
-  const totalConvertidas = db.cotacoes.filter((c) => (c.status || "Nova") === "Convertida").length;
-
-  async function mudarStatus(cotacao, novoStatus) {
-    if (!onAlterarStatusCotacao || novoStatus === (cotacao.status || "Nova")) return;
-    setAlterandoStatus(cotacao.id);
-    try {
-      await onAlterarStatusCotacao(cotacao, novoStatus);
-    } finally {
-      setAlterandoStatus(null);
-    }
-  }
 
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeVeiculo = (id) => {
@@ -3408,8 +2106,20 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
 
   async function adicionarSeguradora() {
     if (!nomeSeguradora.trim()) return;
-    await onSaveSeguradora(nomeSeguradora.trim());
+    await onSaveSeguradora(nomeSeguradora.trim(), linkPortalNovo.trim());
     setNomeSeguradora("");
+    setLinkPortalNovo("");
+  }
+
+  function linkComProtocolo(url) {
+    if (!url) return "";
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  }
+
+  function editarLinkPortal(s) {
+    const novo = window.prompt(`Link do portal da ${s.nome} (deixe em branco para remover):`, s.linkPortal || "");
+    if (novo === null) return; // cancelou
+    onAtualizarLinkPortal(s.id, novo.trim());
   }
 
   async function handleArquivoSelecionado(e) {
@@ -3430,46 +2140,26 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         }))
         .filter((p) => p.seguradoraNome && p.planoNome);
       if (planosNovos.length === 0) {
-        showToast("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.", "warning");
+        alert("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.");
       } else {
         await onImportarPlanos(planosNovos);
       }
     } catch (err) {
-      showToast("Não foi possível ler o arquivo: " + err.message, "error");
+      alert("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportando(false);
     }
   }
 
-  const cotacoesFiltradas = db.cotacoes.filter((c) => {
-    if (!buscaCotacao) return true;
-    const q = buscaCotacao.toLowerCase();
-    return nomeCliente(c.clienteId).toLowerCase().includes(q) || nomeSeguradoraPorId(c.seguradoraId).toLowerCase().includes(q);
-  });
-
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Cotação de seguros</div>
-          <div className="nexo-section-sub">Tabela de seguradoras, planos e cotações geradas para seus clientes</div>
-        </div>
-      </div>
-
-      <div className="nexo-kpi-grid">
-        <Kpi icon={Shield} label="Seguradoras parceiras" value={db.seguradoras.length} tone="accent" />
-        <Kpi icon={FileText} label="Planos cadastrados" value={db.planos.length} tone="info" />
-        <Kpi icon={Wallet} label="Cotações registradas" value={db.cotacoes.length} tone="success" />
-        <Kpi icon={PartyPopper} label="Convertidas" value={totalConvertidas} tone="success" />
-        <Kpi icon={TrendingUp} label="Valor total cotado" value={formatBRL(valorTotalCotado)} tone="warning" />
+        <div className="nexo-section-title">Cotação de seguros</div>
       </div>
 
       <div className="nexo-card" style={{ marginBottom: 16 }}>
         <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-          <div>
-            <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Seguradoras e tabela de preços</div>
-            <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Cadastre suas seguradoras parceiras e os planos que você oferece</div>
-          </div>
+          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Seguradoras e tabela de preços</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               className="nexo-btn nexo-btn-sm"
@@ -3494,113 +2184,115 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
           <input
             className="nexo-input"
-            style={{ maxWidth: 280 }}
+            style={{ maxWidth: 240 }}
             placeholder="Nome da nova seguradora"
             value={nomeSeguradora}
             onChange={(e) => setNomeSeguradora(e.target.value)}
+          />
+          <input
+            className="nexo-input"
+            style={{ maxWidth: 280 }}
+            placeholder="Link do portal (opcional)"
+            value={linkPortalNovo}
+            onChange={(e) => setLinkPortalNovo(e.target.value)}
           />
           <button className="nexo-btn nexo-btn-sm" onClick={adicionarSeguradora}>Adicionar seguradora</button>
         </div>
 
         {db.seguradoras.length === 0 ? (
-          <EmptyState icon={Shield} title="Nenhuma seguradora cadastrada" sub="Adicione uma acima ou importe sua tabela em CSV." />
+          <div className="nexo-empty-sub">Nenhuma seguradora cadastrada ainda. Adicione uma acima ou importe sua tabela em CSV.</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
-            {db.seguradoras.map((s) => {
-              const planosDaSeguradora = db.planos.filter((p) => p.seguradoraId === s.id);
-              return (
-                <div key={s.id} className="nexo-veiculo-card" style={{ margin: 0 }}>
-                  <div className="nexo-veiculo-card-head">
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14 }}>
-                      <Shield size={14} color="var(--accent-2)" /> {s.nome}
-                    </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button className="nexo-icon-btn" title="Novo plano" onClick={() => onOpenModal("plano", null, null, null, s.id)}><Plus size={13} /></button>
-                      <button className="nexo-icon-btn danger" title="Excluir seguradora" onClick={() => onDeleteSeguradora(s.id)}><Trash2 size={13} /></button>
-                    </div>
+          db.seguradoras.map((s) => {
+            const planosDaSeguradora = db.planos.filter((p) => p.seguradoraId === s.id);
+            return (
+              <div key={s.id} className="nexo-veiculo-card">
+                <div className="nexo-veiculo-card-head">
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{s.nome}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {s.linkPortal ? (
+                      <a
+                        className="nexo-btn nexo-btn-sm"
+                        href={linkComProtocolo(s.linkPortal)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Abre o site da seguradora numa aba nova — você faz login lá"
+                      >
+                        Acessar portal ↗
+                      </a>
+                    ) : (
+                      <button className="nexo-btn nexo-btn-sm nexo-btn-ghost" onClick={() => editarLinkPortal(s)}>
+                        + Link do portal
+                      </button>
+                    )}
+                    {s.linkPortal && (
+                      <button className="nexo-icon-btn" title="Editar link do portal" onClick={() => editarLinkPortal(s)}><Pencil size={13} /></button>
+                    )}
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("plano", null, null, null, s.id)}>
+                      <Plus size={12} /> Novo plano
+                    </button>
+                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteSeguradora(s.id)}>
+                      <Trash2 size={12} /> Excluir
+                    </button>
                   </div>
-                  {planosDaSeguradora.length === 0 ? (
-                    <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>Nenhum plano cadastrado para esta seguradora.</div>
-                  ) : (
-                    planosDaSeguradora.map((p) => (
-                      <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border-soft)" }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
-                          <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                            {formatBRL(p.valorMensal)}/mês · Franquia {formatBRL(p.valorFranquia)}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                          <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
-                          <button className="nexo-icon-btn danger" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
+                </div>
+                {planosDaSeguradora.length === 0 ? (
+                  <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>Nenhum plano cadastrado para esta seguradora.</div>
+                ) : (
+                  planosDaSeguradora.map((p) => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border-soft)" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
+                        <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
+                          Mensal: {formatBRL(p.valorMensal)} · Franquia: {formatBRL(p.valorFranquia)}
+                          {p.beneficios ? ` · ${p.beneficios}` : ""}
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
+                        <button className="nexo-icon-btn" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
       <div className="nexo-card">
         <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações realizadas<span className="nexo-section-count">{cotacoesFiltradas.length}</span></div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <div className="nexo-searchbar" style={{ maxWidth: 220 }}>
-              <Search size={14} color="var(--text-faint)" />
-              <input placeholder="Cliente ou seguradora" value={buscaCotacao} onChange={(e) => setBuscaCotacao(e.target.value)} />
-            </div>
-            <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => onOpenModal("cotacao")}>
-              <Plus size={13} /> Nova cotação
-            </button>
-          </div>
+          <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Cotações realizadas</div>
+          <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => onOpenModal("cotacao")}>
+            <Plus size={13} /> Nova cotação
+          </button>
         </div>
         {db.cotacoes.length === 0 ? (
           <EmptyState icon={FileText} title="Nenhuma cotação registrada" sub="Clique em “Nova cotação” para gerar a primeira." />
-        ) : cotacoesFiltradas.length === 0 ? (
-          <EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro cliente ou seguradora." />
         ) : (
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Cliente</th><th>Veículo</th><th>Seguradora</th><th>Plano</th><th>Valor</th><th>Data</th><th></th></tr></thead>
               <tbody>
-                {cotacoesFiltradas
+                {db.cotacoes
                   .slice()
                   .sort((a, b) => (b.dataCotacao || "").localeCompare(a.dataCotacao || ""))
                   .map((c) => (
                     <tr key={c.id}>
-                      <td>
-                        <div className="nexo-name-cell">
-                          <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeCliente(c.clienteId)) }}>{getIniciais(nomeCliente(c.clienteId))}</div>
-                          <span style={{ fontWeight: 600 }}>{nomeCliente(c.clienteId)}</span>
-                        </div>
-                      </td>
+                      <td style={{ fontWeight: 600 }}>{nomeCliente(c.clienteId)}</td>
                       <td className="nexo-cell-muted">{c.veiculoId ? nomeVeiculo(c.veiculoId) : "—"}</td>
                       <td>{nomeSeguradoraPorId(c.seguradoraId)}</td>
                       <td>{nomePlanoPorId(c.planoId)}</td>
-                      <td className="mono nexo-cell-strong">{formatBRL(c.valor)}</td>
-                      <td className="nexo-cell-muted">{formatDateBR(c.dataCotacao)}</td>
-                      <td>
-                        <select
-                          className="nexo-select"
-                          style={{ maxWidth: 168, fontSize: 12.5 }}
-                          value={c.status || "Nova"}
-                          disabled={alterandoStatus === c.id}
-                          onChange={(e) => mudarStatus(c, e.target.value)}
-                        >
-                          {COTACAO_STATUS.map((s) => <option key={s} value={s}>{COTACAO_STATUS_LABELS[s]}</option>)}
-                        </select>
-                      </td>
+                      <td className="mono">{formatBRL(c.valor)}</td>
+                      <td>{formatDateBR(c.dataCotacao)}</td>
                       <td>
                         <div className="nexo-actions-cell">
-                          <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}><FileDown size={12} /> PDF</button>
+                          <button className="nexo-btn nexo-btn-sm" onClick={() => gerarPdfCotacao(c, db)}>Gerar PDF</button>
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cotacao", c)}><Pencil size={13} /></button>
-                          <button className="nexo-icon-btn danger" onClick={() => onDeleteCotacao(c.id)}><Trash2 size={13} /></button>
+                          <button className="nexo-icon-btn" onClick={() => onDeleteCotacao(c.id)}><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -3615,669 +2307,74 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
 }
 
 /* ------------------------------------------------------------------ */
-/* Segurança do login (bloqueio por tentativas + política de senha)    */
-/* ------------------------------------------------------------------ */
-
-const LOGIN_MAX_TENTATIVAS = 5;
-const LOGIN_BLOQUEIO_MS = 5 * 60 * 1000; // 5 minutos
-
-function lerTentativasLogin(email) {
-  try {
-    const bruto = localStorage.getItem("nexo_login_tentativas_" + email.toLowerCase());
-    return bruto ? JSON.parse(bruto) : { tentativas: 0, bloqueadoAte: 0 };
-  } catch {
-    return { tentativas: 0, bloqueadoAte: 0 };
-  }
-}
-
-function gravarTentativasLogin(email, dados) {
-  try {
-    localStorage.setItem("nexo_login_tentativas_" + email.toLowerCase(), JSON.stringify(dados));
-  } catch {
-    /* localStorage indisponível — segue sem bloqueio local (o rate limit do Supabase ainda se aplica) */
-  }
-}
-
-function registrarFalhaLogin(email) {
-  const atual = lerTentativasLogin(email);
-  const tentativas = atual.tentativas + 1;
-  const bloqueadoAte = tentativas >= LOGIN_MAX_TENTATIVAS ? Date.now() + LOGIN_BLOQUEIO_MS : 0;
-  gravarTentativasLogin(email, { tentativas, bloqueadoAte });
-  return { tentativas, bloqueadoAte };
-}
-
-function limparTentativasLogin(email) {
-  gravarTentativasLogin(email, { tentativas: 0, bloqueadoAte: 0 });
-}
-
-/* Mínimo 8 caracteres, com pelo menos uma letra e um número. */
-function senhaAtendeRequisitos(senha) {
-  return /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(senha || "");
-}
-
-/* ------------------------------------------------------------------ */
 /* Login                                                                */
 /* ------------------------------------------------------------------ */
 
 function LoginScreen({ onEntrar }) {
-  const [modo, setModo] = useState("login"); // "login" | "recuperar"
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-  const [aviso, setAviso] = useState("");
-  const [reloadTick, setReloadTick] = useState(0);
-
-  // Atualiza a contagem regressiva do bloqueio de login a cada segundo.
-  useEffect(() => {
-    const id = setInterval(() => setReloadTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const statusLogin = email.trim() ? lerTentativasLogin(email.trim()) : { tentativas: 0, bloqueadoAte: 0 };
-  const bloqueado = statusLogin.bloqueadoAte > Date.now();
-  const segundosRestantes = bloqueado ? Math.max(1, Math.ceil((statusLogin.bloqueadoAte - Date.now()) / 1000)) : 0;
 
   async function handleSubmit() {
-    const emailLimpo = email.trim();
-    if (!emailLimpo || !senha.trim()) {
+    if (!email.trim() || !senha.trim()) {
       setErro("Preencha e-mail e senha.");
       return;
     }
-    const status = lerTentativasLogin(emailLimpo);
-    if (status.bloqueadoAte > Date.now()) {
-      setErro(`Muitas tentativas incorretas. Tente novamente em ${Math.ceil((status.bloqueadoAte - Date.now()) / 1000)}s ou redefina sua senha.`);
-      return;
-    }
     setCarregando(true);
     setErro("");
-    const { error } = await supabase.auth.signInWithPassword({ email: emailLimpo, password: senha });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
     if (error) {
-      const novoStatus = registrarFalhaLogin(emailLimpo);
-      if (novoStatus.bloqueadoAte > Date.now()) {
-        setErro(`Muitas tentativas incorretas. Acesso bloqueado por ${Math.round(LOGIN_BLOQUEIO_MS / 60000)} minutos.`);
-      } else {
-        setErro("E-mail ou senha incorretos.");
-      }
+      setErro("E-mail ou senha incorretos.");
       setCarregando(false);
       return;
     }
-    limparTentativasLogin(emailLimpo);
     onEntrar();
   }
 
-  async function handleRecuperar() {
-    if (!email.trim()) {
-      setErro("Informe seu e-mail para receber o link de redefinição.");
-      return;
-    }
-    setCarregando(true);
-    setErro("");
-    setAviso("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
-    });
-    setCarregando(false);
-    if (error) {
-      setErro("Não foi possível enviar o e-mail agora. Tente novamente em instantes.");
-      return;
-    }
-    setAviso("Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.");
-  }
-
-  function voltarParaLogin() {
-    setModo("login");
-    setErro("");
-    setAviso("");
-  }
-
   return (
-    <div className="nexo-login-page">
-      <div className="nexo-login-body">
-        <div className="nexo-login-hero">
-          <div className="nexo-login-hero-blob b1" />
-          <div className="nexo-login-hero-blob b2" />
-          <div className="nexo-login-skyline" aria-hidden="true">
-            {[38, 62, 44, 80, 52, 68, 40, 90, 56, 46, 72, 50, 84, 40, 60].map((h, i) => (
-              <span key={i} style={{ height: `${h}%` }} />
-            ))}
-          </div>
-          <div className="nexo-login-hero-content">
-            <div className="nexo-login-brand">
-              <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
-              <div>
-                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
-              </div>
-            </div>
-            <div className="nexo-login-hero-mid">
-              <div className="nexo-login-quote">"Protegendo o que <span>realmente importa</span>."</div>
-              <div className="nexo-login-hero-icons">
-                <span className="item"><Shield size={15} /> Dados protegidos</span>
-                <span className="item"><CheckCircle2 size={15} /> Cobertura completa</span>
-                <span className="item"><Clock size={15} /> Atendimento ágil</span>
-              </div>
-            </div>
-            <div className="nexo-login-hero-foot">Plataforma de gestão para corretoras e representantes de seguros.</div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+      <div className="nexo-card" style={{ maxWidth: 360, width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div className="nexo-brand-mark">SS</div>
+          <div>
+            <div className="nexo-brand-name">Seu Seguro Corretora</div>
+            <div className="nexo-brand-tag">Acesso restrito</div>
           </div>
         </div>
-
-        <div className="nexo-login-panel">
-          <div className="nexo-login-card">
-            {modo === "login" ? (
-              <>
-                <div className="nexo-login-eyebrow">Bem-vindo</div>
-                <h1>Entre na sua conta</h1>
-                <p className="sub">Acesse o painel da Corretora Seu Seguro.</p>
-                <div className="nexo-login-fields">
-                  <Field label="E-mail">
-                    <input
-                      type="email"
-                      className="nexo-input"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                      placeholder="seu@email.com"
-                      autoComplete="username"
-                      autoFocus
-                    />
-                  </Field>
-                  <Field label="Senha">
-                    <input
-                      type="password"
-                      className="nexo-input"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                      disabled={bloqueado}
-                    />
-                  </Field>
-                </div>
-                <div className="nexo-login-forgot-row">
-                  <button type="button" className="nexo-login-link" onClick={() => { setModo("recuperar"); setErro(""); setAviso(""); }}>
-                    Esqueci minha senha
-                  </button>
-                </div>
-                {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
-                {bloqueado && (
-                  <div key={reloadTick} className="nexo-login-alert err" role="alert">
-                    Tente novamente em {segundosRestantes}s.
-                  </div>
-                )}
-                <button
-                  className="nexo-btn nexo-btn-primary nexo-login-submit"
-                  disabled={carregando || bloqueado}
-                  onClick={handleSubmit}
-                >
-                  {carregando ? "Entrando…" : "Entrar"}
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" className="nexo-login-back" onClick={voltarParaLogin}>
-                  <ArrowLeft size={14} /> Voltar
-                </button>
-                <div className="nexo-login-eyebrow">Recuperar acesso</div>
-                <h1>Esqueceu sua senha?</h1>
-                <p className="sub">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
-                <div className="nexo-login-fields">
-                  <Field label="E-mail">
-                    <input
-                      type="email"
-                      className="nexo-input"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleRecuperar()}
-                      placeholder="seu@email.com"
-                      autoComplete="username"
-                      autoFocus
-                    />
-                  </Field>
-                </div>
-                {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
-                {aviso && <div className="nexo-login-alert ok" role="status">{aviso}</div>}
-                <button
-                  className="nexo-btn nexo-btn-primary nexo-login-submit"
-                  disabled={carregando}
-                  onClick={handleRecuperar}
-                >
-                  {carregando ? "Enviando…" : "Enviar link de redefinição"}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="nexo-login-page-foot">
-        Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
+        <Field label="E-mail">
+          <input
+            type="email"
+            className="nexo-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="seu@email.com"
+            autoFocus
+          />
+        </Field>
+        <div style={{ height: 12 }} />
+        <Field label="Senha">
+          <input
+            type="password"
+            className="nexo-input"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="••••••••"
+          />
+        </Field>
+        {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
+        <button
+          className="nexo-btn nexo-btn-primary"
+          style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+          disabled={carregando}
+          onClick={handleSubmit}
+        >
+          {carregando ? "Entrando…" : "Entrar"}
+        </button>
       </div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Definir nova senha (após clicar no link recebido por e-mail)        */
-/* ------------------------------------------------------------------ */
-
-function RedefinirSenhaScreen({ onConcluido }) {
-  const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState("");
-  const [concluido, setConcluido] = useState(false);
-
-  async function handleSalvar() {
-    if (!senhaAtendeRequisitos(senha)) {
-      setErro("A senha deve ter pelo menos 8 caracteres, com letras e números.");
-      return;
-    }
-    if (senha !== confirmarSenha) {
-      setErro("As senhas não coincidem.");
-      return;
-    }
-    setCarregando(true);
-    setErro("");
-    const { error } = await supabase.auth.updateUser({ password: senha });
-    setCarregando(false);
-    if (error) {
-      setErro(error.message || "Não foi possível atualizar a senha. Peça um novo link e tente de novo.");
-      return;
-    }
-    setConcluido(true);
-  }
-
-  return (
-    <div className="nexo-login-page">
-      <div className="nexo-login-body">
-        <div className="nexo-login-hero">
-          <div className="nexo-login-hero-blob b1" />
-          <div className="nexo-login-hero-blob b2" />
-          <div className="nexo-login-skyline" aria-hidden="true">
-            {[38, 62, 44, 80, 52, 68, 40, 90, 56, 46, 72, 50, 84, 40, 60].map((h, i) => (
-              <span key={i} style={{ height: `${h}%` }} />
-            ))}
-          </div>
-          <div className="nexo-login-hero-content">
-            <div className="nexo-login-brand">
-              <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
-              <div>
-                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
-              </div>
-            </div>
-            <div className="nexo-login-hero-mid">
-              <div className="nexo-login-quote">"Protegendo o que <span>realmente importa</span>."</div>
-              <div className="nexo-login-hero-icons">
-                <span className="item"><Shield size={15} /> Dados protegidos</span>
-                <span className="item"><CheckCircle2 size={15} /> Cobertura completa</span>
-                <span className="item"><Clock size={15} /> Atendimento ágil</span>
-              </div>
-            </div>
-            <div className="nexo-login-hero-foot">Plataforma de gestão para corretoras e representantes de seguros.</div>
-          </div>
-        </div>
-
-        <div className="nexo-login-panel">
-          <div className="nexo-login-card">
-            {concluido ? (
-              <>
-                <div className="nexo-login-eyebrow">Tudo certo</div>
-                <h1>Senha atualizada</h1>
-                <p className="sub">Sua senha foi alterada com sucesso.</p>
-                <button
-                  className="nexo-btn nexo-btn-primary nexo-login-submit"
-                  onClick={() => { supabase.auth.signOut(); onConcluido(); }}
-                >
-                  Ir para o login
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="nexo-login-eyebrow">Redefinir senha</div>
-                <h1>Defina uma nova senha</h1>
-                <p className="sub">Escolha uma senha com pelo menos 8 caracteres, com letras e números.</p>
-                <div className="nexo-login-fields">
-                  <Field label="Nova senha">
-                    <input
-                      type="password"
-                      className="nexo-input"
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      autoFocus
-                    />
-                  </Field>
-                  <Field label="Confirmar nova senha">
-                    <input
-                      type="password"
-                      className="nexo-input"
-                      value={confirmarSenha}
-                      onChange={(e) => setConfirmarSenha(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSalvar()}
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                    />
-                  </Field>
-                </div>
-                {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
-                <button
-                  className="nexo-btn nexo-btn-primary nexo-login-submit"
-                  disabled={carregando}
-                  onClick={handleSalvar}
-                >
-                  {carregando ? "Salvando…" : "Salvar nova senha"}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="nexo-login-page-foot">
-        Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Verificação em duas etapas (2FA) — desafio no login                  */
-/* ------------------------------------------------------------------ */
-
-function MfaChallengeScreen({ onVerificado }) {
-  const [codigo, setCodigo] = useState("");
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState("");
-
-  async function handleVerificar() {
-    const codigoLimpo = codigo.replace(/\D/g, "");
-    if (codigoLimpo.length !== 6) {
-      setErro("Digite o código de 6 dígitos do seu aplicativo autenticador.");
-      return;
-    }
-    setCarregando(true);
-    setErro("");
-    try {
-      const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
-      if (factorsError) throw factorsError;
-      const factor = (factorsData?.totp || []).find((f) => f.status === "verified");
-      if (!factor) {
-        setErro("Não encontramos sua verificação em duas etapas. Entre em contato com o suporte.");
-        setCarregando(false);
-        return;
-      }
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id });
-      if (challengeError) throw challengeError;
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: factor.id,
-        challengeId: challengeData.id,
-        code: codigoLimpo,
-      });
-      if (verifyError) throw verifyError;
-      onVerificado();
-    } catch (e) {
-      setErro("Código inválido ou expirado. Tente novamente.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  return (
-    <div className="nexo-login-page">
-      <div className="nexo-login-body">
-        <div className="nexo-login-hero">
-          <div className="nexo-login-hero-blob b1" />
-          <div className="nexo-login-hero-blob b2" />
-          <div className="nexo-login-skyline" aria-hidden="true">
-            {[38, 62, 44, 80, 52, 68, 40, 90, 56, 46, 72, 50, 84, 40, 60].map((h, i) => (
-              <span key={i} style={{ height: `${h}%` }} />
-            ))}
-          </div>
-          <div className="nexo-login-hero-content">
-            <div className="nexo-login-brand">
-              <div className="nexo-login-brand-mark"><Shield size={26} color="#fff" /></div>
-              <div>
-                <div className="nexo-login-brand-name">CORRETORA SEU SEGURO</div>
-                <div className="nexo-login-brand-tagline">Sistema de gestão</div>
-              </div>
-            </div>
-            <div className="nexo-login-hero-mid">
-              <div className="nexo-login-quote">"Protegendo o que <span>realmente importa</span>."</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="nexo-login-panel">
-          <div className="nexo-login-card">
-            <div className="nexo-login-eyebrow">Verificação em duas etapas</div>
-            <h1>Digite o código do seu app</h1>
-            <p className="sub">Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e digite o código de 6 dígitos.</p>
-            <div className="nexo-login-fields">
-              <Field label="Código de verificação">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  className="nexo-input mono"
-                  style={{ letterSpacing: 4, fontSize: 18, textAlign: "center" }}
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  onKeyDown={(e) => e.key === "Enter" && handleVerificar()}
-                  placeholder="000000"
-                  autoFocus
-                />
-              </Field>
-            </div>
-            {erro && <div className="nexo-login-alert err" role="alert">{erro}</div>}
-            <button className="nexo-btn nexo-btn-primary nexo-login-submit" disabled={carregando} onClick={handleVerificar}>
-              {carregando ? "Verificando…" : "Verificar"}
-            </button>
-            <button
-              type="button"
-              className="nexo-login-link"
-              style={{ marginTop: 14 }}
-              onClick={() => supabase.auth.signOut()}
-            >
-              Usar outra conta
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="nexo-login-page-foot">
-        Sistema desenvolvido por Gilmar Alves<br />
-        © {new Date().getFullYear()} Corretora Seu Seguro — Todos os direitos reservados.
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Segurança da conta — ativar/desativar verificação em duas etapas    */
-/* ------------------------------------------------------------------ */
-
-function SegurancaModal({ onClose }) {
-  const [etapa, setEtapa] = useState("carregando"); // carregando | inativo | ativando | ativo
-  const [factorAtivo, setFactorAtivo] = useState(null);
-  const [factorPendente, setFactorPendente] = useState(null); // { id, qrCode, secret }
-  const [codigo, setCodigo] = useState("");
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState("");
-
-  const carregarFactors = useCallback(async () => {
-    setErro("");
-    const { data, error } = await supabase.auth.mfa.listFactors();
-    if (error) {
-      setErro("Não foi possível carregar as configurações de segurança.");
-      setEtapa("inativo");
-      return;
-    }
-    const verificado = (data?.totp || []).find((f) => f.status === "verified");
-    if (verificado) {
-      setFactorAtivo(verificado);
-      setEtapa("ativo");
-    } else {
-      setFactorAtivo(null);
-      setEtapa("inativo");
-    }
-  }, []);
-
-  useEffect(() => { carregarFactors(); }, [carregarFactors]);
-
-  async function handleAtivar() {
-    setCarregando(true);
-    setErro("");
-    try {
-      // Remove fatores TOTP não confirmados de tentativas anteriores, pra não acumular.
-      const { data: existentes } = await supabase.auth.mfa.listFactors();
-      const pendentes = (existentes?.totp || []).filter((f) => f.status !== "verified");
-      for (const f of pendentes) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id });
-      }
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Corretora Seu Seguro" });
-      if (error) throw error;
-      setFactorPendente({ id: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
-      setEtapa("ativando");
-    } catch (e) {
-      setErro(e.message || "Não foi possível iniciar a ativação. Tente novamente.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function handleConfirmar() {
-    const codigoLimpo = codigo.replace(/\D/g, "");
-    if (codigoLimpo.length !== 6 || !factorPendente) {
-      setErro("Digite o código de 6 dígitos mostrado no seu aplicativo autenticador.");
-      return;
-    }
-    setCarregando(true);
-    setErro("");
-    try {
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factorPendente.id });
-      if (challengeError) throw challengeError;
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: factorPendente.id,
-        challengeId: challengeData.id,
-        code: codigoLimpo,
-      });
-      if (verifyError) throw verifyError;
-      setCodigo("");
-      setFactorPendente(null);
-      await carregarFactors();
-    } catch (e) {
-      setErro("Código inválido. Confira o horário do seu celular e tente de novo.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function handleDesativar() {
-    if (!factorAtivo) return;
-    if (!(await confirmDialog("Desativar a verificação em duas etapas? Sua conta ficará protegida só por senha."))) return;
-    setCarregando(true);
-    setErro("");
-    try {
-      const { error } = await supabase.auth.mfa.unenroll({ factorId: factorAtivo.id });
-      if (error) throw error;
-      await carregarFactors();
-    } catch (e) {
-      setErro("Não foi possível desativar agora. Tente novamente.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function handleCancelarAtivacao() {
-    if (factorPendente) {
-      await supabase.auth.mfa.unenroll({ factorId: factorPendente.id }).catch(() => {});
-    }
-    setFactorPendente(null);
-    setCodigo("");
-    setErro("");
-    await carregarFactors();
-  }
-
-  return (
-    <Modal title="Segurança da conta" onClose={onClose}>
-      {etapa === "carregando" && <div className="nexo-cell-muted">Carregando…</div>}
-
-      {etapa === "inativo" && (
-        <div>
-          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 14 }}>
-            A verificação em duas etapas pede, além da senha, um código gerado no seu celular
-            (Google Authenticator, Authy, Microsoft Authenticator, etc.) a cada login — assim,
-            mesmo que alguém descubra sua senha, não consegue entrar na conta sem o celular.
-          </p>
-          {erro && <div className="nexo-login-alert err" style={{ marginBottom: 12 }}>{erro}</div>}
-          <button className="nexo-btn nexo-btn-primary" onClick={handleAtivar} disabled={carregando}>
-            <Shield size={14} /> {carregando ? "Preparando…" : "Ativar verificação em duas etapas"}
-          </button>
-        </div>
-      )}
-
-      {etapa === "ativando" && factorPendente && (
-        <div>
-          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 10 }}>
-            1. Abra um aplicativo autenticador no seu celular e escaneie o QR code abaixo.
-          </p>
-          <div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
-            <img
-              src={factorPendente.qrCode}
-              alt="QR code para configurar a verificação em duas etapas"
-              style={{ width: 180, height: 180, background: "#fff", padding: 8, borderRadius: 8 }}
-            />
-          </div>
-          <p style={{ fontSize: 12, color: "var(--text-faint)", marginBottom: 10, textAlign: "center" }}>
-            Não consegue escanear? Digite manualmente este código no app: <br />
-            <span className="mono" style={{ color: "var(--text-dim)" }}>{factorPendente.secret}</span>
-          </p>
-          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 10 }}>
-            2. Digite o código de 6 dígitos que apareceu no app para confirmar:
-          </p>
-          <Field label="Código de verificação">
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              className="nexo-input mono"
-              style={{ letterSpacing: 4, fontSize: 18, textAlign: "center" }}
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              onKeyDown={(e) => e.key === "Enter" && handleConfirmar()}
-              placeholder="000000"
-              autoFocus
-            />
-          </Field>
-          {erro && <div className="nexo-login-alert err" style={{ margin: "10px 0" }}>{erro}</div>}
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button className="nexo-btn nexo-btn-primary" onClick={handleConfirmar} disabled={carregando}>
-              {carregando ? "Confirmando…" : "Confirmar e ativar"}
-            </button>
-            <button className="nexo-btn" onClick={handleCancelarAtivacao} disabled={carregando}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {etapa === "ativo" && (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, color: "var(--success)" }}>
-            <CheckCircle2 size={18} />
-            <div style={{ fontWeight: 600, fontSize: 13.5 }}>Verificação em duas etapas ativada</div>
-          </div>
-          <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 14 }}>
-            A cada login será pedido também o código do seu aplicativo autenticador.
-          </p>
-          {erro && <div className="nexo-login-alert err" style={{ marginBottom: 12 }}>{erro}</div>}
-          <button className="nexo-btn nexo-btn-danger" onClick={handleDesativar} disabled={carregando}>
-            {carregando ? "Desativando…" : "Desativar verificação em duas etapas"}
-          </button>
-        </div>
-      )}
-    </Modal>
   );
 }
 
@@ -4315,7 +2412,7 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
 
   return (
     <>
-      <Field label="Nome do consultor *" error={errors.nome}>
+      <Field label="Nome da consultora *" error={errors.nome}>
         <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Nome completo" />
       </Field>
       <div className="nexo-field-row">
@@ -4334,354 +2431,51 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
       </Field>
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultor</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultora</button>
       </div>
     </>
   );
 }
 
 function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
-  const ativasCount = db.consultoras.filter((c) => c.status === "Ativa").length;
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Consultores<span className="nexo-section-count">{db.consultoras.length} cadastrados</span></div>
-          <div className="nexo-section-sub">Equipe comercial, adesões e comissões por consultor</div>
-        </div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Novo consultor</button>
+        <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
       </div>
 
       {db.consultoras.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum consultor cadastrado" sub="Clique em “Novo consultor” para começar." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
       ) : (
-        <>
-          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
-            <Kpi icon={Users} label="Consultores cadastrados" value={db.consultoras.length} tone="info" />
-            <Kpi icon={CheckCircle2} label="Consultores ativos" value={ativasCount} tone="success" />
-          </div>
-          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
-            {db.consultoras.map((c) => {
-              const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
-              const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
-              const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
-              const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
-              const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
-              return (
-                <div key={c.id} className="nexo-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, gap: 8 }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div className="nexo-avatar-sm" style={{ background: getAvatarColor(c.nome) }}>{getIniciais(c.nome)}</div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
-                        <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
-                      </div>
-                    </div>
-                    <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
+        <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+          {db.consultoras.map((c) => {
+            const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
+            const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
+            const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
+            const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
+            const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
+            return (
+              <div key={c.id} className="nexo-card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
+                    <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
                   </div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
-                    <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
-                    <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
-                    <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
-                  </div>
+                  <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
                 </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Usuários (Administrador / Operador)                                  */
-/* ------------------------------------------------------------------ */
-
-function NovoUsuarioForm({ sessao, onCriado }) {
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [role, setRole] = useState("operador");
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState("");
-
-  async function criar() {
-    if (!nome.trim() || !email.trim() || !senha.trim()) {
-      setErro("Preencha nome, e-mail e senha.");
-      return;
-    }
-    if (senha.length < 6) {
-      setErro("A senha precisa ter pelo menos 6 caracteres.");
-      return;
-    }
-    setSalvando(true);
-    setErro("");
-    try {
-      const resp = await fetch("/api/gerenciar-usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
-        body: JSON.stringify({ acao: "criar", nome, email, senha, role }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.erro || "Não foi possível criar o usuário.");
-      setNome(""); setEmail(""); setSenha(""); setRole("operador");
-      showToast("Usuário criado com sucesso.", "success");
-      onCriado();
-    } catch (e) {
-      setErro(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  return (
-    <div className="nexo-card" style={{ marginBottom: 16 }}>
-      <div className="nexo-chart-title" style={{ marginBottom: 12 }}>Novo usuário</div>
-      <div className="nexo-field-row3">
-        <Field label="Nome">
-          <input className="nexo-input" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
-        </Field>
-        <Field label="E-mail">
-          <input type="email" className="nexo-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" />
-        </Field>
-        <Field label="Senha">
-          <input type="password" className="nexo-input" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
-        </Field>
-      </div>
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginTop: 12, flexWrap: "wrap" }}>
-        <div style={{ maxWidth: 220, flex: "1 1 220px" }}>
-          <Field label="Perfil">
-            <select className="nexo-select" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="operador">Operador (acesso limitado)</option>
-              <option value="admin">Administrador (acesso total)</option>
-            </select>
-          </Field>
-        </div>
-        <button className="nexo-btn nexo-btn-primary" disabled={salvando} onClick={criar}>
-          {salvando ? "Criando…" : "Criar usuário"}
-        </button>
-      </div>
-      {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
-    </div>
-  );
-}
-
-function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
-  const [alterando, setAlterando] = useState(null);
-
-  async function alterarRole(userId, novoRole) {
-    setAlterando(userId);
-    try {
-      const resp = await fetch("/api/gerenciar-usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
-        body: JSON.stringify({ acao: "alterar_role", userId, role: novoRole }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.erro || "Não foi possível alterar o perfil.");
-      await onRecarregarUsuarios();
-      showToast("Perfil atualizado.", "success");
-    } catch (e) {
-      showToast(e.message, "error");
-    } finally {
-      setAlterando(null);
-    }
-  }
-
-  async function excluirUsuario(userId, nome) {
-    if (userId === meuUserId) {
-      showToast("Você não pode excluir seu próprio usuário.", "warning");
-      return;
-    }
-    if (!(await confirmDialog(`Excluir o acesso de "${nome}"? Essa ação não pode ser desfeita.`))) return;
-    setAlterando(userId);
-    try {
-      const resp = await fetch("/api/gerenciar-usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
-        body: JSON.stringify({ acao: "excluir", userId }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.erro || "Não foi possível excluir o usuário.");
-      await onRecarregarUsuarios();
-      showToast("Usuário excluído.", "success");
-    } catch (e) {
-      showToast(e.message, "error");
-    } finally {
-      setAlterando(null);
-    }
-  }
-
-  return (
-    <div>
-      <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Usuários<span className="nexo-section-count">{db.usuarios.length} cadastrados</span></div>
-          <div className="nexo-section-sub">Quem tem acesso ao sistema e com qual perfil</div>
-        </div>
-      </div>
-
-      <NovoUsuarioForm sessao={sessao} onCriado={onRecarregarUsuarios} />
-
-      {db.usuarios.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Shield} title="Nenhum usuário cadastrado" sub="Use o formulário acima para criar o primeiro acesso." /></div>
-      ) : (
-        <div className="nexo-table-wrap">
-          <div className="nexo-table-scroll">
-            <table className="nexo-table">
-              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th></th></tr></thead>
-              <tbody>
-                {db.usuarios.map((u) => (
-                  <tr key={u.userId}>
-                    <td>
-                      <div className="nexo-name-cell">
-                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(u.nome || u.email) }}>{getIniciais(u.nome || u.email)}</div>
-                        <span style={{ fontWeight: 600 }}>{u.nome || "—"}{u.userId === meuUserId && <span className="nexo-cell-muted"> (você)</span>}</span>
-                      </div>
-                    </td>
-                    <td className="nexo-cell-muted">{u.email}</td>
-                    <td>
-                      <select
-                        className="nexo-select"
-                        style={{ maxWidth: 200 }}
-                        value={u.role}
-                        disabled={alterando === u.userId || u.userId === meuUserId}
-                        onChange={(e) => alterarRole(u.userId, e.target.value)}
-                      >
-                        <option value="operador">Operador</option>
-                        <option value="admin">Administrador</option>
-                      </select>
-                    </td>
-                    <td>
-                      <div className="nexo-actions-cell">
-                        <button
-                          className="nexo-icon-btn danger"
-                          disabled={alterando === u.userId || u.userId === meuUserId}
-                          onClick={() => excluirUsuario(u.userId, u.nome || u.email)}
-                          title="Excluir usuário"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Links Úteis                                                          */
-/* ------------------------------------------------------------------ */
-
-function LinkForm({ initial, onSave, onCancel }) {
-  const [f, setF] = useState(initial || { nome: "", url: "", observacao: "" });
-  const [errors, setErrors] = useState({});
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-
-  function submit() {
-    const errs = {};
-    if (!f.nome.trim()) errs.nome = "Informe um nome.";
-    if (!f.url.trim()) errs.url = "Informe o link.";
-    else if (!/^https?:\/\//i.test(f.url.trim())) errs.url = "O link deve começar com http:// ou https://";
-    if (Object.keys(errs).length) return setErrors(errs);
-    onSave({ ...f, id: initial?.id });
-  }
-
-  return (
-    <>
-      <Field label="Nome *" error={errors.nome}>
-        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: SGA Hinova, Porto Seguro Corretor…" />
-      </Field>
-      <Field label="Link (URL) *" error={errors.url}>
-        <input className="nexo-input mono" value={f.url} onChange={set("url")} placeholder="https://..." />
-      </Field>
-      <Field label="Observação (opcional)">
-        <input className="nexo-input" value={f.observacao} onChange={set("observacao")} placeholder="Ex.: login com CPF, usuário compartilhado…" />
-      </Field>
-      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
-        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar link</button>
-      </div>
-    </>
-  );
-}
-
-function LinksUteisView({ db, onOpenModal, onDeleteLink }) {
-  const [query, setQuery] = useState("");
-  const filtered = db.linksUteis.filter((l) => {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return l.nome.toLowerCase().includes(q) || l.url.toLowerCase().includes(q) || (l.observacao || "").toLowerCase().includes(q);
-  });
-
-  return (
-    <div>
-      <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Links Úteis<span className="nexo-section-count">{db.linksUteis.length} cadastrados</span></div>
-          <div className="nexo-section-sub">Atalhos para portais de seguradoras e sistemas parceiros</div>
-        </div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("link")}><Plus size={15} /> Novo link</button>
-      </div>
-
-      <div className="nexo-filters">
-        <div className="nexo-filter-field" style={{ flex: "1 1 260px" }}>
-          <label>Buscar</label>
-          <div className="nexo-searchbar">
-            <Search size={14} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nome, link ou observação" />
-          </div>
-        </div>
-      </div>
-
-      {db.linksUteis.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Link2} title="Nenhum link cadastrado" sub="Clique em “Novo link” para adicionar os sistemas das seguradoras/corretoras que você usa." /></div>
-      ) : filtered.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={ListFilter} title="Nenhum link encontrado" sub="Ajuste a busca para ver outros resultados." /></div>
-      ) : (
-        <div className="nexo-table-wrap">
-          <div className="nexo-table-scroll">
-            <table className="nexo-table">
-              <thead>
-                <tr><th>Nome</th><th>Link</th><th>Observação</th><th></th></tr>
-              </thead>
-              <tbody>
-                {filtered.map((l) => (
-                  <tr key={l.id}>
-                    <td>
-                      <div className="nexo-name-cell">
-                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(l.nome) }}><Link2 size={13} /></div>
-                        <span style={{ fontWeight: 600 }}>{l.nome}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="mono" style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4, wordBreak: "break-all" }}>
-                        {l.url} <ExternalLink size={12} />
-                      </a>
-                    </td>
-                    <td className="nexo-cell-muted">{l.observacao || "—"}</td>
-                    <td>
-                      <div className="nexo-actions-cell">
-                        <button className="nexo-icon-btn" onClick={() => onOpenModal("link", l)}><Pencil size={13} /></button>
-                        <button className="nexo-icon-btn" onClick={() => onDeleteLink(l.id)}><Trash2 size={13} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
+                  <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
+                  <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
+                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -4702,7 +2496,7 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   function submit() {
     const errs = {};
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
-    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
     if (!f.valorAdesao || Number(f.valorAdesao) <= 0) errs.valorAdesao = "Informe um valor válido.";
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
@@ -4717,7 +2511,7 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
-        <Field label="Consultor responsável *" error={errors.consultoraId}>
+        <Field label="Consultora responsável *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -4755,77 +2549,165 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   );
 }
 
+function mesRefDe(dataISO) {
+  return (dataISO || "").slice(0, 7); // "AAAA-MM"
+}
+function rotuloMes(chaveAAAAMM) {
+  if (!chaveAAAAMM) return "Sem data";
+  const [ano, mes] = chaveAAAAMM.split("-").map(Number);
+  const d = new Date(ano, mes - 1, 1);
+  const rotulo = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return rotulo.charAt(0).toUpperCase() + rotulo.slice(1);
+}
+
 function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const chaveMesAtual = mesRefDe(todayISO());
+  const [mesSelecionado, setMesSelecionado] = useState(chaveMesAtual);
+  const [aba, setAba] = useState("lancamentos"); // lancamentos | fechamento
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
 
-  const recebidas = db.adesoes.filter((a) => a.status === "Recebida");
-  const pendentes = db.adesoes.filter((a) => a.status === "Pendente");
-  const canceladas = db.adesoes.filter((a) => a.status === "Cancelada");
+  const mesesDisponiveis = useMemo(() => {
+    const chaves = new Set(db.adesoes.map((a) => mesRefDe(a.dataVenda)).filter(Boolean));
+    chaves.add(chaveMesAtual);
+    return Array.from(chaves).sort().reverse();
+  }, [db.adesoes]);
 
-  const filtradas = filtroStatus === "Todos" ? db.adesoes : db.adesoes.filter((a) => a.status === filtroStatus);
+  const adesoesDoMes = mesSelecionado === "todos" ? db.adesoes : db.adesoes.filter((a) => mesRefDe(a.dataVenda) === mesSelecionado);
+
+  const recebidas = adesoesDoMes.filter((a) => a.status === "Recebida");
+  const pendentes = adesoesDoMes.filter((a) => a.status === "Pendente");
+  const canceladas = adesoesDoMes.filter((a) => a.status === "Cancelada");
+
+  const filtradas = filtroStatus === "Todos" ? adesoesDoMes : adesoesDoMes.filter((a) => a.status === filtroStatus);
+
+  const colunasExportacao = [
+    { titulo: "Cliente", valor: (a) => nomeCliente(a.clienteId) },
+    { titulo: "Consultora", valor: (a) => nomeConsultora(a.consultoraId) },
+    { titulo: "Data da venda", valor: (a) => formatDateBR(a.dataVenda) },
+    { titulo: "Valor da adesão", valor: (a) => a.valorAdesao },
+    { titulo: "Valor recebido", valor: (a) => a.valorRecebido },
+    { titulo: "Status", valor: (a) => a.status },
+  ];
+
+  const fechamentoPorMes = useMemo(() => {
+    const chaves = Array.from(new Set(db.adesoes.map((a) => mesRefDe(a.dataVenda)))).sort().reverse();
+    return chaves.map((chave) => {
+      const doMes = db.adesoes.filter((a) => mesRefDe(a.dataVenda) === chave);
+      const recebidasDoMes = doMes.filter((a) => a.status === "Recebida");
+      const pendentesDoMes = doMes.filter((a) => a.status === "Pendente");
+      const canceladasDoMes = doMes.filter((a) => a.status === "Cancelada");
+      return {
+        chave,
+        total: doMes.length,
+        valorRecebido: sum(recebidasDoMes.map((a) => a.valorRecebido || a.valorAdesao)),
+        valorPendente: sum(pendentesDoMes.map((a) => a.valorAdesao)),
+        valorCancelado: sum(canceladasDoMes.map((a) => a.valorAdesao)),
+        linhas: doMes,
+      };
+    });
+  }, [db.adesoes]);
 
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
-          <div className="nexo-section-sub">Taxas de adesão de novos clientes por consultor</div>
-        </div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("adesao")}><Plus size={15} /> Nova adesão</button>
-      </div>
-
-      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <Kpi icon={CheckCircle2} label="Adesões recebidas" value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
-        <Kpi icon={Clock} label="Adesões pendentes" value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
-        <Kpi icon={XCircle} label="Adesões canceladas" value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
-      </div>
-
-      <div className="nexo-filters">
-        <div className="nexo-filter-field">
-          <label>Status</label>
-          <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
-            <option>Todos</option><option>Pendente</option><option>Recebida</option><option>Cancelada</option>
-          </select>
+        <div className="nexo-section-title">Adesões<span className="nexo-section-count">{db.adesoes.length} lançadas</span></div>
+        <div className="nexo-topbar-actions">
+          <button
+            className="nexo-btn"
+            disabled={filtradas.length === 0}
+            onClick={() => exportarCSV(`adesoes-${mesSelecionado === "todos" ? "todas" : mesSelecionado}.csv`, colunasExportacao, filtradas)}
+          >
+            Exportar CSV
+          </button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("adesao")}><Plus size={15} /> Nova adesão</button>
         </div>
       </div>
 
-      {db.adesoes.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma adesão lançada" sub="Clique em “Nova adesão” para começar." /></div>
+      <div className="nexo-tabs">
+        <div className={`nexo-tab ${aba === "lancamentos" ? "active" : ""}`} onClick={() => setAba("lancamentos")}>Lançamentos</div>
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento mensal</div>
+      </div>
+
+      {aba === "lancamentos" ? (
+        <>
+          <div className="nexo-filters">
+            <div className="nexo-filter-field">
+              <label>Mês</label>
+              <select className="nexo-select" value={mesSelecionado} onChange={(e) => setMesSelecionado(e.target.value)}>
+                <option value="todos">Todos os meses</option>
+                {mesesDisponiveis.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+              </select>
+            </div>
+            <div className="nexo-filter-field">
+              <label>Status</label>
+              <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                <option>Todos</option><option>Pendente</option><option>Recebida</option><option>Cancelada</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <Kpi icon={CheckCircle2} label={`Recebidas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
+            <Kpi icon={Clock} label={`Pendentes${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
+            <Kpi icon={XCircle} label={`Canceladas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
+          </div>
+
+          {adesoesDoMes.length === 0 ? (
+            <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma adesão neste período" sub="Troque o mês no filtro ou clique em “Nova adesão”." /></div>
+          ) : (
+            <div className="nexo-table-wrap">
+              <div className="nexo-table-scroll">
+                <table className="nexo-table">
+                  <thead><tr><th>Cliente</th><th>Consultora</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                  <tbody>
+                    {filtradas.map((a) => (
+                      <tr key={a.id}>
+                        <td style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</td>
+                        <td className="nexo-cell-muted">{nomeConsultora(a.consultoraId)}</td>
+                        <td>{formatDateBR(a.dataVenda)}</td>
+                        <td className="mono">{formatBRL(a.valorAdesao)}</td>
+                        <td><StatusPill status={a.status} /></td>
+                        <td>
+                          <div className="nexo-actions-cell">
+                            {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
+                            <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
+                            <button className="nexo-icon-btn" onClick={() => onDeleteAdesao(a.id)}><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Cliente</th><th>Consultor</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Mês</th><th>Qtd. adesões</th><th>Recebido</th><th>Pendente</th><th>Cancelado</th><th></th></tr></thead>
               <tbody>
-                {filtradas.map((a) => (
-                  <tr key={a.id}>
+                {fechamentoPorMes.length === 0 ? (
+                  <tr><td colSpan={6} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma adesão lançada ainda.</td></tr>
+                ) : fechamentoPorMes.map((f) => (
+                  <tr key={f.chave}>
+                    <td style={{ fontWeight: 600 }}>{rotuloMes(f.chave)}</td>
+                    <td>{f.total}</td>
+                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.valorRecebido)}</td>
+                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.valorPendente)}</td>
+                    <td className="mono" style={{ color: "var(--danger)" }}>{formatBRL(f.valorCancelado)}</td>
                     <td>
-                      <div className="nexo-name-cell">
-                        <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeCliente(a.clienteId)) }}>{getIniciais(nomeCliente(a.clienteId))}</div>
-                        <span style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</span>
-                      </div>
-                    </td>
-                    <td className="nexo-cell-muted">{nomeConsultora(a.consultoraId)}</td>
-                    <td>{formatDateBR(a.dataVenda)}</td>
-                    <td className="mono">{formatBRL(a.valorAdesao)}</td>
-                    <td><StatusPill status={a.status} /></td>
-                    <td>
-                      <div className="nexo-actions-cell">
-                        {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
-                        <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
-                        <button className="nexo-icon-btn" onClick={() => onDeleteAdesao(a.id)}><Trash2 size={13} /></button>
-                      </div>
+                      <button className="nexo-btn nexo-btn-sm" onClick={() => exportarCSV(`adesoes-${f.chave}.csv`, colunasExportacao, f.linhas)}>
+                        Exportar CSV
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="nexo-table-foot">
-            <span>{filtradas.length} de {db.adesoes.length} adesões</span>
-            <span className="mono">Total no filtro: {formatBRL(sum(filtradas.map((a) => a.valorAdesao)))}</span>
           </div>
         </div>
       )}
@@ -4859,7 +2741,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
 
   function submit() {
     const errs = {};
-    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
     if (!f.valorBase || Number(f.valorBase) <= 0) errs.valorBase = "Informe o valor do contrato/adesão.";
     if (!f.percentual || Number(f.percentual) <= 0) errs.percentual = "Informe o percentual.";
@@ -4870,7 +2752,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   return (
     <>
       <div className="nexo-field-row">
-        <Field label="Consultor *" error={errors.consultoraId}>
+        <Field label="Consultora *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -4934,24 +2816,12 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
 function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao }) {
   const [aba, setAba] = useState("lista"); // lista | fechamento
   const [filtroStatus, setFiltroStatus] = useState("Todos");
-  const [buscaComissao, setBuscaComissao] = useState("");
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
   const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
 
   const aPagar = db.comissoes.filter((c) => c.status === "A pagar");
   const pagas = db.comissoes.filter((c) => c.status === "Pago");
-  const producaoTotal = sum(db.comissoes.map((c) => c.valorBase));
-  const ticketMedio = db.comissoes.length ? sum(db.comissoes.map((c) => c.valorComissao)) / db.comissoes.length : 0;
-
-  const filtradas = db.comissoes.filter((c) => {
-    if (filtroStatus !== "Todos" && c.status !== filtroStatus) return false;
-    if (buscaComissao) {
-      const termo = buscaComissao.toLowerCase();
-      const texto = `${nomeConsultora(c.consultoraId)} ${nomeCliente(c.clienteId)} ${c.tipo} ${c.referencia}`.toLowerCase();
-      if (!texto.includes(termo)) return false;
-    }
-    return true;
-  });
+  const filtradas = filtroStatus === "Todos" ? db.comissoes : db.comissoes.filter((c) => c.status === filtroStatus);
 
   const fechamentoPorConsultora = db.consultoras.map((consultora) => {
     const comissoesDaConsultora = db.comissoes.filter((c) => c.consultoraId === consultora.id);
@@ -4962,40 +2832,28 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
       totalPago: sum(comissoesDaConsultora.filter((c) => c.status === "Pago").map((c) => c.valorComissao)),
       totalAPagar: sum(comissoesDaConsultora.filter((c) => c.status === "A pagar").map((c) => c.valorComissao)),
     };
-  }).filter((f) => f.totalContratos > 0).sort((a, b) => b.totalComissao - a.totalComissao);
+  }).filter((f) => f.totalContratos > 0);
 
   return (
     <div>
       <div className="nexo-section-head">
-        <div>
-          <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
-          <div className="nexo-section-sub">Comissões de consultores, produção e fechamento por período</div>
-        </div>
+        <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
         <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Nova comissão</button>
       </div>
 
-      <div className="nexo-kpi-grid">
-        <Kpi icon={Clock} label="A pagar" value={formatBRL(sum(aPagar.map((c) => c.valorComissao)))} tone="warning" />
-        <Kpi icon={CheckCircle2} label="Pagas" value={formatBRL(sum(pagas.map((c) => c.valorComissao)))} tone="success" />
-        <Kpi icon={TrendingUp} label="Produção total" value={formatBRL(producaoTotal)} tone="info" />
-        <Kpi icon={Wallet} label="Ticket médio de comissão" value={formatBRL(ticketMedio)} tone="neutral" />
+      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <Kpi icon={Clock} label="Comissões a pagar" value={formatBRL(sum(aPagar.map((c) => c.valorComissao)))} tone="warning" />
+        <Kpi icon={CheckCircle2} label="Comissões pagas" value={formatBRL(sum(pagas.map((c) => c.valorComissao)))} tone="success" />
       </div>
 
       <div className="nexo-tabs">
         <div className={`nexo-tab ${aba === "lista" ? "active" : ""}`} onClick={() => setAba("lista")}>Lançamentos</div>
-        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultor</div>
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultora</div>
       </div>
 
       {aba === "lista" ? (
         <>
           <div className="nexo-filters">
-            <div className="nexo-filter-field" style={{ flex: "1 1 220px" }}>
-              <label>Buscar</label>
-              <div className="nexo-searchbar">
-                <Search size={14} />
-                <input value={buscaComissao} onChange={(e) => setBuscaComissao(e.target.value)} placeholder="Consultor, cliente ou referência…" />
-              </div>
-            </div>
             <div className="nexo-filter-field">
               <label>Status</label>
               <select className="nexo-select" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
@@ -5005,25 +2863,17 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
           </div>
           {db.comissoes.length === 0 ? (
             <div className="nexo-table-wrap"><EmptyState icon={FileText} title="Nenhuma comissão lançada" sub="Clique em “Nova comissão” para começar." /></div>
-          ) : filtradas.length === 0 ? (
-            <div className="nexo-table-wrap"><EmptyState icon={ListFilter} title="Nenhuma comissão encontrada" sub="Ajuste a busca ou os filtros para ver outros resultados." /></div>
           ) : (
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Consultor</th><th>Cliente</th><th>Sobre</th><th>Referência</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {filtradas.map((c) => (
                       <tr key={c.id}>
-                        <td>
-                          <div className="nexo-name-cell">
-                            <div className="nexo-avatar-sm" style={{ background: getAvatarColor(nomeConsultora(c.consultoraId)) }}>{getIniciais(nomeConsultora(c.consultoraId))}</div>
-                            <span style={{ fontWeight: 600 }}>{nomeConsultora(c.consultoraId)}</span>
-                          </div>
-                        </td>
+                        <td style={{ fontWeight: 600 }}>{nomeConsultora(c.consultoraId)}</td>
                         <td className="nexo-cell-muted">{nomeCliente(c.clienteId)}</td>
                         <td className="nexo-cell-muted">{c.tipo}</td>
-                        <td className="nexo-cell-muted">{c.referencia || "—"}</td>
                         <td className="mono">{formatBRL(c.valorBase)}</td>
                         <td className="mono">{c.percentual}%</td>
                         <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(c.valorComissao)}</td>
@@ -5040,51 +2890,197 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
                   </tbody>
                 </table>
               </div>
-              <div className="nexo-table-foot">
-                <span>{filtradas.length} de {db.comissoes.length} lançamentos</span>
-                <span className="mono">Total no filtro: {formatBRL(sum(filtradas.map((c) => c.valorComissao)))}</span>
-              </div>
             </div>
           )}
         </>
       ) : (
         <div className="nexo-table-wrap">
-          {fechamentoPorConsultora.length === 0 ? (
-            <EmptyState icon={Users} title="Nenhum fechamento ainda" sub="Lance comissões para ver o total por consultor." />
-          ) : (
-            <div className="nexo-table-scroll">
-              <table className="nexo-table">
-                <thead><tr><th>Consultor</th><th>Contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th><th style={{ width: 160 }}>Progresso pago</th></tr></thead>
-                <tbody>
-                  {fechamentoPorConsultora.map((f) => {
-                    const pct = f.totalComissao > 0 ? Math.round((f.totalPago / f.totalComissao) * 100) : 0;
-                    return (
-                      <tr key={f.consultora.id}>
-                        <td>
-                          <div className="nexo-name-cell">
-                            <div className="nexo-avatar-sm" style={{ background: getAvatarColor(f.consultora.nome) }}>{getIniciais(f.consultora.nome)}</div>
-                            <span style={{ fontWeight: 600 }}>{f.consultora.nome}</span>
-                          </div>
-                        </td>
-                        <td>{f.totalContratos}</td>
-                        <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(f.totalComissao)}</td>
-                        <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.totalPago)}</td>
-                        <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.totalAPagar)}</td>
-                        <td>
-                          <div className="nexo-progress-track">
-                            <div className="nexo-progress-fill" style={{ width: `${pct}%` }} />
-                          </div>
-                          <div className="nexo-cell-muted" style={{ fontSize: 11, marginTop: 3 }}>{pct}% pago</div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Consultora</th><th>Total de contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th></tr></thead>
+              <tbody>
+                {fechamentoPorConsultora.length === 0 ? (
+                  <tr><td colSpan={5} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma comissão lançada ainda.</td></tr>
+                ) : fechamentoPorConsultora.map((f) => (
+                  <tr key={f.consultora.id}>
+                    <td style={{ fontWeight: 600 }}>{f.consultora.nome}</td>
+                    <td>{f.totalContratos}</td>
+                    <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(f.totalComissao)}</td>
+                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.totalPago)}</td>
+                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.totalAPagar)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Usuários (Administrador / Operador)                                  */
+/* ------------------------------------------------------------------ */
+
+function NovoUsuarioForm({ onCriado, sessao }) {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [role, setRole] = useState("operador");
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function criar() {
+    if (!nome.trim() || !email.trim() || !senha.trim()) {
+      setErro("Preencha nome, e-mail e senha.");
+      return;
+    }
+    if (senha.length < 6) {
+      setErro("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+    setSalvando(true);
+    setErro("");
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "criar", nome, email, senha, role }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível criar o usuário.");
+      setNome(""); setEmail(""); setSenha(""); setRole("operador");
+      onCriado();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="nexo-card" style={{ marginBottom: 16 }}>
+      <div className="nexo-chart-title" style={{ marginBottom: 12 }}>Novo usuário</div>
+      <div className="nexo-field-row3">
+        <Field label="Nome">
+          <input className="nexo-input" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
+        </Field>
+        <Field label="E-mail">
+          <input type="email" className="nexo-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@email.com" />
+        </Field>
+        <Field label="Senha">
+          <input type="password" className="nexo-input" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
+        </Field>
+      </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginTop: 12 }}>
+        <div style={{ maxWidth: 220 }}>
+          <Field label="Perfil">
+            <select className="nexo-select" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="operador">Operador (acesso limitado)</option>
+              <option value="admin">Administrador (acesso total)</option>
+            </select>
+          </Field>
+        </div>
+        <button className="nexo-btn nexo-btn-primary" disabled={salvando} onClick={criar}>
+          {salvando ? "Criando…" : "Criar usuário"}
+        </button>
+      </div>
+      {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 10 }}>{erro}</div>}
+    </div>
+  );
+}
+
+function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
+  const [alterando, setAlterando] = useState(null);
+
+  async function alterarRole(userId, novoRole) {
+    setAlterando(userId);
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "alterar_role", userId, role: novoRole }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível alterar o perfil.");
+      onRecarregarUsuarios();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAlterando(null);
+    }
+  }
+
+  async function excluirUsuario(userId, nome) {
+    if (userId === meuUserId) {
+      alert("Você não pode excluir seu próprio usuário.");
+      return;
+    }
+    if (!window.confirm(`Excluir o acesso de "${nome}"? Essa ação não pode ser desfeita.`)) return;
+    setAlterando(userId);
+    try {
+      const resp = await fetch("/api/gerenciar-usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessao.access_token}` },
+        body: JSON.stringify({ acao: "excluir", userId }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || "Não foi possível excluir o usuário.");
+      onRecarregarUsuarios();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAlterando(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Usuários<span className="nexo-section-count">{db.usuarios.length} cadastrados</span></div>
+      </div>
+
+      <NovoUsuarioForm sessao={sessao} onCriado={onRecarregarUsuarios} />
+
+      <div className="nexo-table-wrap">
+        <div className="nexo-table-scroll">
+          <table className="nexo-table">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th></th></tr></thead>
+            <tbody>
+              {db.usuarios.map((u) => (
+                <tr key={u.userId}>
+                  <td style={{ fontWeight: 600 }}>{u.nome || "—"}{u.userId === meuUserId && <span className="nexo-cell-muted"> (você)</span>}</td>
+                  <td className="nexo-cell-muted">{u.email}</td>
+                  <td>
+                    <select
+                      className="nexo-select"
+                      style={{ maxWidth: 200 }}
+                      value={u.role}
+                      disabled={alterando === u.userId || u.userId === meuUserId}
+                      onChange={(e) => alterarRole(u.userId, e.target.value)}
+                    >
+                      <option value="operador">Operador</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div className="nexo-actions-cell">
+                      <button
+                        className="nexo-icon-btn"
+                        disabled={alterando === u.userId || u.userId === meuUserId}
+                        onClick={() => excluirUsuario(u.userId, u.nome)}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -5094,31 +3090,20 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
 /* ------------------------------------------------------------------ */
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard, group: "Visão geral" },
-  { key: "clientes", label: "Clientes", Icon: Users, group: "Operação" },
-  { key: "veiculos", label: "Veículos", Icon: Car, group: "Operação" },
-  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet, group: "Operação" },
-  { key: "financeiro", label: "Financeiro", Icon: Receipt, group: "Financeiro" },
-  { key: "comissoes", label: "Comissões", Icon: CreditCard, group: "Financeiro" },
-  { key: "adesoes", label: "Adesões", Icon: FileDown, group: "Financeiro" },
-  { key: "consultoras", label: "Consultores", Icon: Users, group: "Equipe & recursos" },
-  { key: "relatorios", label: "Relatórios", Icon: FileText, group: "Equipe & recursos" },
-  { key: "links", label: "Links Úteis", Icon: Link2, group: "Equipe & recursos" },
-  { key: "usuarios", label: "Usuários", Icon: Shield, group: "Equipe & recursos" },
+  { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { key: "clientes", label: "Clientes", Icon: Users },
+  { key: "veiculos", label: "Veículos", Icon: Car },
+  { key: "financeiro", label: "Financeiro", Icon: Receipt },
+  { key: "relatorios", label: "Relatórios", Icon: FileText },
+  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet },
+  { key: "consultoras", label: "Consultoras", Icon: Users },
+  { key: "adesoes", label: "Adesões", Icon: FileDown },
+  { key: "comissoes", label: "Comissões", Icon: CreditCard },
+  { key: "usuarios", label: "Usuários", Icon: Shield },
 ];
 
-// Perfil "operador": só enxerga os módulos operacionais do dia a dia.
-// Consultoras, Adesões, Relatórios, Links Úteis e Usuários ficam restritos
-// a administradores (a tabela `perfis` e as políticas de RLS no Supabase
-// aplicam essa mesma regra também no banco de dados).
-const MODULOS_OPERADOR = ["clientes", "veiculos", "financeiro", "cotacoes", "comissoes", "clienteDetail"];
-
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], linksUteis: [], usuarios: [] };
-
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], usuarios: [] };
 const rowToUsuario = (r) => ({ userId: r.user_id, nome: r.nome || "", email: r.email || "", role: r.role || "operador" });
-
-const rowToLink = (r) => ({ id: r.id, nome: r.nome || "", url: r.url || "", observacao: r.observacao || "" });
-const linkToRow = (l) => ({ nome: l.nome, url: l.url, observacao: l.observacao || null });
 
 const rowToConsultora = (r) => ({ id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa" });
 const consultoraToRow = (c) => ({ nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa" });
@@ -5148,8 +3133,8 @@ const comissaoToRow = (c) => ({
   data_prevista_pagamento: c.dataPrevistaPagamento || null, data_efetiva_pagamento: c.dataEfetivaPagamento || null, status: c.status || "A pagar",
 });
 
-const rowToSeguradora = (r) => ({ id: r.id, nome: r.nome || "" });
-const seguradoraToRow = (s) => ({ nome: s.nome });
+const rowToSeguradora = (r) => ({ id: r.id, nome: r.nome || "", linkPortal: r.link_portal || "" });
+const seguradoraToRow = (s) => ({ nome: s.nome, link_portal: s.linkPortal || null });
 
 const rowToPlano = (r) => ({
   id: r.id, seguradoraId: r.seguradora_id, nome: r.nome || "",
@@ -5165,12 +3150,11 @@ const planoToRow = (p) => ({
 const rowToCotacao = (r) => ({
   id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id, seguradoraId: r.seguradora_id, planoId: r.plano_id,
   valor: r.valor ?? "", dataCotacao: r.data_cotacao || "", observacoes: r.observacoes || "",
-  status: r.status || "Nova",
 });
 const cotacaoToRow = (c) => ({
   cliente_id: c.clienteId, veiculo_id: c.veiculoId || null, seguradora_id: c.seguradoraId, plano_id: c.planoId,
   valor: c.valor === "" || c.valor == null ? null : Number(c.valor), data_cotacao: c.dataCotacao || null,
-  observacoes: c.observacoes || null, status: c.status || "Nova",
+  observacoes: c.observacoes || null,
 });
 
 /* Mapeamento entre o formato usado no app (camelCase) e as colunas do Supabase (snake_case) */
@@ -5214,144 +3198,18 @@ const veiculoToRow = (v) => ({
   fipe_combustivel: v.fipeCombustivel || null, fipe_mes_referencia: v.fipeMesReferencia || null, fipe_ultima_consulta: v.fipeUltimaConsulta || null,
 });
 const rowToBoleto = (r) => ({
-  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", veiculoIds: r.veiculo_ids || [], numero: r.numero || "",
-  nossoNumero: r.nosso_numero || "",
+  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "",
   dataEmissao: r.data_emissao || "", dataVencimento: r.data_vencimento || "", valor: r.valor ?? "",
   dataPagamento: r.data_pagamento || "",
 });
-/** Um boleto pode cobrir vários veículos do mesmo cliente (ex.: boleto único de um cliente
- * com a frota toda). veiculo_ids guarda a lista completa; veiculo_id continua preenchido
- * (com o 1º da lista) só para compatibilidade com telas/relatórios antigos que leem 1 veículo só. */
-const boletoToRow = (b) => {
-  const veiculoIds = Array.isArray(b.veiculoIds) ? b.veiculoIds.filter(Boolean) : (b.veiculoId ? [b.veiculoId] : []);
-  return {
-    cliente_id: b.clienteId,
-    veiculo_id: veiculoIds.length ? veiculoIds[0] : null,
-    veiculo_ids: veiculoIds,
-    numero: b.numero,
-    nosso_numero: (b.nossoNumero || "").trim() || null,
-    data_emissao: b.dataEmissao || null,
-    data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
-  };
-};
-
-/* ------------------------------------------------------------------ */
-/* Assistente de IA (Google Gemini) — botão flutuante                  */
-/* ------------------------------------------------------------------ */
-
-function AssistenteIA({ db }) {
-  const [aberto, setAberto] = useState(false);
-  const [mensagens, setMensagens] = useState([]); // { autor: "usuario" | "assistente", texto }
-  const [pergunta, setPergunta] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const fimRef = useRef(null);
-
-  useEffect(() => {
-    if (aberto) fimRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mensagens, aberto]);
-
-  const enviar = async () => {
-    const texto = pergunta.trim();
-    if (!texto || enviando) return;
-    const historico = mensagens;
-    setMensagens((m) => [...m, { autor: "usuario", texto }]);
-    setPergunta("");
-    setEnviando(true);
-    try {
-      const contexto = montarContextoAssistente(db);
-      const resp = await fetch("/api/assistente-ia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pergunta: texto, contexto, historico }),
-      });
-      const dados = await resp.json().catch(() => ({}));
-      setMensagens((m) => [
-        ...m,
-        { autor: "assistente", texto: dados.resposta || dados.erro || "Não foi possível obter resposta do assistente." },
-      ]);
-    } catch (e) {
-      setMensagens((m) => [...m, { autor: "assistente", texto: "Não foi possível falar com o assistente agora. Tente novamente." }]);
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <>
-      <button
-        onClick={() => setAberto((v) => !v)}
-        title="Assistente de IA"
-        className="nexo-ai-fab"
-        style={{
-          position: "fixed", right: 22, bottom: 22, width: 54, height: 54, borderRadius: "50%",
-          background: "linear-gradient(135deg, var(--accent-2), var(--accent))", color: "#fff", border: "none", boxShadow: "0 8px 24px rgba(62,134,191,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 60,
-        }}
-      >
-        {aberto ? <X size={22} /> : <Bot size={24} />}
-      </button>
-
-      {aberto && (
-        <div
-          className="nexo-fade-in"
-          style={{
-            position: "fixed", right: 22, bottom: 86, width: 340, maxWidth: "calc(100vw - 32px)", height: 460,
-            maxHeight: "calc(100vh - 120px)", background: "var(--surface)", border: "1px solid var(--border-soft)",
-            borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column",
-            overflow: "hidden", zIndex: 60,
-          }}
-        >
-          <div style={{ padding: "13px 14px", borderBottom: "1px solid var(--border-soft)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, background: "var(--surface-2)" }}>
-            <div style={{ width: 26, height: 26, borderRadius: 8, background: "linear-gradient(135deg, var(--accent-2), var(--accent))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Bot size={14} color="#fff" />
-            </div>
-            Assistente Nexo
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {mensagens.length === 0 && (
-              <div className="nexo-cell-muted" style={{ fontSize: 12.5 }}>
-                Olá! Posso ajudar com dúvidas sobre o sistema e um resumo geral dos seus números (sem acessar dados pessoais de clientes). O que você quer saber?
-              </div>
-            )}
-            {mensagens.map((m, i) => (
-              <div
-                key={i}
-                style={{
-                  alignSelf: m.autor === "usuario" ? "flex-end" : "flex-start",
-                  background: m.autor === "usuario" ? "var(--accent)" : "var(--surface-2)",
-                  color: m.autor === "usuario" ? "#fff" : "var(--text)",
-                  borderRadius: 10, padding: "8px 11px", fontSize: 13, maxWidth: "85%", whiteSpace: "pre-wrap",
-                }}
-              >
-                {m.texto}
-              </div>
-            ))}
-            {enviando && <div className="nexo-cell-muted" style={{ fontSize: 12 }}>Digitando…</div>}
-            <div ref={fimRef} />
-          </div>
-          <div style={{ padding: 10, borderTop: "1px solid var(--border-soft)", display: "flex", gap: 8 }}>
-            <input
-              className="nexo-input"
-              style={{ flex: 1 }}
-              placeholder="Digite sua pergunta…"
-              value={pergunta}
-              onChange={(e) => setPergunta(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
-              disabled={enviando}
-            />
-            <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={enviar} disabled={enviando || !pergunta.trim()}>
-              <Send size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
+const boletoToRow = (b) => ({
+  cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, data_emissao: b.dataEmissao || null,
+  data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
+});
 
 export default function App() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = sem sessão, objeto = logado
-  const [recuperandoSenha, setRecuperandoSenha] = useState(false);
+  const [perfil, setPerfil] = useState(undefined); // undefined = carregando, null = sem perfil, objeto = { role, nome }
   const [db, setDb] = useState(EMPTY_DB);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -5359,92 +3217,35 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [globalSearch, setGlobalSearch] = useState("");
-  const [mfaPendente, setMfaPendente] = useState(false);
-  const [mostrarSeguranca, setMostrarSeguranca] = useState(false);
-  const [perfil, setPerfil] = useState(undefined); // undefined = carregando, null = sem perfil, objeto = { role, nome }
-  const [tema, setTema] = useState(() => {
-    try {
-      return localStorage.getItem("nexo_tema") === "branco" ? "branco" : "padrao";
-    } catch {
-      return "padrao";
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("nexo_tema", tema);
-    } catch {}
-  }, [tema]);
-
-  const alternarTema = () => setTema((t) => (t === "branco" ? "padrao" : "branco"));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      // Disparado quando o usuário chega pelo link de "redefinir senha" do e-mail.
-      if (event === "PASSWORD_RECOVERY") setRecuperandoSenha(true);
-      setSessao(session);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setSessao(session));
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Verificação em duas etapas: se o usuário ativou o 2FA, o login por senha
-  // só chega ao "aal1" — precisa confirmar o código do app autenticador
-  // ("aal2") antes de liberar os dados do sistema.
   useEffect(() => {
-    if (!sessao) {
-      setMfaPendente(false);
-      return;
-    }
-    let cancelado = false;
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
-      if (cancelado || error) return;
-      setMfaPendente(data.currentLevel === "aal1" && data.nextLevel === "aal2");
-    });
-    return () => { cancelado = true; };
-  }, [sessao]);
-
-  // Perfil de acesso (Administrador / Operador). A tabela `perfis` é
-  // protegida por RLS: cada usuário só enxerga a própria linha, exceto
-  // administradores, que enxergam todas — por isso essa consulta é segura
-  // mesmo antes de sabermos o papel do usuário logado.
-  useEffect(() => {
-    if (!sessao || mfaPendente) { setPerfil(sessao === null ? null : undefined); return; }
-    let cancelado = false;
+    if (!sessao) { setPerfil(sessao === null ? null : undefined); return; }
     supabase
       .from("perfis")
       .select("*")
       .eq("user_id", sessao.user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelado) return;
-        if (error) {
-          // A tabela "perfis" ainda não existe (migração de
-          // supabase/perfis-usuarios.sql não rodada) — libera acesso total
-          // em vez de restringir o sistema para todo mundo por engano.
-          setPerfil({ role: "admin" });
-          return;
-        }
+      .single()
+      .then(({ data }) => {
         setPerfil(data || null);
-        if (data && data.role !== "admin") {
-          setView((v) => (MODULOS_OPERADOR.includes(v) ? v : "clientes"));
-        }
+        if (data && data.role !== "admin") setView((v) => (v === "dashboard" ? "clientes" : v));
       });
-    return () => { cancelado = true; };
-  }, [sessao, mfaPendente]);
+  }, [sessao]);
 
   const ehAdmin = perfil?.role === "admin";
-  const podeVer = (chave) => ehAdmin || MODULOS_OPERADOR.includes(chave);
+  const modulosDoOperador = ["clientes", "veiculos", "financeiro", "cotacoes", "comissoes", "clienteDetail"];
+  const podeVer = (chave) => ehAdmin || modulosDoOperador.includes(chave);
 
   const carregarTudo = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, linksUteisRes, perfisRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -5454,7 +3255,6 @@ export default function App() {
         supabase.from("consultoras").select("*").order("nome"),
         supabase.from("adesoes").select("*"),
         supabase.from("comissoes").select("*"),
-        supabase.from("links_uteis").select("*").order("nome"),
         supabase.from("perfis").select("*").order("nome"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
@@ -5466,9 +3266,6 @@ export default function App() {
       if (consultorasRes.error) throw consultorasRes.error;
       if (adesoesRes.error) throw adesoesRes.error;
       if (comissoesRes.error) throw comissoesRes.error;
-      if (linksUteisRes.error) throw linksUteisRes.error;
-      // Se a tabela `perfis` ainda não existir no banco (migração não
-      // rodada), ignora o erro em vez de travar o carregamento do resto do sistema.
       setDb({
         clientes: (clientesRes.data || []).map(rowToCliente),
         veiculos: (veiculosRes.data || []).map(rowToVeiculo),
@@ -5479,8 +3276,7 @@ export default function App() {
         consultoras: (consultorasRes.data || []).map(rowToConsultora),
         adesoes: (adesoesRes.data || []).map(rowToAdesao),
         comissoes: (comissoesRes.data || []).map(rowToComissao),
-        linksUteis: (linksUteisRes.data || []).map(rowToLink),
-        usuarios: (perfisRes?.data || []).map(rowToUsuario),
+        usuarios: (usuariosRes.data || []).map(rowToUsuario),
       });
     } catch (e) {
       console.error(e);
@@ -5490,15 +3286,9 @@ export default function App() {
     }
   }, []);
 
-  const recarregarUsuarios = useCallback(async () => {
-    const { data, error } = await supabase.from("perfis").select("*").order("nome");
-    if (error) { showToast("Não foi possível atualizar a lista de usuários: " + error.message, "error"); return; }
-    setDb((prev) => ({ ...prev, usuarios: (data || []).map(rowToUsuario) }));
-  }, []);
-
   useEffect(() => {
-    if (sessao && !mfaPendente) carregarTudo();
-  }, [carregarTudo, sessao, mfaPendente]);
+    if (sessao) carregarTudo();
+  }, [carregarTudo, sessao]);
 
   const closeModal = () => setModal(null);
   const openModal = (type, data = null, defaultClienteId = null, defaultVeiculoId = null, defaultSeguradoraId = null) =>
@@ -5517,7 +3307,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar o cliente: " + e.message, "error");
+      alert("Não foi possível salvar o cliente: " + e.message);
     }
   };
 
@@ -5555,7 +3345,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar o veículo: " + e.message, "error");
+      alert("Não foi possível salvar o veículo: " + e.message);
     }
   };
 
@@ -5578,9 +3368,6 @@ export default function App() {
           return boletoToRow({
             ...boleto,
             numero: parcelado ? `${boleto.numero}-${i + 1}/${totalParcelas}` : boleto.numero,
-            // o Nosso Número é um controle único por boleto: em parcelamento, só a 1ª parcela leva
-            // o valor informado (senão as parcelas seguintes violariam a unicidade)
-            nossoNumero: i === 0 ? boleto.nossoNumero : "",
             dataVencimento: somarMeses(boleto.dataVencimento, i),
             // a data de pagamento (se informada) só se aplica à 1ª parcela; as seguintes começam em aberto
             dataPagamento: i === 0 ? boleto.dataPagamento : "",
@@ -5592,12 +3379,12 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar o boleto: " + e.message, "error");
+      alert("Não foi possível salvar o boleto: " + e.message);
     }
   };
 
   const deleteCliente = async (id) => {
-    if (!(await confirmDialog("Excluir este cliente? Os veículos e boletos vinculados também serão removidos."))) return;
+    if (!window.confirm("Excluir este cliente? Os veículos e boletos vinculados também serão removidos.")) return;
     try {
       const { error } = await supabase.from("clientes").delete().eq("id", id);
       if (error) throw error;
@@ -5611,59 +3398,33 @@ export default function App() {
       });
       if (selectedClienteId === id) { setSelectedClienteId(null); setView("clientes"); }
     } catch (e) {
-      showToast("Não foi possível excluir o cliente: " + e.message, "error");
+      alert("Não foi possível excluir o cliente: " + e.message);
     }
   };
 
   const deleteVeiculo = async (id) => {
-    if (!(await confirmDialog("Excluir este veículo? Boletos lançados só para ele serão removidos; boletos que cobrem vários veículos (inclusive este) serão mantidos, só tirando este veículo da lista."))) return;
+    if (!window.confirm("Excluir este veículo? Os boletos vinculados também serão removidos.")) return;
     try {
-      // Boletos que citam este veículo, via veiculo_ids (boleto de vários veículos) ou veiculo_id (boleto de 1 só)
-      const afetados = db.boletos.filter((b) => b.veiculoId === id || (b.veiculoIds || []).includes(id));
-      const idsRestantesPorBoleto = new Map(
-        afetados.map((b) => [b.id, (b.veiculoIds && b.veiculoIds.length ? b.veiculoIds : (b.veiculoId ? [b.veiculoId] : [])).filter((vid) => vid !== id)])
-      );
-      const paraExcluir = afetados.filter((b) => (idsRestantesPorBoleto.get(b.id) || []).length === 0);
-      const paraAtualizar = afetados.filter((b) => (idsRestantesPorBoleto.get(b.id) || []).length > 0);
-
-      for (const b of paraAtualizar) {
-        const novosIds = idsRestantesPorBoleto.get(b.id);
-        const { error: errUpd } = await supabase.from("boletos").update({ veiculo_ids: novosIds, veiculo_id: novosIds[0] }).eq("id", b.id);
-        if (errUpd) throw errUpd;
-      }
-
       const { error } = await supabase.from("veiculos").delete().eq("id", id);
       if (error) throw error;
-
-      if (paraExcluir.length) {
-        const { error: errDel } = await supabase.from("boletos").delete().in("id", paraExcluir.map((b) => b.id));
-        if (errDel) throw errDel;
-      }
-
       setDb((prev) => ({
         ...prev,
         veiculos: prev.veiculos.filter((v) => v.id !== id),
-        boletos: prev.boletos
-          .filter((b) => !paraExcluir.some((x) => x.id === b.id))
-          .map((b) => {
-            if (!idsRestantesPorBoleto.has(b.id)) return b;
-            const novosIds = idsRestantesPorBoleto.get(b.id);
-            return { ...b, veiculoIds: novosIds, veiculoId: novosIds[0] || "" };
-          }),
+        boletos: prev.boletos.filter((b) => b.veiculoId !== id),
       }));
     } catch (e) {
-      showToast("Não foi possível excluir o veículo: " + e.message, "error");
+      alert("Não foi possível excluir o veículo: " + e.message);
     }
   };
 
   const deleteBoleto = async (id) => {
-    if (!(await confirmDialog("Excluir este boleto?"))) return;
+    if (!window.confirm("Excluir este boleto?")) return;
     try {
       const { error } = await supabase.from("boletos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.filter((b) => b.id !== id) }));
     } catch (e) {
-      showToast("Não foi possível excluir o boleto: " + e.message, "error");
+      alert("Não foi possível excluir o boleto: " + e.message);
     }
   };
 
@@ -5673,27 +3434,37 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => (b.id === id ? rowToBoleto(data) : b)) }));
     } catch (e) {
-      showToast("Não foi possível atualizar o boleto: " + e.message, "error");
+      alert("Não foi possível atualizar o boleto: " + e.message);
     }
   };
 
   const openDetail = (clienteId) => { setSelectedClienteId(clienteId); setView("clienteDetail"); };
 
   // --- Seguradoras, planos e cotações ---
-  const saveSeguradora = async (nome) => {
+  const saveSeguradora = async (nome, linkPortal) => {
     try {
-      const { data, error } = await supabase.from("seguradoras").insert({ nome }).select().single();
+      const { data, error } = await supabase.from("seguradoras").insert(seguradoraToRow({ nome, linkPortal })).select().single();
       if (error) throw error;
       setDb((prev) => ({ ...prev, seguradoras: [...prev.seguradoras, rowToSeguradora(data)] }));
       return data.id;
     } catch (e) {
-      showToast("Não foi possível salvar a seguradora: " + e.message, "error");
+      alert("Não foi possível salvar a seguradora: " + e.message);
       return null;
     }
   };
 
+  const atualizarLinkPortalSeguradora = async (id, linkPortal) => {
+    try {
+      const { data, error } = await supabase.from("seguradoras").update({ link_portal: linkPortal || null }).eq("id", id).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, seguradoras: prev.seguradoras.map((s) => (s.id === id ? rowToSeguradora(data) : s)) }));
+    } catch (e) {
+      alert("Não foi possível salvar o link do portal: " + e.message);
+    }
+  };
+
   const deleteSeguradora = async (id) => {
-    if (!(await confirmDialog("Excluir esta seguradora? Os planos vinculados também serão removidos."))) return;
+    if (!window.confirm("Excluir esta seguradora? Os planos vinculados também serão removidos.")) return;
     try {
       const { error } = await supabase.from("seguradoras").delete().eq("id", id);
       if (error) throw error;
@@ -5703,7 +3474,7 @@ export default function App() {
         planos: prev.planos.filter((p) => p.seguradoraId !== id),
       }));
     } catch (e) {
-      showToast("Não foi possível excluir a seguradora: " + e.message, "error");
+      alert("Não foi possível excluir a seguradora: " + e.message);
     }
   };
 
@@ -5720,90 +3491,46 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar o plano: " + e.message, "error");
+      alert("Não foi possível salvar o plano: " + e.message);
     }
   };
 
   const deletePlano = async (id) => {
-    if (!(await confirmDialog("Excluir este plano?"))) return;
+    if (!window.confirm("Excluir este plano?")) return;
     try {
       const { error } = await supabase.from("planos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, planos: prev.planos.filter((p) => p.id !== id) }));
     } catch (e) {
-      showToast("Não foi possível excluir o plano: " + e.message, "error");
+      alert("Não foi possível excluir o plano: " + e.message);
     }
   };
 
   const saveCotacao = async (cotacao) => {
-    // Se a migração da esteira de status (supabase/status-cotacoes.sql) ainda
-    // não foi rodada, a coluna "status" não existe — tenta de novo sem ela
-    // em vez de travar o salvamento de cotações que já funcionava antes.
-    const salvar = async (comStatus) => {
-      const row = cotacaoToRow(cotacao);
-      if (!comStatus) delete row.status;
-      return cotacao.id
-        ? supabase.from("cotacoes").update(row).eq("id", cotacao.id).select().single()
-        : supabase.from("cotacoes").insert(row).select().single();
-    };
     try {
-      let { data, error } = await salvar(true);
-      if (error && /status/i.test(error.message || "") && (error.code === "42703" || /column/i.test(error.message || ""))) {
-        ({ data, error } = await salvar(false));
-        if (!error) showToast("Cotação salva, mas a esteira de status ainda não foi ativada (rode supabase/status-cotacoes.sql no Supabase).", "warning");
-      }
-      if (error) throw error;
       if (cotacao.id) {
+        const { data, error } = await supabase.from("cotacoes").update(cotacaoToRow(cotacao)).eq("id", cotacao.id).select().single();
+        if (error) throw error;
         setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.map((c) => (c.id === data.id ? rowToCotacao(data) : c)) }));
       } else {
+        const { data, error } = await supabase.from("cotacoes").insert(cotacaoToRow(cotacao)).select().single();
+        if (error) throw error;
         setDb((prev) => ({ ...prev, cotacoes: [...prev.cotacoes, rowToCotacao(data)] }));
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar a cotação: " + e.message, "error");
+      alert("Não foi possível salvar a cotação: " + e.message);
     }
   };
 
-  const alterarStatusCotacao = async (cotacao, novoStatus) => {
-    await saveCotacao({ ...cotacao, status: novoStatus });
-  };
-
   const deleteCotacao = async (id) => {
-    if (!(await confirmDialog("Excluir esta cotação?"))) return;
+    if (!window.confirm("Excluir esta cotação?")) return;
     try {
       const { error } = await supabase.from("cotacoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      showToast("Não foi possível excluir a cotação: " + e.message, "error");
-    }
-  };
-
-  // --- Links Úteis ---
-  const saveLink = async (link) => {
-    try {
-      if (link.id) {
-        const { data, error } = await supabase.from("links_uteis").update(linkToRow(link)).eq("id", link.id).select().single();
-        if (error) throw error;
-        setDb((prev) => ({ ...prev, linksUteis: prev.linksUteis.map((l) => (l.id === data.id ? rowToLink(data) : l)) }));
-      } else {
-        const { data, error } = await supabase.from("links_uteis").insert(linkToRow(link)).select().single();
-        if (error) throw error;
-        setDb((prev) => ({ ...prev, linksUteis: [...prev.linksUteis, rowToLink(data)] }));
-      }
-      closeModal();
-    } catch (e) {
-      showToast("Não foi possível salvar o link: " + e.message, "error");
-    }
-  };
-  const deleteLink = async (id) => {
-    if (!(await confirmDialog("Excluir este link?"))) return;
-    try {
-      const { error } = await supabase.from("links_uteis").delete().eq("id", id);
-      if (error) throw error;
-      setDb((prev) => ({ ...prev, linksUteis: prev.linksUteis.filter((l) => l.id !== id) }));
-    } catch (e) {
-      showToast("Não foi possível excluir o link: " + e.message, "error");
+      alert("Não foi possível excluir a cotação: " + e.message);
     }
   };
 
@@ -5821,11 +3548,11 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar o consultor: " + e.message, "error");
+      alert("Não foi possível salvar a consultora: " + e.message);
     }
   };
   const deleteConsultora = async (id) => {
-    if (!(await confirmDialog("Excluir este consultor? Adesões e comissões vinculadas a ele também serão removidas."))) return;
+    if (!window.confirm("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
     try {
       const { error } = await supabase.from("consultoras").delete().eq("id", id);
       if (error) throw error;
@@ -5836,7 +3563,7 @@ export default function App() {
         comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
       }));
     } catch (e) {
-      showToast("Não foi possível excluir o consultor: " + e.message, "error");
+      alert("Não foi possível excluir a consultora: " + e.message);
     }
   };
 
@@ -5854,17 +3581,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar a adesão: " + e.message, "error");
+      alert("Não foi possível salvar a adesão: " + e.message);
     }
   };
   const deleteAdesao = async (id) => {
-    if (!(await confirmDialog("Excluir esta adesão?"))) return;
+    if (!window.confirm("Excluir esta adesão?")) return;
     try {
       const { error } = await supabase.from("adesoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.filter((a) => a.id !== id) }));
     } catch (e) {
-      showToast("Não foi possível excluir a adesão: " + e.message, "error");
+      alert("Não foi possível excluir a adesão: " + e.message);
     }
   };
   const marcarRecebidaAdesao = async (id) => {
@@ -5879,7 +3606,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.map((a) => (a.id === id ? rowToAdesao(data) : a)) }));
     } catch (e) {
-      showToast("Não foi possível atualizar a adesão: " + e.message, "error");
+      alert("Não foi possível atualizar a adesão: " + e.message);
     }
   };
 
@@ -5897,17 +3624,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      showToast("Não foi possível salvar a comissão: " + e.message, "error");
+      alert("Não foi possível salvar a comissão: " + e.message);
     }
   };
   const deleteComissao = async (id) => {
-    if (!(await confirmDialog("Excluir esta comissão?"))) return;
+    if (!window.confirm("Excluir esta comissão?")) return;
     try {
       const { error } = await supabase.from("comissoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      showToast("Não foi possível excluir a comissão: " + e.message, "error");
+      alert("Não foi possível excluir a comissão: " + e.message);
     }
   };
   const marcarPagaComissao = async (id) => {
@@ -5916,7 +3643,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.map((c) => (c.id === id ? rowToComissao(data) : c)) }));
     } catch (e) {
-      showToast("Não foi possível atualizar a comissão: " + e.message, "error");
+      alert("Não foi possível atualizar a comissão: " + e.message);
     }
   };
 
@@ -5928,83 +3655,9 @@ export default function App() {
       const { data, error } = await supabase.from("clientes").insert(payload).select();
       if (error) throw error;
       setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
-      showToast(`${data?.length || 0} cliente(s) importado(s) com sucesso.`, "success");
+      alert(`${data?.length || 0} cliente(s) importado(s) com sucesso.`);
     } catch (e) {
-      showToast("Não foi possível importar os clientes: " + e.message, "error");
-    }
-  };
-
-  // Importa clientes e seus veículos em uma única planilha (uma linha = um veículo;
-  // repita o CPF em várias linhas para cadastrar mais de um veículo do mesmo cliente).
-  // Se o cliente já existir (mesmo CPF), reaproveita o cadastro em vez de duplicá-lo.
-  const importarClientesEVeiculosCSV = async (linhas) => {
-    if (linhas.length === 0) return;
-    try {
-      const cpfParaId = new Map(db.clientes.map((c) => [c.cpf.replace(/\D/g, ""), c.id]));
-      const placasExistentes = new Set(db.veiculos.map((v) => v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase()));
-      const dadosClientePorCpf = new Map();
-      const ignoradas = [];
-
-      linhas.forEach((l, idx) => {
-        const cpfNumerico = (l.cpf || "").replace(/\D/g, "");
-        if (!l.nome || !cpfNumerico) { ignoradas.push(`Linha ${idx + 2}: sem nome ou CPF/CNPJ válido`); return; }
-        if (!dadosClientePorCpf.has(cpfNumerico)) {
-          dadosClientePorCpf.set(cpfNumerico, {
-            nome: l.nome, cpf: l.cpf, nascimento: l.nascimento, sexo: l.sexo, telefone: l.telefone,
-            whatsapp: l.whatsapp, email: l.email, cep: l.cep, endereco: l.endereco, status: l.status || "Ativo",
-          });
-        }
-      });
-
-      // Cria só os clientes cujo CPF ainda não existe no Nexo.
-      const cpfsNovos = [...dadosClientePorCpf.keys()].filter((cpf) => !cpfParaId.has(cpf));
-      let clientesNovosCriados = [];
-      if (cpfsNovos.length > 0) {
-        const payloadClientes = cpfsNovos.map((cpf) => clienteToRow(dadosClientePorCpf.get(cpf)));
-        const { data, error } = await supabase.from("clientes").insert(payloadClientes).select();
-        if (error) throw error;
-        clientesNovosCriados = data || [];
-        clientesNovosCriados.forEach((c) => cpfParaId.set((c.cpf || "").replace(/\D/g, ""), c.id));
-      }
-
-      // Monta os veículos, ligando cada um ao cliente (novo ou já existente).
-      const veiculosIgnorados = [];
-      const payloadVeiculos = [];
-      linhas.forEach((l, idx) => {
-        if (!l.placa) return; // linha só de cliente, sem veículo — tudo bem, não é erro
-        const cpfNumerico = (l.cpf || "").replace(/\D/g, "");
-        const clienteId = cpfParaId.get(cpfNumerico);
-        if (!clienteId) { veiculosIgnorados.push(`Linha ${idx + 2}: veículo "${l.placa}" sem cliente válido`); return; }
-        const placaNorm = l.placa.replace(/[^a-z0-9]/gi, "").toLowerCase();
-        if (placasExistentes.has(placaNorm)) { veiculosIgnorados.push(`Linha ${idx + 2}: placa "${l.placa}" já cadastrada`); return; }
-        placasExistentes.add(placaNorm);
-        payloadVeiculos.push(veiculoToRow({
-          clienteId, tipoVeiculo: l.tipoVeiculo || "Carro ou utilitário", marca: l.marca, modelo: l.modelo,
-          ano: l.ano, anoFabricacao: l.anoFabricacao, placa: l.placa, renavam: l.renavam, chassi: l.chassi, cor: l.cor,
-          status: "Ativo",
-        }));
-      });
-
-      let veiculosNovosCriados = [];
-      if (payloadVeiculos.length > 0) {
-        const { data, error } = await supabase.from("veiculos").insert(payloadVeiculos).select();
-        if (error) throw error;
-        veiculosNovosCriados = data || [];
-      }
-
-      setDb((prev) => ({
-        ...prev,
-        clientes: [...prev.clientes, ...clientesNovosCriados.map(rowToCliente)],
-        veiculos: [...prev.veiculos, ...veiculosNovosCriados.map(rowToVeiculo)],
-      }));
-
-      const clientesReaproveitados = dadosClientePorCpf.size - cpfsNovos.length;
-      let msg = `Importação concluída: ${clientesNovosCriados.length} cliente(s) novo(s), ${clientesReaproveitados} cliente(s) já existente(s) reaproveitado(s), ${veiculosNovosCriados.length} veículo(s) novo(s).`;
-      if (ignoradas.length) msg += `\n\n${ignoradas.length} linha(s) sem nome/CPF ignorada(s):\n` + ignoradas.join("\n");
-      if (veiculosIgnorados.length) msg += `\n\n${veiculosIgnorados.length} veículo(s) não importado(s):\n` + veiculosIgnorados.join("\n");
-      showToast(msg, ignoradas.length || veiculosIgnorados.length ? "warning" : "success");
-    } catch (e) {
-      showToast("Não foi possível importar clientes e veículos: " + e.message, "error");
+      alert("Não foi possível importar os clientes: " + e.message);
     }
   };
 
@@ -6038,106 +3691,9 @@ export default function App() {
         seguradoras: [...prev.seguradoras, ...seguradorasNovasCriadas.map(rowToSeguradora)],
         planos: [...prev.planos, ...(planosData || []).map(rowToPlano)],
       }));
-      showToast(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`, "success");
+      alert(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`);
     } catch (e) {
-      showToast("Não foi possível importar a tabela de preços: " + e.message, "error");
-    }
-  };
-
-  // Cadastro em lote de boletos (planilha com Nome/CPF do cliente, Placa, Nosso Número e Valor)
-  const importarBoletosCSV = async (linhas) => {
-    if (linhas.length === 0) return;
-    try {
-      const rejeitadas = [];
-      const payload = [];
-      const nossosNumerosDoArquivo = new Set();
-      linhas.forEach((l, idx) => {
-        const linhaRef = `Linha ${idx + 2}`;
-        const cpfNumerico = (l.cpf || "").replace(/\D/g, "");
-        const cliente = db.clientes.find((c) => (cpfNumerico && c.cpf.replace(/\D/g, "") === cpfNumerico) || (!cpfNumerico && l.nome && normalizarTexto(c.nome) === normalizarTexto(l.nome)));
-        if (!cliente) { rejeitadas.push(`${linhaRef}: cliente "${l.nome || l.cpf}" não encontrado`); return; }
-        const nossoNumero = (l.nossoNumero || "").trim();
-        if (nossoNumero) {
-          if (nossosNumerosDoArquivo.has(nossoNumero) || db.boletos.some((b) => (b.nossoNumero || "").trim() === nossoNumero)) {
-            rejeitadas.push(`${linhaRef}: Nosso Número "${nossoNumero}" já usado em outro boleto`);
-            return;
-          }
-          nossosNumerosDoArquivo.add(nossoNumero);
-        }
-        // aceita uma ou várias placas na mesma linha (separadas por , ; ou /) para um boleto único
-        // que cobre vários veículos do mesmo cliente
-        const placasDaLinha = (l.placa || "").split(/[,;/]+/).map((p) => p.trim()).filter(Boolean);
-        const veiculosEncontrados = placasDaLinha
-          .map((p) => db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase() === p.replace(/[^a-z0-9]/gi, "").toLowerCase()))
-          .filter(Boolean);
-        if (placasDaLinha.length && veiculosEncontrados.length < placasDaLinha.length) {
-          const naoEncontradas = placasDaLinha.filter((p) => !veiculosEncontrados.some((v) => v.placa.replace(/[^a-z0-9]/gi, "").toLowerCase() === p.replace(/[^a-z0-9]/gi, "").toLowerCase()));
-          rejeitadas.push(`${linhaRef}: placa(s) não encontrada(s) para este cliente: ${naoEncontradas.join(", ")} (boleto seguiu com as demais placas)`);
-        }
-        payload.push(
-          boletoToRow({
-            clienteId: cliente.id,
-            veiculoIds: veiculosEncontrados.map((v) => v.id),
-            numero: nossoNumero || `IMP-${Date.now()}-${idx}`,
-            nossoNumero,
-            dataEmissao: todayISO(),
-            dataVencimento: l.dataVencimento || todayISO(),
-            valor: l.valor,
-            dataPagamento: "",
-          })
-        );
-      });
-      if (payload.length === 0) {
-        showToast("Nenhuma linha pôde ser importada.\n\n" + rejeitadas.join("\n"), "warning");
-        return;
-      }
-      const { data, error } = await supabase.from("boletos").insert(payload).select();
-      if (error) throw error;
-      setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
-      let msg = `${data?.length || 0} boleto(s) importado(s) com sucesso.`;
-      if (rejeitadas.length) msg += `\n\n${rejeitadas.length} linha(s) não importada(s):\n` + rejeitadas.join("\n");
-      showToast(msg, rejeitadas.length ? "warning" : "success");
-    } catch (e) {
-      showToast("Não foi possível importar os boletos: " + e.message, "error");
-    }
-  };
-
-  // Importação do relatório de baixa da seguradora/corretora (conciliação pelo Nosso Número).
-  // O relatório pode vir só com "Baixado", só com "Aberto", ou misto — mesma estrutura de colunas.
-  // Regra: "Baixado" grava a baixa; "Aberto" não altera (não reverte uma baixa já registrada).
-  const importarBaixasCSV = async (linhas) => {
-    if (linhas.length === 0) return;
-    try {
-      const naoEncontrados = [];
-      let baixados = 0;
-      let mantidosAbertos = 0;
-      for (const l of linhas) {
-        const nossoNumero = (l.nossoNumero || "").trim();
-        if (!nossoNumero) continue;
-        const boleto = db.boletos.find((b) => (b.nossoNumero || "").trim() === nossoNumero);
-        if (!boleto) { naoEncontrados.push(`${nossoNumero}${l.nome ? " (" + l.nome + ")" : ""}`); continue; }
-        const situacaoNorm = normalizarTexto(l.situacao);
-        const veioBaixado = situacaoNorm.startsWith("baix") || situacaoNorm.startsWith("pag");
-        if (veioBaixado) {
-          const { data, error } = await supabase
-            .from("boletos")
-            .update({ data_pagamento: l.dataPagamento || todayISO() })
-            .eq("id", boleto.id)
-            .select()
-            .single();
-          if (error) throw error;
-          setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => (b.id === boleto.id ? rowToBoleto(data) : b)) }));
-          baixados++;
-        } else {
-          // Situação "Aberto": mantém como está no Nexo (não desfaz uma baixa manual anterior)
-          mantidosAbertos++;
-        }
-      }
-      let msg = `Importação do relatório concluída: ${baixados} boleto(s) baixado(s), ${mantidosAbertos} confirmado(s) em aberto.`;
-      if (naoEncontrados.length) msg += `\n\n${naoEncontrados.length} Nosso Número não encontrado(s) no sistema:\n` + naoEncontrados.join("\n");
-      showToast(msg, naoEncontrados.length ? "warning" : "success");
-    } catch (e) {
-      showToast("Não foi possível importar o relatório de baixa: " + e.message, "error");
+      alert("Não foi possível importar a tabela de preços: " + e.message);
     }
   };
 
@@ -6145,48 +3701,18 @@ export default function App() {
 
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
-    cotacoes: "Cotação de seguros", consultoras: "Consultores", adesoes: "Adesões", comissoes: "Comissões",
-    links: "Links Úteis", usuarios: "Usuários",
+    cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões", usuarios: "Usuários",
     clienteDetail: "Detalhes do cliente",
   };
 
-  const saudacao = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Bom dia";
-    if (h < 18) return "Boa tarde";
-    return "Boa noite";
-  })();
-  const primeiroNome = (sessao?.user?.email || "").split("@")[0].split(".")[0];
-  const nomeExibicao = primeiroNome ? primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1) : "";
-  const iniciaisUsuario = (nomeExibicao || sessao?.user?.email || "U").slice(0, 2).toUpperCase();
-
-  const cnhAlertas = useMemo(() => cnhsVencendo(db.clientes, 30), [db.clientes]);
-  const boletosVencendoAlerta = useMemo(() => {
-    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-    return db.boletos
-      .filter((b) => !b.dataPagamento && b.dataVencimento)
-      .map((b) => ({ ...b, dias: Math.round((parseISODate(b.dataVencimento) - hoje) / 86400000) }))
-      .filter((b) => b.dias >= 0 && b.dias <= 7)
-      .sort((a, b) => a.dias - b.dias);
-  }, [db.boletos]);
-  const totalNotificacoes = cnhAlertas.length + boletosVencendoAlerta.length;
-
-  const handleGlobalSearchKeyDown = (e) => {
-    if (e.key !== "Enter") return;
-    const termo = normalizarTexto(globalSearch.trim());
-    if (!termo) return;
-    const alvo = db.clientes.find((c) => normalizarTexto(c.nome).includes(termo) || (c.cpf || "").includes(termo));
-    if (alvo) {
-      openDetail(alvo.id);
-    } else {
-      setView("clientes");
-    }
-    setGlobalSearch("");
+  const recarregarUsuarios = async () => {
+    const { data } = await supabase.from("perfis").select("*").order("nome");
+    setDb((prev) => ({ ...prev, usuarios: (data || []).map(rowToUsuario) }));
   };
 
   if (sessao === undefined) {
     return (
-      <div className="nexo" data-theme={tema}>
+      <div className="nexo">
         <style>{STYLE}</style>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13 }}>
           Verificando acesso…
@@ -6195,35 +3721,17 @@ export default function App() {
     );
   }
 
-  if (recuperandoSenha) {
-    return (
-      <div className="nexo" data-theme={tema}>
-        <style>{STYLE}</style>
-        <RedefinirSenhaScreen onConcluido={() => setRecuperandoSenha(false)} />
-      </div>
-    );
-  }
-
   if (!sessao) {
     return (
-      <div className="nexo" data-theme={tema}>
+      <div className="nexo">
         <style>{STYLE}</style>
         <LoginScreen onEntrar={() => {}} />
       </div>
     );
   }
 
-  if (mfaPendente) {
-    return (
-      <div className="nexo" data-theme={tema}>
-        <style>{STYLE}</style>
-        <MfaChallengeScreen onVerificado={() => setMfaPendente(false)} />
-      </div>
-    );
-  }
-
   return (
-    <div className="nexo" data-theme={tema}>
+    <div className="nexo">
       <style>{STYLE}</style>
 
       {loading ? (
@@ -6240,154 +3748,57 @@ export default function App() {
       ) : (
         <div className="nexo-shell">
           <div className={`nexo-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
-          <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
+          <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""}`}>
             <div className="nexo-brand">
-              <div className="nexo-brand-mark">CS</div>
-              <div className="nexo-brand-text">
-                <div className="nexo-brand-name">Corretora Seu Seguro</div>
+              <div className="nexo-brand-mark">SS</div>
+              <div>
+                <div className="nexo-brand-name">Seu Seguro Corretora</div>
                 <div className="nexo-brand-tag">Clientes · Veículos · Financeiro</div>
               </div>
             </div>
-            <div className="nexo-sidebar-scroll">
-              {["Visão geral", "Operação", "Financeiro", "Equipe & recursos"].map((grupo) => {
-                const itensDoGrupo = NAV_ITEMS.filter((item) => item.group === grupo && podeVer(item.key));
-                if (itensDoGrupo.length === 0) return null;
-                return (
-                <nav className="nexo-nav" key={grupo}>
-                  <div className="nexo-sidebar-group-label">{grupo}</div>
-                  {itensDoGrupo.map(({ key, label, Icon }) => (
-                    <div
-                      key={key}
-                      className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
-                      onClick={() => goTo(key)}
-                    >
-                      <Icon size={16} />
-                      <span>{label}</span>
-                      {sidebarCollapsed && <div className="nexo-nav-tooltip">{label}</div>}
-                    </div>
-                  ))}
-                </nav>
-                );
-              })}
-            </div>
-            <button className="nexo-collapse-btn" onClick={() => setSidebarCollapsed((v) => !v)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}>
-              {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-              <span>Recolher menu</span>
-            </button>
+            <nav className="nexo-nav">
+              {NAV_ITEMS.filter(({ key }) => podeVer(key)).map(({ key, label, Icon }) => (
+                <div
+                  key={key}
+                  className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
+                  onClick={() => goTo(key)}
+                >
+                  <Icon size={16} /> {label}
+                </div>
+              ))}
+            </nav>
             <div className="nexo-sidebar-foot">
-              <div className="nexo-sidebar-foot-info">v1.0 · Corretora Seu Seguro</div>
+              <div style={{ marginBottom: 2, wordBreak: "break-all" }}>{sessao?.user?.email}</div>
+              <div style={{ marginBottom: 8, color: "var(--text-faint)" }}>{ehAdmin ? "Administrador" : "Operador"}</div>
+              <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
+                Sair
+              </button>
             </div>
           </aside>
 
-          <div className={`nexo-main ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+          <div className="nexo-main">
             <header className="nexo-topbar">
-              <div className="nexo-topbar-left">
+              <div className="nexo-topbar-title">
                 <button className="nexo-hamburger" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
-                <div className="nexo-topbar-title">
-                  {titleMap[view]}
-                  <span className="nexo-topbar-greeting">{saudacao}{nomeExibicao ? `, ${nomeExibicao}` : ""}</span>
-                </div>
-                <div className="nexo-topbar-search hide-mobile">
-                  <Search size={14} />
-                  <input
-                    placeholder="Buscar cliente por nome ou CPF…"
-                    value={globalSearch}
-                    onChange={(e) => setGlobalSearch(e.target.value)}
-                    onKeyDown={handleGlobalSearchKeyDown}
-                  />
-                </div>
+                {titleMap[view]}
               </div>
-              <div className="nexo-topbar-actions">
-                <div className="nexo-topbar-actions hide-mobile" style={{ marginRight: 4 }}>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
-                  <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
-                </div>
-
-                <button
-                  className="nexo-topbar-iconbtn"
-                  onClick={alternarTema}
-                  title={tema === "branco" ? "Usar cor padrão" : "Usar cor branca"}
-                >
-                  {tema === "branco" ? <Moon size={16} /> : <Sun size={16} />}
-                </button>
-
-                <div className="nexo-dropdown">
-                  <button className="nexo-topbar-iconbtn" onClick={() => { setNotifOpen((v) => !v); setUserMenuOpen(false); }} title="Notificações">
-                    <Bell size={16} />
-                    {totalNotificacoes > 0 && <span className="nexo-notif-dot" />}
-                  </button>
-                  {notifOpen && (
-                    <div className="nexo-dropdown-menu" style={{ minWidth: 300 }} onMouseLeave={() => setNotifOpen(false)}>
-                      <div style={{ padding: "6px 8px 8px", fontSize: 12.5, fontWeight: 700, borderBottom: "1px solid var(--border-soft)", marginBottom: 4 }}>
-                        Notificações {totalNotificacoes > 0 ? `(${totalNotificacoes})` : ""}
-                      </div>
-                      {totalNotificacoes === 0 && (
-                        <div style={{ padding: "14px 8px", fontSize: 12.5, color: "var(--text-faint)", textAlign: "center" }}>Tudo em dia por aqui 👍</div>
-                      )}
-                      {boletosVencendoAlerta.slice(0, 4).map((b) => {
-                        const cliente = db.clientes.find((c) => c.id === b.clienteId);
-                        return (
-                          <button key={b.id} className="nexo-dropdown-item" onClick={() => { setView("financeiro"); setNotifOpen(false); }}>
-                            <Clock size={14} />
-                            <span>{cliente?.nome || "Cliente"} · boleto vence {b.dias === 0 ? "hoje" : `em ${b.dias}d`}</span>
-                          </button>
-                        );
-                      })}
-                      {cnhAlertas.slice(0, 4).map((c) => (
-                        <button key={c.id} className="nexo-dropdown-item" onClick={() => { openDetail(c.id); setNotifOpen(false); }}>
-                          <AlertTriangle size={14} />
-                          <span>CNH de {c.nome.split(" ")[0]} vencendo</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="nexo-dropdown">
-                  <div className="nexo-user-chip" onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}>
-                    <div className="nexo-avatar-xs" style={{ background: "linear-gradient(135deg, var(--accent-2), var(--accent-dim))" }}>{iniciaisUsuario}</div>
-                    <div className="hide-mobile">
-                      <div className="nexo-user-chip-name">{nomeExibicao || "Usuário"}</div>
-                      <div className="nexo-user-chip-role">{ehAdmin ? "Administrador" : "Operador"}</div>
-                    </div>
-                    <ChevronDown size={14} className="hide-mobile" />
-                  </div>
-                  {userMenuOpen && (
-                    <div className="nexo-dropdown-menu" onMouseLeave={() => setUserMenuOpen(false)}>
-                      <div style={{ padding: "6px 10px 10px", fontSize: 12, color: "var(--text-faint)", wordBreak: "break-all", borderBottom: "1px solid var(--border-soft)", marginBottom: 4 }}>
-                        {sessao?.user?.email}
-                      </div>
-                      <button className="nexo-dropdown-item" onClick={() => { setMostrarSeguranca(true); setUserMenuOpen(false); }}>
-                        <Shield size={14} /> Segurança e senha
-                      </button>
-                      <div className="nexo-dropdown-sep" />
-                      <button className="nexo-dropdown-item" onClick={() => supabase.auth.signOut()}>
-                        <LogOut size={14} /> Sair
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div className="nexo-topbar-actions hide-mobile">
+                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
+                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
+                <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
               </div>
             </header>
 
-            <main className="nexo-content nexo-fade-in" key={view}>
+            <main className="nexo-content">
               {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} />}
               {view === "clientes" && (
-                <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} onImportarClientesEVeiculos={importarClientesEVeiculosCSV} />
+                <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
               )}
               {view === "veiculos" && (
                 <VeiculosView db={db} onOpenModal={openModal} onDeleteVeiculo={deleteVeiculo} onOpenDetail={openDetail} />
               )}
               {view === "financeiro" && (
-                <FinanceiroView
-                  db={db}
-                  onOpenModal={openModal}
-                  onDeleteBoleto={deleteBoleto}
-                  onMarcarPago={marcarPago}
-                  onImportarBoletos={importarBoletosCSV}
-                  onImportarBaixas={importarBaixasCSV}
-                />
+                <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} />
               )}
               {view === "relatorios" && <RelatoriosView db={db} />}
               {view === "cotacoes" && (
@@ -6399,7 +3810,7 @@ export default function App() {
                   onDeletePlano={deletePlano}
                   onDeleteCotacao={deleteCotacao}
                   onImportarPlanos={importarPlanosCSV}
-                  onAlterarStatusCotacao={alterarStatusCotacao}
+                  onAtualizarLinkPortal={atualizarLinkPortalSeguradora}
                 />
               )}
               {view === "consultoras" && <ConsultorasView db={db} onOpenModal={openModal} onDeleteConsultora={deleteConsultora} />}
@@ -6407,7 +3818,6 @@ export default function App() {
               {view === "comissoes" && (
                 <ComissoesView db={db} onOpenModal={openModal} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />
               )}
-              {view === "links" && <LinksUteisView db={db} onOpenModal={openModal} onDeleteLink={deleteLink} />}
               {view === "usuarios" && ehAdmin && (
                 <UsuariosView db={db} sessao={sessao} meuUserId={sessao?.user?.id} onRecarregarUsuarios={recarregarUsuarios} />
               )}
@@ -6423,12 +3833,8 @@ export default function App() {
               )}
             </main>
           </div>
-
-          <AssistenteIA db={db} />
         </div>
       )}
-
-      {mostrarSeguranca && <SegurancaModal onClose={() => setMostrarSeguranca(false)} />}
 
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
@@ -6446,7 +3852,6 @@ export default function App() {
             initial={modal.data}
             clientes={db.clientes}
             veiculos={db.veiculos}
-            boletos={db.boletos}
             defaultClienteId={modal.defaultClienteId}
             defaultVeiculoId={modal.defaultVeiculoId}
             onSave={saveBoleto}
@@ -6480,13 +3885,8 @@ export default function App() {
         </Modal>
       )}
       {modal && modal.type === "consultora" && (
-        <Modal title={modal.data ? "Editar consultor" : "Novo consultor"} onClose={closeModal}>
+        <Modal title={modal.data ? "Editar consultora" : "Nova consultora"} onClose={closeModal}>
           <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
-        </Modal>
-      )}
-      {modal && modal.type === "link" && (
-        <Modal title={modal.data ? "Editar link" : "Novo link"} onClose={closeModal}>
-          <LinkForm initial={modal.data} onSave={saveLink} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "adesao" && (
@@ -6499,9 +3899,6 @@ export default function App() {
           <ComissaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveComissao} onCancel={closeModal} />
         </Modal>
       )}
-
-      <ToastHost />
-      <ConfirmHost />
     </div>
   );
 }
