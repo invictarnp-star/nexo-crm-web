@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "./supabaseClient";
 import jsPDF from "jspdf";
 import {
@@ -501,6 +501,7 @@ function ClienteForm({ initial, onSave, onCancel }) {
     initial || {
       nome: "", nascimento: "", sexo: "", cpf: "", cnhNumero: "", cnhEmissao: "", cnhValidade: "",
       telefone: "", whatsapp: "", email: "", cep: "", endereco: "", status: "Ativo",
+      codigoSga: "", ultimoContato: "", indicadoPor: "",
     }
   );
   const [errors, setErrors] = useState({});
@@ -646,6 +647,17 @@ function ClienteForm({ initial, onSave, onCancel }) {
       <Field label="Endereço">
         <textarea className="nexo-textarea" value={f.endereco} onChange={set("endereco")} placeholder="Rua, número, bairro, cidade - UF" />
       </Field>
+      <div className="nexo-field-row3">
+        <Field label="Código do cliente no SGA">
+          <input className="nexo-input mono" value={f.codigoSga} onChange={set("codigoSga")} placeholder="Código de conciliação" />
+        </Field>
+        <Field label="Último contato">
+          <input type="date" className="nexo-input" value={f.ultimoContato} onChange={set("ultimoContato")} />
+        </Field>
+        <Field label="Indicado por">
+          <input className="nexo-input" value={f.indicadoPor} onChange={set("indicadoPor")} placeholder="Quem trouxe esse cliente" />
+        </Field>
+      </div>
       <Field label="Status">
         <select className="nexo-select" value={f.status} onChange={set("status")}>
           <option>Ativo</option>
@@ -1015,7 +1027,7 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
 function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeiculoId, onSave, onCancel }) {
   const [f, setF] = useState(
     initial || {
-      clienteId: defaultClienteId || "", veiculoId: defaultVeiculoId || "", numero: "",
+      clienteId: defaultClienteId || "", veiculoId: defaultVeiculoId || "", numero: "", nossoNumero: "",
       dataEmissao: todayISO(), dataVencimento: "", valor: "", dataPagamento: "", parcelas: 1,
     }
   );
@@ -1049,9 +1061,14 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
           </select>
         </Field>
       </div>
-      <Field label="Número do boleto *" error={errors.numero}>
-        <input className="nexo-input mono" value={f.numero} onChange={set("numero")} placeholder="Ex.: 000123" />
-      </Field>
+      <div className="nexo-field-row">
+        <Field label="Número do boleto *" error={errors.numero}>
+          <input className="nexo-input mono" value={f.numero} onChange={set("numero")} placeholder="Ex.: 000123" />
+        </Field>
+        <Field label="Nosso Número (SGA)">
+          <input className="nexo-input mono" value={f.nossoNumero} onChange={set("nossoNumero")} placeholder="Código de conciliação do SGA" />
+        </Field>
+      </div>
       <div className="nexo-field-row3">
         <Field label="Data de emissão">
           <input type="date" className="nexo-input" value={f.dataEmissao} onChange={set("dataEmissao")} />
@@ -1531,7 +1548,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
 /* Financeiro                                                           */
 /* ------------------------------------------------------------------ */
 
-function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
+function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImportarBaixa }) {
   const [fCliente, setFCliente] = useState("");
   const [fCpf, setFCpf] = useState("");
   const [fPlaca, setFPlaca] = useState("");
@@ -1539,6 +1556,41 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
   const [fDe, setFDe] = useState("");
   const [fAte, setFAte] = useState("");
   const [fVencimento, setFVencimento] = useState("Todos");
+  const [importandoBaixa, setImportandoBaixa] = useState(false);
+  const fileInputBaixaRef = useRef(null);
+
+  async function handleArquivoBaixa(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    setImportandoBaixa(true);
+    try {
+      const texto = await lerArquivoTexto(arquivo);
+      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const linhasBaixa = linhas
+        .map((linha) => ({
+          nomeCliente: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
+          cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
+          codigoSga: valorDaColuna(cabecalhos, linha, ["codigosga", "codigocliente", "codigo"]),
+          nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nossonumer"]),
+          situacao: valorDaColuna(cabecalhos, linha, ["situacao", "status"]),
+          dataPagamento: paraDataISO(valorDaColuna(cabecalhos, linha, ["datadopagamento", "datapagamento", "databaixa"])),
+          valor: valorDaColuna(cabecalhos, linha, ["valor", "valordoboleto"]),
+          dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datadevencimento"])),
+          placa: valorDaColuna(cabecalhos, linha, ["placa"]),
+        }))
+        .filter((l) => l.nossoNumero);
+      if (linhasBaixa.length === 0) {
+        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.");
+      } else {
+        await onImportarBaixa(linhasBaixa);
+      }
+    } catch (err) {
+      alert("Não foi possível ler o arquivo: " + err.message);
+    } finally {
+      setImportandoBaixa(false);
+    }
+  }
 
   const boletosComStatus = db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) }));
 
@@ -1577,7 +1629,18 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
+        <div className="nexo-topbar-actions">
+          <input ref={fileInputBaixaRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoBaixa} />
+          <button
+            className="nexo-btn"
+            disabled={importandoBaixa}
+            title="Importa o relatório do SGA/Invicta Mais: dá baixa nos boletos existentes pelo Nosso Número e cadastra sozinho clientes/boletos que ainda não existem no sistema"
+            onClick={() => fileInputBaixaRef.current?.click()}
+          >
+            <Upload size={14} /> {importandoBaixa ? "Importando…" : "Importar baixa (SGA)"}
+          </button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
+        </div>
       </div>
 
       <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
@@ -1636,7 +1699,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
-                <tr><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
+                <tr><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Nosso Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
                 {filtered.map((b) => {
@@ -1647,6 +1710,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago }) {
                       <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
                       <td className="nexo-cell-muted">{veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "—"}</td>
                       <td className="mono nexo-cell-muted">{veiculo ? veiculo.placa : "—"}</td>
+                      <td className="mono nexo-cell-muted">{b.nossoNumero || "—"}</td>
                       <td>{formatDateBR(b.dataVencimento)}</td>
                       <td className="mono">{formatBRL(b.valor)}</td>
                       <td><StatusBadge status={b.status} /></td>
@@ -1716,6 +1780,9 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
           <div className="nexo-info-row"><MessageCircle size={14} /> {cliente.whatsapp || "—"}</div>
           <div className="nexo-info-row"><Mail size={14} /> {cliente.email || "—"}</div>
           <div className="nexo-info-row"><MapPin size={14} /> {cliente.endereco || "—"}{cliente.cep ? ` · CEP ${cliente.cep}` : ""}</div>
+          {cliente.codigoSga && <div className="nexo-info-row"><CreditCard size={14} /> Código SGA: <span className="mono">{cliente.codigoSga}</span></div>}
+          {cliente.ultimoContato && <div className="nexo-info-row"><Clock size={14} /> Último contato: {formatDateBR(cliente.ultimoContato)}</div>}
+          {cliente.indicadoPor && <div className="nexo-info-row"><Users size={14} /> Indicado por: {cliente.indicadoPor}</div>}
           <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 14 }} onClick={() => onOpenModal("cliente", cliente)}>
             <Pencil size={14} /> Editar dados pessoais
           </button>
@@ -3163,12 +3230,14 @@ const rowToCliente = (r) => ({
   cnhNumero: r.cnh_numero || "", cnhEmissao: r.cnh_emissao || "", cnhValidade: r.cnh_validade || "",
   telefone: r.telefone || "", whatsapp: r.whatsapp || "", email: r.email || "",
   cep: r.cep || "", endereco: r.endereco || "", status: r.status || "Ativo",
+  codigoSga: r.codigo_sga || "", ultimoContato: r.ultimo_contato || "", indicadoPor: r.indicado_por || "",
 });
 const clienteToRow = (c) => ({
   nome: c.nome, nascimento: c.nascimento || null, sexo: c.sexo || null, cpf: c.cpf || null,
   cnh_numero: c.cnhNumero || null, cnh_emissao: c.cnhEmissao || null, cnh_validade: c.cnhValidade || null,
   telefone: c.telefone || null, whatsapp: c.whatsapp || null, email: c.email || null,
   cep: c.cep || null, endereco: c.endereco || null, status: c.status || "Ativo",
+  codigo_sga: c.codigoSga || null, ultimo_contato: c.ultimoContato || null, indicado_por: c.indicadoPor || null,
 });
 const rowToVeiculo = (r) => ({
   id: r.id, clienteId: r.cliente_id, tipoVeiculo: r.tipo_veiculo || "Carro ou utilitário",
@@ -3198,12 +3267,13 @@ const veiculoToRow = (v) => ({
   fipe_combustivel: v.fipeCombustivel || null, fipe_mes_referencia: v.fipeMesReferencia || null, fipe_ultima_consulta: v.fipeUltimaConsulta || null,
 });
 const rowToBoleto = (r) => ({
-  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "",
+  id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "", nossoNumero: r.nosso_numero || "",
   dataEmissao: r.data_emissao || "", dataVencimento: r.data_vencimento || "", valor: r.valor ?? "",
   dataPagamento: r.data_pagamento || "",
 });
 const boletoToRow = (b) => ({
-  cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, data_emissao: b.dataEmissao || null,
+  cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, nosso_numero: b.nossoNumero || null,
+  data_emissao: b.dataEmissao || null,
   data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
 });
 
@@ -3368,6 +3438,7 @@ export default function App() {
           return boletoToRow({
             ...boleto,
             numero: parcelado ? `${boleto.numero}-${i + 1}/${totalParcelas}` : boleto.numero,
+            nossoNumero: i === 0 ? boleto.nossoNumero : "",
             dataVencimento: somarMeses(boleto.dataVencimento, i),
             // a data de pagamento (se informada) só se aplica à 1ª parcela; as seguintes começam em aberto
             dataPagamento: i === 0 ? boleto.dataPagamento : "",
@@ -3651,13 +3722,148 @@ export default function App() {
   const importarClientesCSV = async (linhas) => {
     if (linhas.length === 0) return;
     try {
-      const payload = linhas.map((l) => clienteToRow({ ...l, status: l.status || "Ativo" }));
-      const { data, error } = await supabase.from("clientes").insert(payload).select();
-      if (error) throw error;
-      setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
-      alert(`${data?.length || 0} cliente(s) importado(s) com sucesso.`);
+      const cpfsExistentes = new Set(db.clientes.map((c) => c.cpf.replace(/\D/g, "")).filter(Boolean));
+      const cpfsNestaImportacao = new Set();
+      const novos = [];
+      let duplicados = 0;
+      for (const l of linhas) {
+        const cpfLimpo = (l.cpf || "").replace(/\D/g, "");
+        if (cpfLimpo && (cpfsExistentes.has(cpfLimpo) || cpfsNestaImportacao.has(cpfLimpo))) {
+          duplicados++;
+          continue;
+        }
+        if (cpfLimpo) cpfsNestaImportacao.add(cpfLimpo);
+        novos.push(l);
+      }
+      let importados = 0;
+      if (novos.length > 0) {
+        const payload = novos.map((l) => clienteToRow({ ...l, status: l.status || "Ativo" }));
+        const { data, error } = await supabase.from("clientes").insert(payload).select();
+        if (error) throw error;
+        importados = data?.length || 0;
+        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
+      }
+      alert(`${importados} cliente(s) importado(s) com sucesso.` + (duplicados > 0 ? `\n${duplicados} ignorado(s) por já existir um cliente com esse CPF/CNPJ.` : ""));
     } catch (e) {
       alert("Não foi possível importar os clientes: " + e.message);
+    }
+  };
+
+  const importarBaixaBoletosCSV = async (linhas) => {
+    if (linhas.length === 0) return;
+    try {
+      let baixados = 0, naoEncontrados = 0, jaBaixados = 0, ignoradosAberto = 0;
+      let clientesCriados = 0, boletosCriados = 0, semDadosParaCriarBoleto = 0;
+      const atualizacoes = [];
+      const boletosParaCriar = [];
+
+      // Cache local (nesta importação) de clientes já encontrados/criados, pra não duplicar
+      // mesmo quando o mesmo cliente aparece em várias linhas do relatório.
+      const clientesPorCpf = new Map(db.clientes.filter((c) => c.cpf).map((c) => [c.cpf.replace(/\D/g, ""), c]));
+      const clientesPorCodigoSga = new Map(db.clientes.filter((c) => c.codigoSga).map((c) => [normalizarTexto(c.codigoSga), c]));
+      const clientesPorNome = new Map(db.clientes.map((c) => [normalizarTexto(c.nome), c]));
+      const clientesNovosCriados = [];
+
+      async function buscarOuCriarCliente(linha) {
+        const cpfLimpo = (linha.cpf || "").replace(/\D/g, "");
+        const codigoSgaNorm = normalizarTexto(linha.codigoSga);
+        const nomeNorm = normalizarTexto(linha.nomeCliente);
+        let existente =
+          (cpfLimpo && clientesPorCpf.get(cpfLimpo)) ||
+          (codigoSgaNorm && clientesPorCodigoSga.get(codigoSgaNorm)) ||
+          (nomeNorm && clientesPorNome.get(nomeNorm));
+        if (existente) return existente;
+        if (!linha.nomeCliente) return null;
+
+        const { data, error } = await supabase
+          .from("clientes")
+          .insert(clienteToRow({ nome: linha.nomeCliente, cpf: linha.cpf, codigoSga: linha.codigoSga, status: "Ativo" }))
+          .select()
+          .single();
+        if (error) throw error;
+        const novo = rowToCliente(data);
+        clientesNovosCriados.push(novo);
+        if (cpfLimpo) clientesPorCpf.set(cpfLimpo, novo);
+        if (codigoSgaNorm) clientesPorCodigoSga.set(codigoSgaNorm, novo);
+        if (nomeNorm) clientesPorNome.set(nomeNorm, novo);
+        clientesCriados++;
+        return novo;
+      }
+
+      for (const linha of linhas) {
+        const situacaoNorm = normalizarTexto(linha.situacao);
+        const boleto = db.boletos.find((b) => b.nossoNumero && normalizarTexto(b.nossoNumero) === normalizarTexto(linha.nossoNumero));
+
+        if (boleto) {
+          if (situacaoNorm === "aberto") { ignoradosAberto++; continue; } // nunca reverte uma baixa já feita
+          if (situacaoNorm === "baixado" || situacaoNorm === "pago") {
+            if (boleto.dataPagamento) { jaBaixados++; continue; }
+            atualizacoes.push({ id: boleto.id, data_pagamento: linha.dataPagamento || todayISO() });
+            baixados++;
+          }
+          continue;
+        }
+
+        // Boleto não existe ainda — garante que o cliente existe (cria se precisar).
+        naoEncontrados++;
+        const cliente = await buscarOuCriarCliente(linha);
+        if (!cliente) continue; // sem nome do cliente na linha, não dá pra criar nada
+
+        // Só criamos o boleto em si se o relatório trouxer valor e vencimento.
+        if (linha.valor && linha.dataVencimento) {
+          const veiculo = linha.placa
+            ? db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.toUpperCase() === linha.placa.toUpperCase())
+            : null;
+          boletosParaCriar.push(
+            boletoToRow({
+              clienteId: cliente.id,
+              veiculoId: veiculo?.id || null,
+              numero: linha.nossoNumero,
+              nossoNumero: linha.nossoNumero,
+              dataVencimento: linha.dataVencimento,
+              valor: linha.valor,
+              dataPagamento: situacaoNorm === "baixado" || situacaoNorm === "pago" ? linha.dataPagamento || todayISO() : "",
+            })
+          );
+          boletosCriados++;
+        } else {
+          semDadosParaCriarBoleto++;
+        }
+      }
+
+      if (clientesNovosCriados.length > 0) {
+        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...clientesNovosCriados] }));
+      }
+      if (boletosParaCriar.length > 0) {
+        const { data, error } = await supabase.from("boletos").insert(boletosParaCriar).select();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
+      }
+      if (atualizacoes.length > 0) {
+        const resultados = await Promise.all(
+          atualizacoes.map((a) => supabase.from("boletos").update({ data_pagamento: a.data_pagamento }).eq("id", a.id).select().single())
+        );
+        const erro = resultados.find((r) => r.error);
+        if (erro) throw erro.error;
+        const atualizados = resultados.map((r) => rowToBoleto(r.data));
+        setDb((prev) => ({
+          ...prev,
+          boletos: prev.boletos.map((b) => atualizados.find((a) => a.id === b.id) || b),
+        }));
+      }
+
+      alert(
+        `Importação concluída:\n` +
+        `${baixados} boleto(s) existente(s) baixado(s) agora\n` +
+        `${jaBaixados} já estavam baixados (sem alteração)\n` +
+        `${ignoradosAberto} ainda em aberto no relatório (sem alteração)\n` +
+        `${naoEncontrados} não encontrado(s) pelo Nosso Número, sendo:\n` +
+        `   • ${clientesCriados} cliente(s) novo(s) cadastrado(s)\n` +
+        `   • ${boletosCriados} boleto(s) novo(s) criado(s) (tinham valor e vencimento no relatório)\n` +
+        `   • ${semDadosParaCriarBoleto} sem valor/vencimento no relatório (só o cliente foi cadastrado, cadastre o boleto manualmente)`
+      );
+    } catch (e) {
+      alert("Não foi possível importar a baixa de boletos: " + e.message);
     }
   };
 
@@ -3798,7 +4004,7 @@ export default function App() {
                 <VeiculosView db={db} onOpenModal={openModal} onDeleteVeiculo={deleteVeiculo} onOpenDetail={openDetail} />
               )}
               {view === "financeiro" && (
-                <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} />
+                <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} onImportarBaixa={importarBaixaBoletosCSV} />
               )}
               {view === "relatorios" && <RelatoriosView db={db} />}
               {view === "cotacoes" && (
