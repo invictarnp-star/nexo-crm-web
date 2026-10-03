@@ -1354,6 +1354,13 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
     return nomeMatch || cpfMatch || placaMatch;
   });
 
+  function totaisBoletosDoCliente(clienteId) {
+    const boletosDoCliente = db.boletos.filter((b) => b.clienteId === clienteId).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
+    const emAberto = sum(boletosDoCliente.filter((b) => b.status !== "Pago").map((b) => b.valor));
+    const recebido = sum(boletosDoCliente.filter((b) => b.status === "Pago").map((b) => b.valor));
+    return { emAberto, recebido, total: boletosDoCliente.length };
+  }
+
   async function handleArquivoSelecionado(e) {
     const arquivo = e.target.files?.[0];
     e.target.value = "";
@@ -1456,18 +1463,25 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Nome</th><th>CPF</th><th>Contato</th><th>Veículos</th><th>Status</th><th></th>
+                  <th>Nome</th><th>CPF</th><th>Contato</th><th>Veículos</th><th>Em aberto</th><th>Recebido</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => {
                   const nVeiculos = db.veiculos.filter((v) => v.clienteId === c.id).length;
+                  const totaisBoletos = totaisBoletosDoCliente(c.id);
                   return (
                     <tr key={c.id} className="nexo-row-link" onClick={() => onOpenDetail(c.id)}>
                       <td style={{ fontWeight: 600 }}>{c.nome}</td>
                       <td className="mono nexo-cell-muted">{c.cpf || "—"}</td>
                       <td className="nexo-cell-muted">{c.telefone || c.whatsapp || "—"}</td>
                       <td className="nexo-cell-muted">{nVeiculos}</td>
+                      <td className="mono" style={{ color: totaisBoletos.emAberto > 0 ? "var(--warning)" : "var(--text-faint)" }}>
+                        {totaisBoletos.emAberto > 0 ? formatBRL(totaisBoletos.emAberto) : "—"}
+                      </td>
+                      <td className="mono" style={{ color: totaisBoletos.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>
+                        {totaisBoletos.recebido > 0 ? formatBRL(totaisBoletos.recebido) : "—"}
+                      </td>
                       <td><AtivoInativoBadge ativo={c.status} /></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
@@ -3856,8 +3870,13 @@ export default function App() {
         const cliente = await buscarOuCriarCliente(linha);
         if (!cliente) continue; // sem nome do cliente na linha, não dá pra criar nada
 
-        // Só criamos o boleto em si se o relatório trouxer valor e vencimento.
-        if (linha.valor && linha.dataVencimento) {
+        const estaPago = situacaoNorm === "baixado" || situacaoNorm === "pago";
+
+        // Sempre que a linha já vier paga, criamos o boleto também — mesmo que o
+        // relatório não traga valor/vencimento (relatórios de baixa do SGA
+        // normalmente só confirmam o pagamento, sem repetir esses dados).
+        // Nesse caso o valor fica 0,00 até você editar manualmente com o valor real.
+        if (estaPago || (linha.valor && linha.dataVencimento)) {
           const veiculo = linha.placa
             ? db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.toUpperCase() === linha.placa.toUpperCase())
             : null;
@@ -3867,12 +3886,13 @@ export default function App() {
               veiculoId: veiculo?.id || null,
               numero: linha.nossoNumero,
               nossoNumero: linha.nossoNumero,
-              dataVencimento: linha.dataVencimento,
-              valor: linha.valor,
-              dataPagamento: situacaoNorm === "baixado" || situacaoNorm === "pago" ? linha.dataPagamento || todayISO() : "",
+              dataVencimento: linha.dataVencimento || linha.dataPagamento || todayISO(),
+              valor: linha.valor || 0,
+              dataPagamento: estaPago ? linha.dataPagamento || todayISO() : "",
             })
           );
           boletosCriados++;
+          if (!linha.valor) semDadosParaCriarBoleto++; // criado, mas sem valor real — precisa editar depois
         } else {
           semDadosParaCriarBoleto++;
         }
@@ -3907,7 +3927,7 @@ export default function App() {
         `${naoEncontrados} não encontrado(s) pelo Nosso Número, sendo:\n` +
         `   • ${clientesCriados} cliente(s) novo(s) cadastrado(s)\n` +
         `   • ${boletosCriados} boleto(s) novo(s) criado(s) (tinham valor e vencimento no relatório)\n` +
-        `   • ${semDadosParaCriarBoleto} sem valor/vencimento no relatório (só o cliente foi cadastrado, cadastre o boleto manualmente)`
+        `   • ${semDadosParaCriarBoleto} criado(s) sem o valor real (o relatório não trouxe valor — edite esses boletos depois para corrigir o valor)`
       );
     } catch (e) {
       alert("Não foi possível importar a baixa de boletos: " + e.message);
