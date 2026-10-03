@@ -341,6 +341,53 @@ function parseCSVTexto(texto) {
   return { cabecalhos, linhas };
 }
 
+/**
+ * Alguns sistemas (como o SGA da Hinova) exportam "relatório em Excel"
+ * que na verdade é uma página HTML salva com extensão .xls — com um
+ * título mesclado na primeira linha, uma linha em branco, os dados, e
+ * um rodapé de resumo no final. Esse parser acha a linha de cabeçalho
+ * de verdade (a que tem "Nome" e "Nosso Numero", por exemplo) e para
+ * de ler assim que bate no resumo final, devolvendo o mesmo formato
+ * {cabecalhos, linhas} do parser de CSV, pra poder reaproveitar o
+ * resto da lógica de importação sem mudar nada.
+ */
+function parseTabelaHTML(texto) {
+  const doc = new DOMParser().parseFromString(texto, "text/html");
+  const todasLinhas = Array.from(doc.querySelectorAll("tr")).map((tr) =>
+    Array.from(tr.querySelectorAll("td,th")).map((cel) => (cel.textContent || "").replace(/\s+/g, " ").trim())
+  );
+
+  let idxCabecalho = -1;
+  for (let i = 0; i < todasLinhas.length; i++) {
+    const norm = todasLinhas[i].map(normalizarCabecalho);
+    if (norm.includes("nome") && (norm.includes("nossonumero") || norm.includes("cpf") || norm.includes("cpfcnpj"))) {
+      idxCabecalho = i;
+      break;
+    }
+  }
+  if (idxCabecalho === -1) return { cabecalhos: [], linhas: [] };
+
+  const cabecalhos = todasLinhas[idxCabecalho].map(normalizarCabecalho);
+  const linhas = [];
+  for (let i = idxCabecalho + 1; i < todasLinhas.length; i++) {
+    const linha = todasLinhas[i];
+    if (linha.every((c) => !c)) continue; // linha em branco entre o cabeçalho e os dados
+    const primeiraCelula = normalizarTexto(linha[0] || "");
+    if (!linha[0] || primeiraCelula.includes("resumo") || primeiraCelula.includes("total de")) break; // chegou no rodapé
+    linhas.push(linha);
+  }
+  return { cabecalhos, linhas };
+}
+
+/** Detecta automaticamente se o arquivo é HTML (tipo o relatório do SGA) ou um CSV de verdade. */
+function parseRelatorioTexto(texto) {
+  const amostra = texto.slice(0, 2000).toLowerCase();
+  if (amostra.includes("<html") || amostra.includes("<table") || amostra.includes("<!doctype")) {
+    return parseTabelaHTML(texto);
+  }
+  return parseCSVTexto(texto);
+}
+
 function valorDaColuna(cabecalhos, linha, candidatos) {
   for (const cand of candidatos) {
     const idx = cabecalhos.indexOf(cand);
@@ -1314,7 +1361,7 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
     setImportando(true);
     try {
       const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
       const clientesNovos = linhas
         .map((linha) => ({
           nome: valorDaColuna(cabecalhos, linha, ["nome", "nomecompleto"]),
@@ -1367,7 +1414,7 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
           <button className="nexo-btn" disabled={importando} onClick={() => fileInputRef.current?.click()}>
             {importando ? "Importando…" : "Importar CSV"}
           </button>
-          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+          <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
           <button
             className="nexo-btn"
             onClick={() =>
@@ -1566,7 +1613,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
     setImportandoBaixa(true);
     try {
       const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
       const linhasBaixa = linhas
         .map((linha) => ({
           nomeCliente: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
@@ -1630,7 +1677,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
       <div className="nexo-section-head">
         <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
         <div className="nexo-topbar-actions">
-          <input ref={fileInputBaixaRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoBaixa} />
+          <input ref={fileInputBaixaRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoBaixa} />
           <button
             className="nexo-btn"
             disabled={importandoBaixa}
@@ -2196,7 +2243,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
     setImportando(true);
     try {
       const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseCSVTexto(texto);
+      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
       const planosNovos = linhas
         .map((linha) => ({
           seguradoraNome: valorDaColuna(cabecalhos, linha, ["seguradora"]),
@@ -2247,7 +2294,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
             <button className="nexo-btn nexo-btn-sm" disabled={importando} onClick={() => fileInputRef.current?.click()}>
               {importando ? "Importando…" : "Importar tabela (CSV)"}
             </button>
-            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+            <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
           </div>
         </div>
 
