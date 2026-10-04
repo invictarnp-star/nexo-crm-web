@@ -418,6 +418,34 @@ const STYLE = `
 @media (max-width: 768px) { .nexo-table-foot .tot { margin-left: 0; width: 100%; } }
 .nexo-kpi-grid.c3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 940px) { .nexo-kpi-grid.c3 { grid-template-columns: 1fr; } }
+.nexo-bar { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; min-width: 90px; }
+.nexo-bar > span { display: block; height: 100%; border-radius: 999px; transition: width .45s ease; }
+.nexo-evo { display: flex; align-items: stretch; gap: 14px; }
+.nexo-evo-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.nexo-evo-bars { display: flex; align-items: flex-end; gap: 4px; height: 110px; width: 100%; justify-content: center; }
+.nexo-evo-bar { width: 34%; max-width: 30px; border-radius: 7px 7px 0 0; transition: height .45s ease; }
+.nexo-evo-lab { font-size: 11px; color: var(--text-faint); font-weight: 600; }
+.nexo-evo-val { font-size: 10.5px; color: var(--text-dim); font-weight: 600; height: 14px; white-space: nowrap; }
+.nexo-evo-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--text-faint); margin-top: 10px; }
+.nexo-evo-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.nexo-fontes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.nexo-fonte-regra { font-size: 13px; font-weight: 600; margin: 14px 0 8px; }
+.nexo-fonte-linha { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); padding: 7px 0; border-top: 1px solid var(--border-soft); }
+.nexo-rank { display: grid; grid-template-columns: 40px minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)) minmax(150px, 1.2fr) auto; gap: 16px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); transition: background .12s; }
+.nexo-rank:last-child { border-bottom: none; }
+.nexo-rank:hover { background: var(--accent-soft); }
+.nexo-rank-pos { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12.5px; background: var(--surface-3); color: var(--text-dim); }
+.nexo-rank-pos.p1 { background: linear-gradient(135deg, #F7CF63, #E39A1D); color: #3A2600; }
+.nexo-rank-pos.p2 { background: linear-gradient(135deg, #DDE3EA, #AEB8C4); color: #243040; }
+.nexo-rank-pos.p3 { background: linear-gradient(135deg, #E6B48A, #BE7B45); color: #3A1F08; }
+.nexo-rank-metric small { display: block; font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .6px; font-weight: 700; margin-bottom: 4px; }
+.nexo-rank-metric strong { font-size: 14px; }
+@media (max-width: 1100px) {
+  .nexo-rank { display: flex; flex-wrap: wrap; gap: 12px 18px; }
+  .nexo-rank > .nexo-cliente-cell { flex: 1 1 220px; }
+  .nexo-rank > .nexo-rank-metric { flex: 1 1 28%; }
+  .nexo-rank > .nexo-rank-metric.meta { flex: 1 1 100%; }
+}
 .nexo-tab-n { font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); }
 .nexo-tab.active .nexo-tab-n { background: var(--accent); color: #fff; }
 .nexo-tabs { align-items: center; }
@@ -1552,6 +1580,8 @@ const PALETA_GRAFICOS = {
 
 function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   const pal = PALETA_GRAFICOS[tema === "light" ? "light" : "dark"];
+  const fonteAuto = db.seguradoras.find((s) => s.comissaoAutomatica && s.tipoComissao === "mensalidade");
+  const pctComissao = fonteAuto && Number(fonteAuto.percentualComissao) > 0 ? Number(fonteAuto.percentualComissao) : COMISSAO_CORRETORA_PERCENTUAL;
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
 
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
@@ -1601,13 +1631,13 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
     });
     return Array.from(m.values()).sort((x, y) => y.total - x.total).slice(0, 6);
   })();
-  const comissaoCorretora = valorBaseComissao * (COMISSAO_CORRETORA_PERCENTUAL / 100);
+  const comissaoCorretora = valorBaseComissao * (pctComissao / 100);
 
   const valoresData = [
     { name: "Recebido", valor: valorRecebido, color: pal.success },
     { name: "Em aberto", valor: valorEmAberto, color: pal.info },
     { name: "A vencer", valor: valorAReceber, color: pal.warning },
-    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: pal.violet },
+    { name: `Comissão (${pctComissao}%)`, valor: comissaoCorretora, color: pal.violet },
   ];
 
   const contagem = { Pago: 0, "Em aberto": 0, Vencido: 0, "A vencer": 0 };
@@ -1666,7 +1696,7 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${pctComissao}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide
           extra={variacaoMes !== null && (
             <span className={`nexo-trend ${variacaoMes >= 0 ? "up" : "down"}`}>
               {variacaoMes >= 0 ? "▲" : "▼"} {Math.abs(variacaoMes).toFixed(1).replace(".", ",")}% em relação a {rotuloMes(mesAnteriorChave)}
@@ -1767,14 +1797,14 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
 
         <div className="nexo-card">
           <div className="nexo-chart-title">Comissão da corretora</div>
-          <div className="nexo-chart-sub">{COMISSAO_CORRETORA_PERCENTUAL}% sobre os boletos pagos em {rotuloMes(mesEfetivo)}</div>
+          <div className="nexo-chart-sub">{pctComissao}% sobre os boletos pagos em {rotuloMes(mesEfetivo)}</div>
           <div style={{ height: 240, position: "relative" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={[
-                    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, value: COMISSAO_CORRETORA_PERCENTUAL },
-                    { name: "Restante", value: 100 - COMISSAO_CORRETORA_PERCENTUAL },
+                    { name: `Comissão (${pctComissao}%)`, value: pctComissao },
+                    { name: "Restante", value: 100 - pctComissao },
                   ]}
                   dataKey="value"
                   nameKey="name"
@@ -1799,7 +1829,7 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
                 alignItems: "center", justifyContent: "center", pointerEvents: "none", paddingBottom: 24,
               }}
             >
-              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--violet)", lineHeight: 1 }}>{COMISSAO_CORRETORA_PERCENTUAL}%</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--violet)", lineHeight: 1 }}>{pctComissao}%</div>
               <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>recorrência mensal</div>
             </div>
           </div>
@@ -3315,17 +3345,18 @@ function StatusPill({ status }) {
 /* ------------------------------------------------------------------ */
 
 function ConsultoraForm({ initial, onSave, onCancel }) {
-  const [f, setF] = useState(initial || { nome: "", telefone: "", email: "", status: "Ativa" });
+  const [f, setF] = useState({
+    nome: "", telefone: "", email: "", status: "Ativa", percentualAdesao: "", valorFixoContrato: "", percentualRecorrente: "", metaMensal: "",
+    ...(initial || {}),
+  });
   const [errors, setErrors] = useState({});
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-
   function submit() {
     const errs = {};
     if (!f.nome.trim()) errs.nome = "Informe o nome.";
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
   }
-
   return (
     <>
       <Field label="Nome da consultora *" error={errors.nome}>
@@ -3339,12 +3370,30 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
           <input type="email" className="nexo-input" value={f.email} onChange={set("email")} placeholder="nome@email.com" />
         </Field>
       </div>
-      <Field label="Status">
-        <select className="nexo-select" value={f.status} onChange={set("status")}>
-          <option>Ativa</option>
-          <option>Inativa</option>
-        </select>
-      </Field>
+      <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>Quanto ela ganha</div>
+      <div className="nexo-cliente-sub" style={{ marginTop: -8 }}>Preencha o que se aplica. Dá para ajustar o valor em cada adesão.</div>
+      <div className="nexo-field-row3">
+        <Field label="% da adesão">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentualAdesao} onChange={set("percentualAdesao")} placeholder="Ex.: 30" />
+        </Field>
+        <Field label="Valor fixo por contrato (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorFixoContrato} onChange={set("valorFixoContrato")} placeholder="Ex.: 50" />
+        </Field>
+        <Field label="% recorrente (mensalidades)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentualRecorrente} onChange={set("percentualRecorrente")} placeholder="Ex.: 2" />
+        </Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Meta mensal (nº de adesões)">
+          <input type="number" min="0" className="nexo-input" value={f.metaMensal} onChange={set("metaMensal")} placeholder="Ex.: 10" />
+        </Field>
+        <Field label="Status">
+          <select className="nexo-select" value={f.status} onChange={set("status")}>
+            <option>Ativa</option>
+            <option>Inativa</option>
+          </select>
+        </Field>
+      </div>
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
         <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultora</button>
@@ -3353,46 +3402,85 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
   );
 }
 
-function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
+function ConsultorasView({ db, onOpenModal, onDeleteConsultora, onDeleteComissao, onMarcarPagaComissao }) {
+  const [aba, setAba] = useState("desempenho");
+  const [mesEscolhido, setMesEscolhido] = useState(null);
+  const mesAtual = mesRefDe(todayISO());
+  const mesesOpcoes = opcoesMeses(db.adesoes.map((a) => mesRefDe(a.dataVenda)));
+  const mesPadrao = mesesOpcoes.find((m) => db.adesoes.some((a) => mesRefDe(a.dataVenda) === m && a.status !== "Cancelada")) || mesAtual;
+  const mes = mesEscolhido || mesPadrao;
+
+  const ranking = db.consultoras
+    .map((c) => ({ c, d: desempenhoConsultora(db, c, mes) }))
+    .sort((x, y) => y.d.valor - x.d.valor || y.d.qtd - x.d.qtd || x.c.nome.localeCompare(y.c.nome, "pt-BR"));
+  const totQtd = sum(ranking.map((r) => r.d.qtd));
+  const totValor = round2(sum(ranking.map((r) => r.d.valor)));
+  const totGanho = round2(sum(ranking.map((r) => r.d.total)));
+  const aPagar = round2(sum(db.comissoes.filter((c) => c.status === "A pagar").map((c) => c.valorComissao)));
+
   return (
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
+        <div className="nexo-topbar-actions">
+          {aba === "desempenho" && (
+            <select className="nexo-select" style={{ width: "auto" }} value={mes} onChange={(e) => setMesEscolhido(e.target.value)} title="Mês de referência">
+              {mesesOpcoes.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+            </select>
+          )}
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
+        </div>
       </div>
 
-      {db.consultoras.length === 0 ? (
+      <div className="nexo-tabs">
+        <div className={`nexo-tab ${aba === "desempenho" ? "active" : ""}`} onClick={() => setAba("desempenho")}>Desempenho do mês</div>
+        <div className={`nexo-tab ${aba === "pagamentos" ? "active" : ""}`} onClick={() => setAba("pagamentos")}>Pagamentos<span className="nexo-tab-n">{db.comissoes.length}</span></div>
+      </div>
+
+      {aba === "pagamentos" ? (
+        <PagamentosConsultoresView db={db} onOpenModal={onOpenModal} onDeleteComissao={onDeleteComissao} onMarcarPagaComissao={onMarcarPagaComissao} />
+      ) : db.consultoras.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
       ) : (
-        <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-          {db.consultoras.map((c) => {
-            const adesoesDaConsultora = db.adesoes.filter((a) => a.consultoraId === c.id);
-            const comissoesDaConsultora = db.comissoes.filter((cm) => cm.consultoraId === c.id);
-            const totalRecebido = sum(adesoesDaConsultora.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao));
-            const comissaoAPagar = sum(comissoesDaConsultora.filter((cm) => cm.status === "A pagar").map((cm) => cm.valorComissao));
-            const comissaoPaga = sum(comissoesDaConsultora.filter((cm) => cm.status === "Pago").map((cm) => cm.valorComissao));
-            return (
-              <div key={c.id} className="nexo-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.nome}</div>
-                    <div className="nexo-cell-muted" style={{ marginTop: 2 }}>{c.telefone || c.email || "—"}</div>
+        <>
+          <div className="nexo-kpi-grid">
+            <Kpi icon={FileText} label={`Adesões em ${rotuloMes(mes)}`} value={totQtd} tone="accent" />
+            <Kpi icon={Wallet} label="Valor das adesões" value={formatBRL(totValor)} tone="success" />
+            <Kpi icon={TrendingUp} label="Ganho dos consultores no mês" value={formatBRL(totGanho)} tone="warning" />
+            <Kpi icon={Clock} label="Pagamentos a fazer" value={formatBRL(aPagar)} tone="info" />
+          </div>
+          <div className="nexo-table-wrap">
+            {ranking.map(({ c, d }, i) => (
+              <div className="nexo-rank" key={c.id} style={c.status === "Inativa" ? { opacity: 0.6 } : undefined}>
+                <div className={`nexo-rank-pos ${d.qtd > 0 && i < 3 ? "p" + (i + 1) : ""}`}>{i + 1}º</div>
+                <div className="nexo-cliente-cell">
+                  <AvatarNome nome={c.nome} tamanho={40} />
+                  <div style={{ minWidth: 0 }}>
+                    <div className="nexo-cliente-nome" style={{ fontSize: 14 }}>{c.nome}</div>
+                    <div className="nexo-cliente-sub">{[Number(c.percentualAdesao) > 0 && `${pctTexto(c.percentualAdesao)} da adesão`, Number(c.valorFixoContrato) > 0 && `${formatBRL(c.valorFixoContrato)} fixo`, Number(c.percentualRecorrente) > 0 && `${pctTexto(c.percentualRecorrente)} recorrente`].filter(Boolean).join(" · ") || "Regras de ganho não definidas"}</div>
                   </div>
-                  <AtivoInativoBadge ativo={c.status === "Ativa" ? "Ativo" : "Inativo"} />
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span>Adesões recebidas: <strong className="mono">{formatBRL(totalRecebido)}</strong></span>
-                  <span>Comissão a pagar: <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(comissaoAPagar)}</strong></span>
-                  <span>Comissão paga: <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(comissaoPaga)}</strong></span>
+                <div className="nexo-rank-metric"><small>Adesões</small><strong className="mono">{d.qtd}</strong><div className="nexo-cliente-sub">{formatBRL(d.valor)}</div></div>
+                <div className="nexo-rank-metric"><small>Ganho (adesões)</small><strong className="mono">{formatBRL(d.comissaoAdesoes)}</strong></div>
+                <div className="nexo-rank-metric"><small>Recorrente</small><strong className="mono">{formatBRL(d.recorrente)}</strong><div className="nexo-cliente-sub">total {formatBRL(d.total)}</div></div>
+                <div className="nexo-rank-metric meta">
+                  <small>Meta</small>
+                  {d.meta > 0 ? (
+                    <>
+                      <BarraProgresso valor={d.qtd} max={d.meta} cor={d.qtd >= d.meta ? "var(--success)" : "var(--accent)"} />
+                      <div className="nexo-cliente-sub">{d.qtd} de {d.meta} ({d.pctMeta}%)</div>
+                    </>
+                  ) : <div className="nexo-cliente-sub">Sem meta definida</div>}
                 </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("consultora", c)}><Pencil size={12} /> Editar</button>
-                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={12} /> Excluir</button>
+                <div className="nexo-actions-cell">
+                  <button className="nexo-icon-btn" title="Nova adesão desta consultora" onClick={() => onOpenModal("adesao", { consultoraId: c.id })}><Plus size={13} /></button>
+                  <button className="nexo-icon-btn" title="Editar" onClick={() => onOpenModal("consultora", c)}><Pencil size={13} /></button>
+                  <button className="nexo-icon-btn" title="Excluir" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={13} /></button>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -3402,13 +3490,22 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora }) {
 /* Adesões                                                               */
 /* ------------------------------------------------------------------ */
 
-function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
-  const [f, setF] = useState(
-    initial || { clienteId: "", consultoraId: "", dataVenda: todayISO(), valorAdesao: "", valorRecebido: "", dataRecebimento: "", status: "Pendente" }
-  );
+function AdesaoForm({ initial, clientes, consultoras, seguradoras, onSave, onCancel }) {
+  const [f, setF] = useState({
+    clienteId: "", consultoraId: "", seguradoraId: "", dataVenda: todayISO(), valorAdesao: "", comissaoConsultora: "",
+    valorRecebido: "", dataRecebimento: "", status: "Pendente", ...(initial || {}),
+  });
   const [errors, setErrors] = useState({});
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [comissaoManual, setComissaoManual] = useState(false);
+  const consultora = consultoras.find((c) => c.id === f.consultoraId);
 
+  function recalcular(next) {
+    if (comissaoManual) return next;
+    const c = consultoras.find((x) => x.id === next.consultoraId);
+    return { ...next, comissaoConsultora: c ? String(calcComissaoAdesao(c, next.valorAdesao) || "") : next.comissaoConsultora };
+  }
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const setCalc = (k) => (e) => setF(recalcular({ ...f, [k]: e.target.value }));
   function submit() {
     const errs = {};
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
@@ -3417,7 +3514,8 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
   }
-
+  const valor = Number(f.valorAdesao) || 0;
+  const ganho = Number(f.comissaoConsultora) || 0;
   return (
     <>
       <div className="nexo-field-row">
@@ -3428,20 +3526,38 @@ function AdesaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
           </select>
         </Field>
         <Field label="Consultora responsável *" error={errors.consultoraId}>
-          <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
+          <select className="nexo-select" value={f.consultoraId} onChange={setCalc("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
       </div>
       <div className="nexo-field-row">
+        <Field label="Seguradora / associação">
+          <select className="nexo-select" value={f.seguradoraId || ""} onChange={set("seguradoraId")}>
+            <option value="">—</option>
+            {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
+        </Field>
         <Field label="Data da venda">
           <input type="date" className="nexo-input" value={f.dataVenda} onChange={set("dataVenda")} />
         </Field>
-        <Field label="Valor da adesão *" error={errors.valorAdesao}>
-          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorAdesao} onChange={set("valorAdesao")} placeholder="0,00" />
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Valor da adesão (R$) *" error={errors.valorAdesao}>
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorAdesao} onChange={setCalc("valorAdesao")} placeholder="0,00" />
+        </Field>
+        <Field label="Ganho da consultora (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.comissaoConsultora} onChange={(e) => { setComissaoManual(true); setF({ ...f, comissaoConsultora: e.target.value }); }} placeholder="Calculado pelas regras dela" />
         </Field>
       </div>
+      {valor > 0 && (
+        <div className="nexo-card" style={{ padding: "12px 16px", display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, background: "var(--surface-2)" }}>
+          <span>Consultora fica com <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(ganho)}</strong></span>
+          <span>Corretora fica com <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(Math.max(0, valor - ganho))}</strong></span>
+          {consultora && !comissaoManual && <span className="nexo-cliente-sub">calculado pelas regras de {consultora.nome.split(" ")[0]}</span>}
+        </div>
+      )}
       <div className="nexo-field-row">
         <Field label="Valor recebido">
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorRecebido} onChange={set("valorRecebido")} placeholder="0,00" />
@@ -3476,13 +3592,18 @@ function rotuloMes(chaveAAAAMM) {
   return rotulo.charAt(0).toUpperCase() + rotulo.slice(1);
 }
 
-function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
+function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida, onGerarPagamento }) {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const chaveMesAtual = mesRefDe(todayISO());
   const [mesSelecionado, setMesSelecionado] = useState(chaveMesAtual);
   const [aba, setAba] = useState("lancamentos"); // lancamentos | fechamento
+
+  const consultoraPorId = useMemo(() => new Map(db.consultoras.map((c) => [c.id, c])), [db.consultoras]);
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
-  const nomeConsultora = (id) => db.consultoras.find((c) => c.id === id)?.nome || "—";
+  const nomeConsultora = (id) => consultoraPorId.get(id)?.nome || "—";
+  const nomeFonte = (id) => db.seguradoras.find((s) => s.id === id)?.nome || "";
+  const ganhoDe = (a) => comissaoDaAdesao(a, consultoraPorId.get(a.consultoraId));
+  const pagamentoGerado = (a) => db.comissoes.some((c) => c.referencia === `adesao:${a.id}`);
 
   const mesesDisponiveis = useMemo(() => {
     const chaves = new Set(db.adesoes.map((a) => mesRefDe(a.dataVenda)).filter(Boolean));
@@ -3491,18 +3612,25 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
   }, [db.adesoes]);
 
   const adesoesDoMes = mesSelecionado === "todos" ? db.adesoes : db.adesoes.filter((a) => mesRefDe(a.dataVenda) === mesSelecionado);
-
   const recebidas = adesoesDoMes.filter((a) => a.status === "Recebida");
   const pendentes = adesoesDoMes.filter((a) => a.status === "Pendente");
   const canceladas = adesoesDoMes.filter((a) => a.status === "Cancelada");
-
   const filtradas = filtroStatus === "Todos" ? adesoesDoMes : adesoesDoMes.filter((a) => a.status === filtroStatus);
+
+  const validas = adesoesDoMes.filter((a) => a.status !== "Cancelada");
+  const totalValidas = round2(sum(validas.map((a) => a.valorAdesao)));
+  const parteConsultoras = round2(sum(validas.map(ganhoDe)));
+  const parteCorretora = round2(totalValidas - parteConsultoras);
+  const sufixo = mesSelecionado !== "todos" ? " no mês" : "";
 
   const colunasExportacao = [
     { titulo: "Cliente", valor: (a) => nomeCliente(a.clienteId) },
     { titulo: "Consultora", valor: (a) => nomeConsultora(a.consultoraId) },
+    { titulo: "Seguradora/associação", valor: (a) => nomeFonte(a.seguradoraId) },
     { titulo: "Data da venda", valor: (a) => formatDateBR(a.dataVenda) },
     { titulo: "Valor da adesão", valor: (a) => a.valorAdesao },
+    { titulo: "Ganho da consultora", valor: (a) => ganhoDe(a) },
+    { titulo: "Fica com a corretora", valor: (a) => round2((Number(a.valorAdesao) || 0) - ganhoDe(a)) },
     { titulo: "Valor recebido", valor: (a) => a.valorRecebido },
     { titulo: "Status", valor: (a) => a.status },
   ];
@@ -3511,19 +3639,19 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
     const chaves = Array.from(new Set(db.adesoes.map((a) => mesRefDe(a.dataVenda)))).sort().reverse();
     return chaves.map((chave) => {
       const doMes = db.adesoes.filter((a) => mesRefDe(a.dataVenda) === chave);
-      const recebidasDoMes = doMes.filter((a) => a.status === "Recebida");
-      const pendentesDoMes = doMes.filter((a) => a.status === "Pendente");
-      const canceladasDoMes = doMes.filter((a) => a.status === "Cancelada");
+      const vals = doMes.filter((a) => a.status !== "Cancelada");
+      const ganho = round2(sum(vals.map((a) => comissaoDaAdesao(a, consultoraPorId.get(a.consultoraId)))));
       return {
-        chave,
-        total: doMes.length,
-        valorRecebido: sum(recebidasDoMes.map((a) => a.valorRecebido || a.valorAdesao)),
-        valorPendente: sum(pendentesDoMes.map((a) => a.valorAdesao)),
-        valorCancelado: sum(canceladasDoMes.map((a) => a.valorAdesao)),
+        chave, total: doMes.length,
+        valorRecebido: sum(doMes.filter((a) => a.status === "Recebida").map((a) => a.valorRecebido || a.valorAdesao)),
+        valorPendente: sum(doMes.filter((a) => a.status === "Pendente").map((a) => a.valorAdesao)),
+        valorCancelado: sum(doMes.filter((a) => a.status === "Cancelada").map((a) => a.valorAdesao)),
+        ganhoConsultoras: ganho,
+        ficaCorretora: round2(sum(vals.map((a) => a.valorAdesao)) - ganho),
         linhas: doMes,
       };
     });
-  }, [db.adesoes]);
+  }, [db.adesoes, consultoraPorId]);
 
   return (
     <div>
@@ -3565,9 +3693,17 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
           </div>
 
           <div className="nexo-kpi-grid c3">
-            <Kpi icon={CheckCircle2} label={`Recebidas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
-            <Kpi icon={Clock} label={`Pendentes${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
-            <Kpi icon={XCircle} label={`Canceladas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
+            <Kpi icon={CheckCircle2} label={`Recebidas${sufixo}`} value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
+            <Kpi icon={Clock} label={`Pendentes${sufixo}`} value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
+            <Kpi icon={XCircle} label={`Canceladas${sufixo}`} value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
+          </div>
+          <div className="nexo-kpi-grid">
+            <Kpi
+              icon={Wallet} wide tone="accent"
+              label={`Fica com a corretora${sufixo} (sem as canceladas)`}
+              value={formatBRL(parteCorretora)}
+              extra={<span className="nexo-trend up">Total de {formatBRL(totalValidas)} · consultores ficam com {formatBRL(parteConsultoras)}</span>}
+            />
           </div>
 
           {adesoesDoMes.length === 0 ? (
@@ -3576,24 +3712,44 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Cliente</th><th>Consultora</th><th>Data da venda</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Cliente</th><th>Consultora</th><th>Data</th><th>Valor</th><th>Divisão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
-                    {filtradas.map((a) => (
-                      <tr key={a.id}>
-                        <td style={{ fontWeight: 600 }}>{nomeCliente(a.clienteId)}</td>
-                        <td className="nexo-cell-muted">{nomeConsultora(a.consultoraId)}</td>
-                        <td>{formatDateBR(a.dataVenda)}</td>
-                        <td className="mono">{formatBRL(a.valorAdesao)}</td>
-                        <td><StatusPill status={a.status} /></td>
-                        <td>
-                          <div className="nexo-actions-cell">
-                            {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
-                            <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
-                            <button className="nexo-icon-btn" onClick={() => onDeleteAdesao(a.id)}><Trash2 size={13} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {filtradas.map((a) => {
+                      const ganho = ganhoDe(a);
+                      return (
+                        <tr key={a.id}>
+                          <td>
+                            <div className="nexo-cliente-cell">
+                              <AvatarNome nome={nomeCliente(a.clienteId)} tamanho={32} />
+                              <span className="nexo-cliente-nome">{nomeCliente(a.clienteId)}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="nexo-cliente-nome">{nomeConsultora(a.consultoraId)}</div>
+                            {nomeFonte(a.seguradoraId) && <div className="nexo-cliente-sub">{nomeFonte(a.seguradoraId)}</div>}
+                          </td>
+                          <td>{formatDateBR(a.dataVenda)}</td>
+                          <td className="mono">{formatBRL(a.valorAdesao)}</td>
+                          <td className="mono">
+                            <div style={{ color: ganho > 0 ? "var(--warning)" : "var(--text-faint)" }}>{ganho > 0 ? formatBRL(ganho) : "—"} <span className="nexo-cliente-sub">consultora</span></div>
+                            <div style={{ color: "var(--success)" }}>{formatBRL(round2((Number(a.valorAdesao) || 0) - ganho))} <span className="nexo-cliente-sub">corretora</span></div>
+                          </td>
+                          <td><StatusPill status={a.status} /></td>
+                          <td>
+                            <div className="nexo-actions-cell">
+                              {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
+                              {a.status === "Recebida" && ganho > 0 && (
+                                pagamentoGerado(a)
+                                  ? <span className="nexo-tag-frota" title="O pagamento desta adesão já está na aba Pagamentos das consultoras">pagamento gerado</span>
+                                  : <button className="nexo-btn nexo-btn-sm" title="Cria o pagamento do consultor na aba Pagamentos" onClick={() => onGerarPagamento(a)}>Gerar pagamento</button>
+                              )}
+                              <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
+                              <button className="nexo-icon-btn" onClick={() => onDeleteAdesao(a.id)}><Trash2 size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3604,21 +3760,21 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Mês</th><th>Qtd. adesões</th><th>Recebido</th><th>Pendente</th><th>Cancelado</th><th></th></tr></thead>
+              <thead><tr><th>Mês</th><th>Qtd.</th><th>Recebido</th><th>Pendente</th><th>Cancelado</th><th>Consultores</th><th>Corretora</th><th></th></tr></thead>
               <tbody>
                 {fechamentoPorMes.length === 0 ? (
-                  <tr><td colSpan={6} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma adesão lançada ainda.</td></tr>
-                ) : fechamentoPorMes.map((f) => (
-                  <tr key={f.chave}>
-                    <td style={{ fontWeight: 600 }}>{rotuloMes(f.chave)}</td>
-                    <td>{f.total}</td>
-                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(f.valorRecebido)}</td>
-                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(f.valorPendente)}</td>
-                    <td className="mono" style={{ color: "var(--danger)" }}>{formatBRL(f.valorCancelado)}</td>
+                  <tr><td colSpan={8} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma adesão lançada ainda.</td></tr>
+                ) : fechamentoPorMes.map((x) => (
+                  <tr key={x.chave}>
+                    <td style={{ fontWeight: 600 }}>{rotuloMes(x.chave)}</td>
+                    <td>{x.total}</td>
+                    <td className="mono" style={{ color: "var(--success)" }}>{formatBRL(x.valorRecebido)}</td>
+                    <td className="mono" style={{ color: "var(--warning)" }}>{formatBRL(x.valorPendente)}</td>
+                    <td className="mono" style={{ color: "var(--danger)" }}>{formatBRL(x.valorCancelado)}</td>
+                    <td className="mono">{formatBRL(x.ganhoConsultoras)}</td>
+                    <td className="mono" style={{ fontWeight: 600 }}>{formatBRL(x.ficaCorretora)}</td>
                     <td>
-                      <button className="nexo-btn nexo-btn-sm" onClick={() => exportarCSV(`adesoes-${f.chave}.csv`, colunasExportacao, f.linhas)}>
-                        Exportar CSV
-                      </button>
+                      <button className="nexo-btn nexo-btn-sm" onClick={() => exportarCSV(`adesoes-${x.chave}.csv`, colunasExportacao, x.linhas)}>Exportar CSV</button>
                     </td>
                   </tr>
                 ))}
@@ -3729,7 +3885,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   );
 }
 
-function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao }) {
+function PagamentosConsultoresView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao }) {
   const [aba, setAba] = useState("lista"); // lista | fechamento
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
@@ -3753,8 +3909,8 @@ function ComissoesView({ db, onOpenModal, onDeleteComissao, onMarcarPagaComissao
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Comissões<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
-        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Nova comissão</button>
+        <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Pagamentos aos consultores<span className="nexo-section-count">{db.comissoes.length} lançamentos</span></div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("comissao")}><Plus size={15} /> Novo pagamento</button>
       </div>
 
       <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
@@ -4389,6 +4545,573 @@ function VeiculoLinha({ v, onEditar, onExcluir, onNovoBoleto, plano }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Comissões da corretora, adesões e consultores: regras e cálculos     */
+/* ------------------------------------------------------------------ */
+
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const numOuNull = (v) => (v === "" || v == null ? null : Number(v));
+const pctTexto = (v) => `${String(Number(v) || 0).replace(".", ",")}%`;
+const compactoBRL = (v) => {
+  const n = Number(v) || 0;
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")}k` : String(Math.round(n));
+};
+
+/** Texto curto que resume a regra de comissão de uma seguradora/associação. */
+function resumoRegra(f) {
+  if (!f || !f.tipoComissao) return "Sem regra definida";
+  if (f.tipoComissao === "mensalidade") return `${pctTexto(f.percentualComissao)} sobre mensalidades pagas${f.comissaoAutomatica ? " · automático" : ""}`;
+  if (f.tipoComissao === "premio") return `${pctTexto(f.percentualComissao)} na venda${Number(f.percentualRenovacao) > 0 ? ` · ${pctTexto(f.percentualRenovacao)} na renovação` : ""}`;
+  return `${formatBRL(f.valorFixoComissao || 0)} por contrato`;
+}
+
+/** Soma dos boletos pagos no mês (base da comissão automática sobre mensalidades). */
+function baseAutomatica(db, mes) {
+  return round2(sum(db.boletos.filter((b) => b.dataPagamento && mesRefDe(b.dataPagamento) === mes).map((b) => b.valor)));
+}
+
+function situacaoLinhaComissao(l) {
+  const prev = Number(l.valorPrevisto) || 0;
+  if (l.valorRecebido === "" || l.valorRecebido == null) return { rotulo: "A receber", tom: "warning" };
+  const rec = Number(l.valorRecebido) || 0;
+  if (Math.abs(rec - prev) < 0.01) return { rotulo: "Recebida", tom: "success" };
+  return rec < prev ? { rotulo: "Recebeu menos", tom: "danger" } : { rotulo: "Recebeu a mais", tom: "info" };
+}
+
+/**
+ * Fechamento do mês: para cada seguradora/associação, o que era PREVISTO, o que foi RECEBIDO
+ * e a diferença. Fontes com comissão automática calculam o previsto sobre os boletos pagos.
+ */
+function fechamentoComissoes(db, mes) {
+  const linhas = db.comissoesCorretora.filter((l) => l.competencia === mes);
+  return db.seguradoras
+    .map((f) => {
+      const doFonte = linhas.filter((l) => l.seguradoraId === f.id);
+      const auto = !!f.comissaoAutomatica && f.tipoComissao === "mensalidade";
+      const baseAuto = auto ? baseAutomatica(db, mes) : 0;
+      const previsto = auto ? round2((baseAuto * (Number(f.percentualComissao) || 0)) / 100) : round2(sum(doFonte.map((l) => l.valorPrevisto)));
+      const recebido = round2(sum(doFonte.map((l) => l.valorRecebido)));
+      const estornos = round2(sum(doFonte.map((l) => l.estorno)));
+      const diferenca = round2(previsto - recebido);
+      let sit;
+      if (previsto === 0 && recebido === 0) sit = { chave: "vazio", rotulo: "Sem movimento", tom: "info" };
+      else if (recebido === 0) sit = { chave: "areceber", rotulo: "A receber", tom: "warning" };
+      else if (Math.abs(diferenca) < 0.01) sit = { chave: "ok", rotulo: "Recebida", tom: "success" };
+      else if (diferenca > 0) sit = { chave: "menos", rotulo: "Recebeu menos", tom: "danger" };
+      else sit = { chave: "mais", rotulo: "Recebeu a mais", tom: "info" };
+      return { fonte: f, auto, baseAuto, linhas: doFonte, previsto, recebido, estornos, diferenca, sit };
+    })
+    .filter((r) => r.fonte.tipoComissao || r.linhas.length > 0);
+}
+
+function calcComissaoAdesao(consultora, valor) {
+  if (!consultora) return 0;
+  const v = Number(valor) || 0;
+  return round2(v * ((Number(consultora.percentualAdesao) || 0) / 100) + (Number(consultora.valorFixoContrato) || 0));
+}
+
+/** Comissão do consultor em uma adesão: o valor combinado na própria adesão, ou o calculado pelas regras dele. */
+function comissaoDaAdesao(adesao, consultora) {
+  if (adesao.comissaoConsultora !== "" && adesao.comissaoConsultora != null) return Number(adesao.comissaoConsultora) || 0;
+  return calcComissaoAdesao(consultora, adesao.valorAdesao);
+}
+
+/** Comissão recorrente do consultor: % sobre as mensalidades pagas no mês pelos clientes que ele trouxe. */
+function recorrenteDoMes(db, consultora, mes) {
+  const pct = Number(consultora.percentualRecorrente) || 0;
+  if (!pct) return 0;
+  const clientes = new Set(db.adesoes.filter((a) => a.consultoraId === consultora.id && a.status !== "Cancelada").map((a) => a.clienteId));
+  const base = sum(db.boletos.filter((b) => clientes.has(b.clienteId) && b.dataPagamento && mesRefDe(b.dataPagamento) === mes).map((b) => b.valor));
+  return round2((base * pct) / 100);
+}
+
+function desempenhoConsultora(db, consultora, mes) {
+  const adesoesMes = db.adesoes.filter((a) => a.consultoraId === consultora.id && mesRefDe(a.dataVenda) === mes && a.status !== "Cancelada");
+  const valor = round2(sum(adesoesMes.map((a) => a.valorAdesao)));
+  const comissaoAdesoes = round2(sum(adesoesMes.map((a) => comissaoDaAdesao(a, consultora))));
+  const recorrente = recorrenteDoMes(db, consultora, mes);
+  const meta = Number(consultora.metaMensal) || 0;
+  return {
+    adesoesMes, qtd: adesoesMes.length, valor, comissaoAdesoes, recorrente,
+    total: round2(comissaoAdesoes + recorrente), meta,
+    pctMeta: meta > 0 ? Math.min(100, Math.round((adesoesMes.length / meta) * 100)) : null,
+  };
+}
+
+/** Os n meses até mesBase, em ordem cronológica. */
+function ultimosMeses(mesBase, n) {
+  const [a, m] = mesBase.split("-").map(Number);
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(a, m - 1 - (n - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+}
+function opcoesMeses(extras = []) {
+  const hoje = mesRefDe(todayISO());
+  return Array.from(new Set([...ultimosMeses(hoje, 18), ...extras].filter(Boolean))).sort().reverse();
+}
+
+function BarraProgresso({ valor, max, cor = "var(--accent)" }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (valor / max) * 100)) : 0;
+  return <div className="nexo-bar"><span style={{ width: `${pct}%`, background: cor }} /></div>;
+}
+
+function EvolucaoComissoes({ dados }) {
+  const max = Math.max(1, ...dados.map((d) => Math.max(d.previsto, d.recebido)));
+  return (
+    <div>
+      <div className="nexo-evo">
+        {dados.map((d) => (
+          <div className="nexo-evo-col" key={d.mes}>
+            <div className="nexo-evo-val">{d.recebido > 0 ? compactoBRL(d.recebido) : ""}</div>
+            <div className="nexo-evo-bars">
+              <div className="nexo-evo-bar" style={{ height: `${(d.previsto / max) * 100}%`, minHeight: d.previsto > 0 ? 4 : 0, background: "color-mix(in srgb, var(--accent) 28%, transparent)", border: d.previsto > 0 ? "1px solid var(--accent-dim)" : "none" }} title={`Previsto: ${formatBRL(d.previsto)}`} />
+              <div className="nexo-evo-bar" style={{ height: `${(d.recebido / max) * 100}%`, minHeight: d.recebido > 0 ? 4 : 0, background: "var(--success)" }} title={`Recebido: ${formatBRL(d.recebido)}`} />
+            </div>
+            <div className="nexo-evo-lab">{rotuloMes(d.mes).slice(0, 3)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="nexo-evo-legend">
+        <span><i style={{ background: "color-mix(in srgb, var(--accent) 28%, transparent)", border: "1px solid var(--accent-dim)" }} />Previsto</span>
+        <span><i style={{ background: "var(--success)" }} />Recebido</span>
+      </div>
+    </div>
+  );
+}
+
+const TIPOS_REGRA = [
+  ["mensalidade", "% sobre cada mensalidade/boleto pago"],
+  ["premio", "% sobre o prêmio (venda e renovação)"],
+  ["fixo", "Valor fixo por contrato"],
+];
+const TIPOS_LANCAMENTO = ["Mensalidade", "Venda", "Renovação", "Fixo", "Outro"];
+const PRESET_INVICTA = { nome: "Invicta Mais", tipoComissao: "mensalidade", percentualComissao: 10, comissaoAutomatica: true };
+
+function ComissoesCorretoraView({ db, onOpenModal, onDeleteLancamento }) {
+  const [aba, setAba] = useState("fechamento");
+  const [mesEscolhido, setMesEscolhido] = useState(null);
+  const [filtroFonte, setFiltroFonte] = useState("todas");
+
+  const mesAtual = mesRefDe(todayISO());
+  const mesesOpcoes = opcoesMeses(db.comissoesCorretora.map((l) => l.competencia));
+  const mesPadrao = mesesOpcoes.find((m) => fechamentoComissoes(db, m).some((r) => r.previsto > 0 || r.recebido > 0)) || mesAtual;
+  const mes = mesEscolhido || mesPadrao;
+
+  const fech = fechamentoComissoes(db, mes);
+  const totPrev = round2(sum(fech.map((r) => r.previsto)));
+  const totRec = round2(sum(fech.map((r) => r.recebido)));
+  const totEst = round2(sum(fech.map((r) => r.estornos)));
+  const falta = round2(totPrev - totRec);
+  const evolucao = ultimosMeses(mes, 6).map((m) => {
+    const f = fechamentoComissoes(db, m);
+    return { mes: m, previsto: sum(f.map((r) => r.previsto)), recebido: sum(f.map((r) => r.recebido)) };
+  });
+  const nomeFonte = (id) => db.seguradoras.find((s) => s.id === id)?.nome || "—";
+  const nomeCliente = (id) => db.clientes.find((c) => c.id === id)?.nome || "";
+  const lancamentos = db.comissoesCorretora
+    .filter((l) => l.competencia === mes && (filtroFonte === "todas" || l.seguradoraId === filtroFonte))
+    .sort((x, y) => nomeFonte(x.seguradoraId).localeCompare(nomeFonte(y.seguradoraId), "pt-BR"));
+
+  function registrarRecebimento(r) {
+    if (r.auto) {
+      onOpenModal("lancamento", {
+        seguradoraId: r.fonte.id, competencia: mes, tipo: "Mensalidade", base: r.baseAuto, percentual: r.fonte.percentualComissao,
+        valorPrevisto: r.previsto, valorRecebido: "", dataRecebimento: todayISO(), estorno: "", clienteId: "",
+        referencia: `Boletos pagos em ${rotuloMes(mes)}`, observacoes: "",
+      });
+    } else {
+      const tipo = r.fonte.tipoComissao === "fixo" ? "Fixo" : r.fonte.tipoComissao === "premio" ? "Venda" : "Mensalidade";
+      onOpenModal("lancamento", { seguradoraId: r.fonte.id, competencia: mes, tipo });
+    }
+  }
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Comissões<span className="nexo-section-count">o que a corretora recebe</span></div>
+        <div className="nexo-topbar-actions">
+          <select className="nexo-select" style={{ width: "auto" }} value={mes} onChange={(e) => setMesEscolhido(e.target.value)} title="Mês de referência">
+            {mesesOpcoes.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+          </select>
+          <button className="nexo-btn" onClick={() => onOpenModal("fonte")}><Plus size={15} /> Nova fonte</button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("lancamento", { competencia: mes })}><Plus size={15} /> Novo lançamento</button>
+        </div>
+      </div>
+
+      <div className="nexo-kpi-grid">
+        <Kpi icon={TrendingUp} label={`Previsto em ${rotuloMes(mes)}`} value={formatBRL(totPrev)} tone="accent" />
+        <Kpi icon={CheckCircle2} label="Recebido" value={formatBRL(totRec)} tone="success" />
+        <Kpi icon={Clock} label={falta < -0.009 ? "Recebido a mais" : "Falta receber"} value={formatBRL(Math.abs(falta))} tone={falta > 0.009 ? "warning" : falta < -0.009 ? "info" : "success"} />
+        <Kpi icon={AlertTriangle} label="Estornos no mês" value={formatBRL(totEst)} tone={totEst > 0 ? "danger" : "info"} />
+      </div>
+
+      <div className="nexo-card" style={{ marginBottom: 18 }}>
+        <div className="nexo-chart-title">Previsto × recebido</div>
+        <div className="nexo-chart-sub">Últimos 6 meses até {rotuloMes(mes)}</div>
+        <EvolucaoComissoes dados={evolucao} />
+      </div>
+
+      <div className="nexo-tabs">
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento do mês</div>
+        <div className={`nexo-tab ${aba === "lancamentos" ? "active" : ""}`} onClick={() => setAba("lancamentos")}>Lançamentos<span className="nexo-tab-n">{lancamentos.length}</span></div>
+        <div className={`nexo-tab ${aba === "fontes" ? "active" : ""}`} onClick={() => setAba("fontes")}>Fontes e regras<span className="nexo-tab-n">{db.seguradoras.length}</span></div>
+      </div>
+
+      {aba === "fechamento" && (
+        fech.length === 0 ? (
+          <div className="nexo-table-wrap">
+            <EmptyState icon={Wallet} title="Nenhuma fonte de comissão ainda" sub="Cadastre cada seguradora ou associação que paga comissão à corretora, com a regra de cada uma." />
+            <div style={{ textAlign: "center", paddingBottom: 28 }}>
+              <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("fonte", PRESET_INVICTA)}><Plus size={15} /> Criar “Invicta Mais” (10% automático)</button>
+            </div>
+          </div>
+        ) : (
+          <div className="nexo-table-wrap">
+            <div className="nexo-table-scroll">
+              <table className="nexo-table">
+                <thead><tr><th>Fonte</th><th>Previsto</th><th>Recebido</th><th>Diferença</th><th>Andamento</th><th>Situação</th><th></th></tr></thead>
+                <tbody>
+                  {fech.map((r) => (
+                    <tr key={r.fonte.id}>
+                      <td>
+                        <div className="nexo-cliente-cell">
+                          <AvatarNome nome={r.fonte.nome} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className="nexo-cliente-nome">{r.fonte.nome}</div>
+                            <div className="nexo-cliente-sub">{resumoRegra(r.fonte)}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="mono">
+                        {r.previsto > 0 ? formatBRL(r.previsto) : "—"}
+                        {r.auto && <div className="nexo-cliente-sub">base {formatBRL(r.baseAuto)}</div>}
+                      </td>
+                      <td className="mono" style={{ color: r.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>{r.recebido > 0 ? formatBRL(r.recebido) : "—"}</td>
+                      <td className="mono">
+                        {Math.abs(r.diferenca) < 0.01 ? <span className="nexo-cell-muted">—</span> : (
+                          <>
+                            <div style={{ color: r.diferenca > 0 ? "var(--warning)" : "var(--info)" }}>{formatBRL(Math.abs(r.diferenca))}</div>
+                            <div className="nexo-cliente-sub">{r.diferenca > 0 ? "falta receber" : "recebeu a mais"}</div>
+                          </>
+                        )}
+                      </td>
+                      <td style={{ minWidth: 130 }}><BarraProgresso valor={r.recebido} max={r.previsto} cor={r.sit.chave === "menos" ? "var(--danger)" : "var(--success)"} /></td>
+                      <td><PillTom tom={r.sit.tom}>{r.sit.rotulo}</PillTom></td>
+                      <td>
+                        <div className="nexo-actions-cell">
+                          {!r.fonte.tipoComissao ? (
+                            <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("fonte", r.fonte)}>Definir regra</button>
+                          ) : (
+                            <button className="nexo-btn nexo-btn-sm" onClick={() => registrarRecebimento(r)}>
+                              {r.auto ? "Registrar recebimento" : <><Plus size={12} /> Lançamento</>}
+                            </button>
+                          )}
+                          <button className="nexo-icon-btn" title="Editar regra" onClick={() => onOpenModal("fonte", r.fonte)}><Pencil size={13} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="nexo-table-foot">
+              <span><strong>{fech.length}</strong> fonte(s)</span>
+              <span>Previsto: <strong>{formatBRL(totPrev)}</strong></span>
+              <span>Recebido: <strong style={{ color: "var(--success)" }}>{formatBRL(totRec)}</strong></span>
+              <span className="tot">{falta < -0.009 ? "Recebido a mais" : "Falta receber"}: <strong style={{ color: falta > 0.009 ? "var(--warning)" : "var(--text)" }}>{formatBRL(Math.abs(falta))}</strong></span>
+            </div>
+          </div>
+        )
+      )}
+
+      {aba === "lancamentos" && (
+        <>
+          <div className="nexo-toolbar">
+            <select className="nexo-select" style={{ width: "auto" }} value={filtroFonte} onChange={(e) => setFiltroFonte(e.target.value)}>
+              <option value="todas">Todas as fontes</option>
+              {db.seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+            </select>
+          </div>
+          {lancamentos.length === 0 ? (
+            <div className="nexo-table-wrap"><EmptyState icon={FileText} title={`Nenhum lançamento em ${rotuloMes(mes)}`} sub="Use “Novo lançamento” para registrar uma comissão a receber ou já recebida." /></div>
+          ) : (
+            <div className="nexo-table-wrap">
+              <div className="nexo-table-scroll">
+                <table className="nexo-table">
+                  <thead><tr><th>Fonte</th><th>Tipo</th><th>Cliente / referência</th><th>Base</th><th>%</th><th>Previsto</th><th>Recebido</th><th>Situação</th><th></th></tr></thead>
+                  <tbody>
+                    {lancamentos.map((l) => {
+                      const sit = situacaoLinhaComissao(l);
+                      return (
+                        <tr key={l.id}>
+                          <td style={{ fontWeight: 600 }}>{nomeFonte(l.seguradoraId)}</td>
+                          <td className="nexo-cell-muted">{l.tipo}</td>
+                          <td>
+                            <div>{nomeCliente(l.clienteId) || "—"}</div>
+                            {l.referencia && <div className="nexo-cliente-sub">{l.referencia}</div>}
+                          </td>
+                          <td className="mono">{Number(l.base) > 0 ? formatBRL(l.base) : "—"}</td>
+                          <td className="mono nexo-cell-muted">{Number(l.percentual) > 0 ? pctTexto(l.percentual) : "—"}</td>
+                          <td className="mono">{formatBRL(l.valorPrevisto)}</td>
+                          <td className="mono" style={{ color: l.valorRecebido !== "" ? "var(--success)" : "var(--text-faint)" }}>
+                            {l.valorRecebido !== "" ? formatBRL(l.valorRecebido) : "—"}
+                            {Number(l.estorno) > 0 && <div className="nexo-cliente-sub" style={{ color: "var(--danger)" }}>estorno {formatBRL(l.estorno)}</div>}
+                          </td>
+                          <td><PillTom tom={sit.tom}>{sit.rotulo}</PillTom></td>
+                          <td>
+                            <div className="nexo-actions-cell">
+                              <button className="nexo-icon-btn" onClick={() => onOpenModal("lancamento", l)}><Pencil size={13} /></button>
+                              <button className="nexo-icon-btn" onClick={() => onDeleteLancamento(l.id)}><Trash2 size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {aba === "fontes" && (
+        db.seguradoras.length === 0 ? (
+          <div className="nexo-table-wrap">
+            <EmptyState icon={Wallet} title="Nenhuma fonte cadastrada" sub="Cadastre as seguradoras e associações que pagam comissão à corretora." />
+            <div style={{ textAlign: "center", paddingBottom: 28 }}>
+              <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("fonte", PRESET_INVICTA)}><Plus size={15} /> Criar “Invicta Mais” (10% automático)</button>
+            </div>
+          </div>
+        ) : (
+          <div className="nexo-fontes-grid">
+            {db.seguradoras.map((f) => {
+              const r = fech.find((x) => x.fonte.id === f.id);
+              return (
+                <div className="nexo-card" key={f.id}>
+                  <div className="nexo-cliente-cell">
+                    <AvatarNome nome={f.nome} tamanho={42} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="nexo-cliente-nome" style={{ fontSize: 14.5 }}>{f.nome}</div>
+                      <div className="nexo-cliente-sub">{f.diaRepasse ? `Repasse todo dia ${f.diaRepasse}` : "Dia de repasse não informado"}</div>
+                    </div>
+                    {f.comissaoAutomatica && <span className="nexo-tag-frota">automático</span>}
+                  </div>
+                  <div className="nexo-fonte-regra" style={{ color: f.tipoComissao ? "var(--text)" : "var(--warning)" }}>{resumoRegra(f)}</div>
+                  {f.regraEstorno && <div className="nexo-cliente-sub" style={{ marginBottom: 8 }}>Estorno: {f.regraEstorno}</div>}
+                  <div className="nexo-fonte-linha"><span>Previsto em {rotuloMes(mes)}</span><strong className="mono">{r ? formatBRL(r.previsto) : "—"}</strong></div>
+                  <div className="nexo-fonte-linha"><span>Recebido</span><strong className="mono" style={{ color: "var(--success)" }}>{r ? formatBRL(r.recebido) : "—"}</strong></div>
+                  <div style={{ marginTop: 12 }}>
+                    <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("fonte", f)}><Pencil size={12} /> Editar regra</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function FonteForm({ initial, outraAutomatica, onSave, onCancel }) {
+  const [f, setF] = useState({
+    nome: "", percentualComissao: "", percentualRenovacao: "", valorFixoComissao: "",
+    diaRepasse: "", regraEstorno: "", comissaoAutomatica: false, ...(initial || {}),
+    tipoComissao: initial?.tipoComissao || "mensalidade",
+  });
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  function submit() {
+    const errs = {};
+    if (!f.nome.trim()) errs.nome = "Informe o nome da seguradora ou associação.";
+    if ((f.tipoComissao === "mensalidade" || f.tipoComissao === "premio") && !(Number(f.percentualComissao) > 0)) errs.percentualComissao = "Informe o percentual.";
+    if (f.tipoComissao === "fixo" && !(Number(f.valorFixoComissao) > 0)) errs.valorFixoComissao = "Informe o valor.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id, comissaoAutomatica: f.tipoComissao === "mensalidade" ? !!f.comissaoAutomatica : false });
+  }
+  return (
+    <>
+      <Field label="Seguradora / associação *" error={errors.nome}>
+        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: Invicta Mais, Suhai, Porto Seguro" />
+      </Field>
+      <Field label="Como ela paga a comissão da corretora?">
+        <select className="nexo-select" value={f.tipoComissao} onChange={set("tipoComissao")}>
+          {TIPOS_REGRA.map(([k, rotulo]) => <option key={k} value={k}>{rotulo}</option>)}
+        </select>
+      </Field>
+      {(f.tipoComissao === "mensalidade" || f.tipoComissao === "premio") && (
+        <div className="nexo-field-row">
+          <Field label={f.tipoComissao === "premio" ? "Percentual na venda (%) *" : "Percentual (%) *"} error={errors.percentualComissao}>
+            <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentualComissao} onChange={set("percentualComissao")} placeholder="10" />
+          </Field>
+          {f.tipoComissao === "premio" && (
+            <Field label="Percentual na renovação (%)">
+              <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentualRenovacao} onChange={set("percentualRenovacao")} placeholder="Se for diferente da venda" />
+            </Field>
+          )}
+        </div>
+      )}
+      {f.tipoComissao === "fixo" && (
+        <Field label="Valor fixo por contrato (R$) *" error={errors.valorFixoComissao}>
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorFixoComissao} onChange={set("valorFixoComissao")} placeholder="0,00" />
+        </Field>
+      )}
+      <div className="nexo-field-row">
+        <Field label="Dia do mês em que ela repassa">
+          <input type="number" min="1" max="31" className="nexo-input" value={f.diaRepasse} onChange={set("diaRepasse")} placeholder="Ex.: 10" />
+        </Field>
+        <Field label="Regra de estorno (se cancelar)">
+          <input className="nexo-input" value={f.regraEstorno} onChange={set("regraEstorno")} placeholder="Ex.: devolve proporcional se cancelar em 12 meses" />
+        </Field>
+      </div>
+      {f.tipoComissao === "mensalidade" && (
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: "var(--text-dim)", cursor: "pointer" }}>
+          <input type="checkbox" checked={!!f.comissaoAutomatica} onChange={(e) => setF({ ...f, comissaoAutomatica: e.target.checked })} style={{ marginTop: 3 }} />
+          <span>
+            <strong style={{ color: "var(--text)" }}>Calcular automaticamente sobre os boletos pagos no sistema</strong>
+            <br />O previsto de cada mês passa a ser o percentual sobre tudo que foi pago nos boletos.
+            {outraAutomatica && f.comissaoAutomatica && <span style={{ color: "var(--warning)" }}> A fonte que estava no automático passa a ser manual.</span>}
+          </span>
+        </label>
+      )}
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar regra</button>
+      </div>
+    </>
+  );
+}
+
+function LancamentoForm({ initial, seguradoras, clientes, onSave, onCancel }) {
+  const [f, setF] = useState({
+    seguradoraId: "", competencia: mesRefDe(todayISO()), tipo: "Mensalidade", clienteId: "", referencia: "",
+    base: "", percentual: "", valorPrevisto: "", valorRecebido: "", dataRecebimento: "", estorno: "", observacoes: "",
+    ...(initial || {}),
+  });
+  const [errors, setErrors] = useState({});
+  const [previstoManual, setPrevistoManual] = useState(false);
+  const fonte = seguradoras.find((s) => s.id === f.seguradoraId);
+
+  function recalcular(next) {
+    const fo = seguradoras.find((s) => s.id === next.seguradoraId);
+    if (previstoManual || !fo) return next;
+    if (fo.tipoComissao === "fixo") return { ...next, valorPrevisto: fo.valorFixoComissao !== "" ? String(fo.valorFixoComissao) : next.valorPrevisto };
+    const base = Number(next.base) || 0;
+    const pct = Number(next.percentual) || 0;
+    return { ...next, valorPrevisto: base && pct ? String(round2((base * pct) / 100)) : next.valorPrevisto };
+  }
+  function regraPercentual(fo, tipo) {
+    if (!fo) return "";
+    if (tipo === "Renovação" && Number(fo.percentualRenovacao) > 0) return String(fo.percentualRenovacao);
+    return fo.percentualComissao !== "" && fo.percentualComissao != null ? String(fo.percentualComissao) : "";
+  }
+  const set = (k) => (e) => setF(recalcular({ ...f, [k]: e.target.value }));
+  function mudarFonteOuTipo(k) {
+    return (e) => {
+      const next = { ...f, [k]: e.target.value };
+      const fo = seguradoras.find((s) => s.id === next.seguradoraId);
+      if (fo) next.percentual = fo.tipoComissao === "fixo" ? "" : regraPercentual(fo, next.tipo);
+      setF(recalcular(next));
+    };
+  }
+  function submit() {
+    const errs = {};
+    if (!f.seguradoraId) errs.seguradoraId = "Selecione a seguradora ou associação.";
+    if (!f.competencia) errs.competencia = "Selecione o mês.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({ ...f, id: initial?.id });
+  }
+  const meses = opcoesMeses([f.competencia]);
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Seguradora / associação *" error={errors.seguradoraId}>
+          <select className="nexo-select" value={f.seguradoraId} onChange={mudarFonteOuTipo("seguradoraId")}>
+            <option value="">Selecione</option>
+            {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
+        </Field>
+        <Field label="Mês de referência *" error={errors.competencia}>
+          <select className="nexo-select" value={f.competencia} onChange={set("competencia")}>
+            {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+          </select>
+        </Field>
+      </div>
+      {fonte && <div className="nexo-cliente-sub" style={{ marginTop: -6 }}>Regra: {resumoRegra(fonte)}</div>}
+      <div className="nexo-field-row">
+        <Field label="Tipo">
+          <select className="nexo-select" value={f.tipo} onChange={mudarFonteOuTipo("tipo")}>
+            {TIPOS_LANCAMENTO.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </Field>
+        <Field label="Cliente (opcional)">
+          <select className="nexo-select" value={f.clienteId || ""} onChange={set("clienteId")}>
+            <option value="">—</option>
+            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </Field>
+      </div>
+      <Field label="Referência (contrato, apólice ou descrição)">
+        <input className="nexo-input" value={f.referencia} onChange={set("referencia")} placeholder="Ex.: Apólice 12345" />
+      </Field>
+      <div className="nexo-field-row3">
+        <Field label="Base (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.base} onChange={set("base")} placeholder="Prêmio ou boletos pagos" />
+        </Field>
+        <Field label="Percentual (%)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.percentual} onChange={set("percentual")} placeholder="10" />
+        </Field>
+        <Field label="Comissão prevista (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorPrevisto} onChange={(e) => { setPrevistoManual(true); setF({ ...f, valorPrevisto: e.target.value }); }} placeholder="Calculada" />
+        </Field>
+      </div>
+      <div className="nexo-field-row3">
+        <Field label="Valor recebido (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorRecebido === null ? "" : f.valorRecebido} onChange={set("valorRecebido")} placeholder="O que caiu na conta" />
+        </Field>
+        <Field label="Data do recebimento">
+          <input type="date" className="nexo-input" value={f.dataRecebimento} onChange={set("dataRecebimento")} />
+        </Field>
+        <Field label="Estorno (R$)">
+          <input type="number" step="0.01" min="0" className="nexo-input" value={f.estorno === null ? "" : f.estorno} onChange={set("estorno")} placeholder="0,00" />
+        </Field>
+      </div>
+      <Field label="Observações">
+        <textarea className="nexo-textarea" value={f.observacoes} onChange={set("observacoes")} placeholder="Ex.: divergência com o extrato, cancelamento de apólice…" />
+      </Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar lançamento</button>
+      </div>
+    </>
+  );
+}
+
+/** Se uma tela ou janela der erro, mostra um aviso no lugar dela em vez de derrubar o sistema inteiro. */
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { erro: null }; }
+  static getDerivedStateFromError(erro) { return { erro }; }
+  componentDidCatch(erro) { console.error(erro); if (this.props.onError) this.props.onError(erro); }
+  componentDidUpdate(anterior) {
+    if (this.state.erro && anterior.resetKey !== this.props.resetKey) this.setState({ erro: null });
+  }
+  render() {
+    if (!this.state.erro) return this.props.children;
+    if (this.props.fallback !== undefined) return this.props.fallback;
+    return (
+      <div className="nexo-card" style={{ maxWidth: 560, margin: "40px auto", textAlign: "center" }}>
+        <div className="nexo-dialog-ico" style={{ "--tone": "var(--danger)", margin: "0 auto 14px" }}><AlertTriangle size={22} /></div>
+        <div className="nexo-chart-title" style={{ fontSize: 16 }}>Algo deu errado nesta tela</div>
+        <div className="nexo-chart-sub" style={{ marginBottom: 16 }}>O resto do sistema continua funcionando. Você pode tentar de novo ou abrir outra tela no menu.</div>
+        <div className="nexo-cliente-sub mono" style={{ marginBottom: 16, wordBreak: "break-word" }}>{String(this.state.erro?.message || this.state.erro)}</div>
+        <button className="nexo-btn nexo-btn-primary" onClick={() => this.setState({ erro: null })}>Tentar de novo</button>
+      </div>
+    );
+  }
+}
+
 const NAV_GRUPOS = [
   { titulo: "", chaves: ["dashboard"] },
   { titulo: "Cadastros", chaves: ["clientes", "veiculos"] },
@@ -4400,7 +5123,7 @@ const NAV_GRUPOS = [
 const SUBTITULOS = {
   dashboard: "Visão geral do negócio", clientes: "Cadastro e histórico", veiculos: "Frota cadastrada",
   financeiro: "Boletos e recebimentos", relatorios: "Exportações", cotacoes: "Seguradoras, planos e cotações",
-  consultoras: "Equipe de vendas", adesoes: "Adesões e recebimentos", comissoes: "Comissões e fechamento",
+  consultoras: "Equipe de vendas", adesoes: "Adesões e recebimentos", comissoes: "O que a corretora recebe das seguradoras",
   usuarios: "Acessos e permissões", clienteDetail: "Dados, veículos e boletos",
 };
 
@@ -4417,21 +5140,31 @@ const NAV_ITEMS = [
   { key: "usuarios", label: "Usuários", Icon: Shield },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], usuarios: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], comissoesCorretora: [], usuarios: [] };
 const rowToUsuario = (r) => ({ userId: r.user_id, nome: r.nome || "", email: r.email || "", role: r.role || "operador" });
 
-const rowToConsultora = (r) => ({ id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa" });
-const consultoraToRow = (c) => ({ nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa" });
+const rowToConsultora = (r) => ({
+  id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa",
+  percentualAdesao: r.percentual_adesao ?? "", valorFixoContrato: r.valor_fixo_contrato ?? "",
+  percentualRecorrente: r.percentual_recorrente ?? "", metaMensal: r.meta_mensal ?? "",
+});
+const consultoraToRow = (c) => ({
+  nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa",
+  percentual_adesao: numOuNull(c.percentualAdesao), valor_fixo_contrato: numOuNull(c.valorFixoContrato),
+  percentual_recorrente: numOuNull(c.percentualRecorrente), meta_mensal: numOuNull(c.metaMensal),
+});
 
 const rowToAdesao = (r) => ({
   id: r.id, clienteId: r.cliente_id, consultoraId: r.consultora_id, dataVenda: r.data_venda || "",
   valorAdesao: r.valor_adesao ?? "", valorRecebido: r.valor_recebido ?? "", dataRecebimento: r.data_recebimento || "", status: r.status || "Pendente",
+  seguradoraId: r.seguradora_id || "", comissaoConsultora: r.comissao_consultora ?? "",
 });
 const adesaoToRow = (a) => ({
   cliente_id: a.clienteId, consultora_id: a.consultoraId, data_venda: a.dataVenda || null,
   valor_adesao: a.valorAdesao === "" ? null : Number(a.valorAdesao),
   valor_recebido: a.valorRecebido === "" || a.valorRecebido == null ? null : Number(a.valorRecebido),
   data_recebimento: a.dataRecebimento || null, status: a.status || "Pendente",
+  seguradora_id: a.seguradoraId || null, comissao_consultora: numOuNull(a.comissaoConsultora),
 });
 
 const rowToComissao = (r) => ({
@@ -4448,7 +5181,28 @@ const comissaoToRow = (c) => ({
   data_prevista_pagamento: c.dataPrevistaPagamento || null, data_efetiva_pagamento: c.dataEfetivaPagamento || null, status: c.status || "A pagar",
 });
 
-const rowToSeguradora = (r) => ({ id: r.id, nome: r.nome || "", linkPortal: r.link_portal || "" });
+const rowToSeguradora = (r) => ({
+  id: r.id, nome: r.nome || "", linkPortal: r.link_portal || "",
+  tipoComissao: r.tipo_comissao || "", percentualComissao: r.percentual_comissao ?? "", percentualRenovacao: r.percentual_renovacao ?? "",
+  valorFixoComissao: r.valor_fixo_comissao ?? "", diaRepasse: r.dia_repasse ?? "", regraEstorno: r.regra_estorno || "",
+  comissaoAutomatica: !!r.comissao_automatica,
+});
+const regraComissaoToRow = (s) => ({
+  nome: s.nome, tipo_comissao: s.tipoComissao || null, percentual_comissao: numOuNull(s.percentualComissao),
+  percentual_renovacao: numOuNull(s.percentualRenovacao), valor_fixo_comissao: numOuNull(s.valorFixoComissao),
+  dia_repasse: numOuNull(s.diaRepasse), regra_estorno: s.regraEstorno || null, comissao_automatica: !!s.comissaoAutomatica,
+});
+const rowToComissaoCorretora = (r) => ({
+  id: r.id, seguradoraId: r.seguradora_id, competencia: r.competencia || "", tipo: r.tipo || "Mensalidade", clienteId: r.cliente_id || "",
+  referencia: r.referencia || "", base: r.base ?? "", percentual: r.percentual ?? "", valorPrevisto: r.valor_previsto ?? "",
+  valorRecebido: r.valor_recebido ?? "", dataRecebimento: r.data_recebimento || "", estorno: r.estorno ?? "", observacoes: r.observacoes || "",
+});
+const comissaoCorretoraToRow = (c) => ({
+  seguradora_id: c.seguradoraId, competencia: c.competencia, tipo: c.tipo || "Mensalidade", cliente_id: c.clienteId || null,
+  referencia: c.referencia || null, base: numOuNull(c.base), percentual: numOuNull(c.percentual), valor_previsto: numOuNull(c.valorPrevisto),
+  valor_recebido: numOuNull(c.valorRecebido), data_recebimento: c.dataRecebimento || null,
+  estorno: c.estorno === "" || c.estorno == null ? 0 : Number(c.estorno), observacoes: c.observacoes || null,
+});
 const seguradoraToRow = (s) => ({ nome: s.nome, link_portal: s.linkPortal || null });
 
 const rowToPlano = (r) => ({
@@ -4570,14 +5324,14 @@ export default function App() {
   }, [sessao]);
 
   const ehAdmin = perfil?.role === "admin";
-  const modulosDoOperador = ["clientes", "veiculos", "financeiro", "cotacoes", "comissoes", "clienteDetail"];
+  const modulosDoOperador = ["clientes", "veiculos", "financeiro", "cotacoes", "clienteDetail"];
   const podeVer = (chave) => ehAdmin || modulosDoOperador.includes(chave);
 
   const carregarTudo = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -4588,6 +5342,7 @@ export default function App() {
         supabase.from("adesoes").select("*"),
         supabase.from("comissoes").select("*"),
         supabase.from("perfis").select("*").order("nome"),
+        supabase.from("comissoes_corretora").select("*"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -4609,6 +5364,7 @@ export default function App() {
         adesoes: (adesoesRes.data || []).map(rowToAdesao),
         comissoes: (comissoesRes.data || []).map(rowToComissao),
         usuarios: (usuariosRes.data || []).map(rowToUsuario),
+        comissoesCorretora: comissoesCorretoraRes.error ? [] : (comissoesCorretoraRes.data || []).map(rowToComissaoCorretora),
       });
     } catch (e) {
       console.error(e);
@@ -4980,6 +5736,81 @@ export default function App() {
     }
   };
 
+  // --- Comissões da corretora (regras por fonte e lançamentos) ---
+  const saveFonteComissao = async (fonte) => {
+    try {
+      let salvo;
+      if (fonte.id) {
+        const { data, error } = await supabase.from("seguradoras").update(regraComissaoToRow(fonte)).eq("id", fonte.id).select().single();
+        if (error) throw error;
+        salvo = data;
+      } else {
+        const { data, error } = await supabase.from("seguradoras").insert(regraComissaoToRow(fonte)).select().single();
+        if (error) throw error;
+        salvo = data;
+      }
+      if (fonte.comissaoAutomatica) {
+        // só pode haver uma fonte no automático
+        const { error: e2 } = await supabase.from("seguradoras").update({ comissao_automatica: false }).neq("id", salvo.id).eq("comissao_automatica", true);
+        if (e2) throw e2;
+      }
+      setDb((prev) => {
+        const novo = rowToSeguradora(salvo);
+        const existe = prev.seguradoras.some((s) => s.id === novo.id);
+        const lista = existe ? prev.seguradoras.map((s) => (s.id === novo.id ? { ...novo, linkPortal: s.linkPortal || novo.linkPortal } : s)) : [...prev.seguradoras, novo];
+        return { ...prev, seguradoras: lista.map((s) => (fonte.comissaoAutomatica && s.id !== novo.id ? { ...s, comissaoAutomatica: false } : s)) };
+      });
+      closeModal();
+    } catch (e) {
+      notify("Não foi possível salvar a regra de comissão: " + e.message);
+    }
+  };
+  const saveLancamento = async (lanc) => {
+    try {
+      if (lanc.id) {
+        const { data, error } = await supabase.from("comissoes_corretora").update(comissaoCorretoraToRow(lanc)).eq("id", lanc.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, comissoesCorretora: prev.comissoesCorretora.map((c) => (c.id === data.id ? rowToComissaoCorretora(data) : c)) }));
+      } else {
+        const { data, error } = await supabase.from("comissoes_corretora").insert(comissaoCorretoraToRow(lanc)).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, comissoesCorretora: [...prev.comissoesCorretora, rowToComissaoCorretora(data)] }));
+      }
+      closeModal();
+    } catch (e) {
+      notify("Não foi possível salvar o lançamento: " + e.message);
+    }
+  };
+  const deleteLancamento = async (id) => {
+    if (!await confirmDialog("Excluir este lançamento de comissão?")) return;
+    try {
+      const { error } = await supabase.from("comissoes_corretora").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, comissoesCorretora: prev.comissoesCorretora.filter((c) => c.id !== id) }));
+    } catch (e) {
+      notify("Não foi possível excluir o lançamento: " + e.message);
+    }
+  };
+  const gerarPagamentoAdesao = async (adesao) => {
+    const consultora = db.consultoras.find((c) => c.id === adesao.consultoraId);
+    const valor = comissaoDaAdesao(adesao, consultora);
+    if (!(valor > 0)) { notify("Defina o ganho da consultora nessa adesão (ou nas regras dela) antes de gerar o pagamento."); return; }
+    const referencia = `adesao:${adesao.id}`;
+    if (db.comissoes.some((c) => c.referencia === referencia)) { notify("Já existe um pagamento gerado para essa adesão."); return; }
+    try {
+      const base = Number(adesao.valorAdesao) || 0;
+      const { data, error } = await supabase.from("comissoes").insert(comissaoToRow({
+        consultoraId: adesao.consultoraId, clienteId: adesao.clienteId, tipo: "Adesão", referencia, dataVenda: adesao.dataVenda,
+        valorBase: base, percentual: base > 0 ? round2((valor / base) * 100) : 0, valorComissao: valor,
+        dataPrevistaPagamento: "", dataEfetivaPagamento: "", status: "A pagar",
+      })).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, comissoes: [...prev.comissoes, rowToComissao(data)] }));
+      notify("Pagamento gerado. Ele aparece em Consultoras › Pagamentos.");
+    } catch (e) {
+      notify("Não foi possível gerar o pagamento: " + e.message);
+    }
+  };
   // --- Importação em massa (CSV) ---
   const importarClientesCSV = async (linhas) => {
     if (linhas.length === 0) return;
@@ -5455,6 +6286,7 @@ export default function App() {
             </header>
 
             <main key={view === "clienteDetail" ? "d" + selectedClienteId : view} className="nexo-content">
+              <ErrorBoundary resetKey={view + (selectedClienteId || "")}>
               {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} tema={tema} onOpenDetail={openDetail} onIr={goTo} />}
               {view === "clientes" && (
                 <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
@@ -5478,10 +6310,10 @@ export default function App() {
                   onAtualizarLinkPortal={atualizarLinkPortalSeguradora}
                 />
               )}
-              {view === "consultoras" && <ConsultorasView db={db} onOpenModal={openModal} onDeleteConsultora={deleteConsultora} />}
-              {view === "adesoes" && <AdesoesView db={db} onOpenModal={openModal} onDeleteAdesao={deleteAdesao} onMarcarRecebida={marcarRecebidaAdesao} />}
+              {view === "consultoras" && <ConsultorasView db={db} onOpenModal={openModal} onDeleteConsultora={deleteConsultora} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />}
+              {view === "adesoes" && <AdesoesView db={db} onOpenModal={openModal} onDeleteAdesao={deleteAdesao} onMarcarRecebida={marcarRecebidaAdesao} onGerarPagamento={gerarPagamentoAdesao} />}
               {view === "comissoes" && (
-                <ComissoesView db={db} onOpenModal={openModal} onDeleteComissao={deleteComissao} onMarcarPagaComissao={marcarPagaComissao} />
+                <ComissoesCorretoraView db={db} onOpenModal={openModal} onDeleteLancamento={deleteLancamento} />
               )}
               {view === "usuarios" && ehAdmin && (
                 <UsuariosView db={db} sessao={sessao} meuUserId={sessao?.user?.id} onRecarregarUsuarios={recarregarUsuarios} />
@@ -5496,11 +6328,13 @@ export default function App() {
                   onMarcarPago={marcarPago}
                 />
               )}
+              </ErrorBoundary>
             </main>
           </div>
         </div>
       )}
 
+      <ErrorBoundary fallback={null} resetKey={modal ? modal.type + (modal.data?.id || "") : ""} onError={(e) => { closeModal(); notify("Não foi possível abrir esta janela: " + (e.message || e)); }}>
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
           <ClienteForm initial={modal.data} onSave={saveCliente} onCancel={closeModal} />
@@ -5550,13 +6384,23 @@ export default function App() {
         </Modal>
       )}
       {modal && modal.type === "consultora" && (
-        <Modal title={modal.data ? "Editar consultora" : "Nova consultora"} onClose={closeModal}>
+        <Modal title={modal.data?.id ? "Editar consultora" : "Nova consultora"} onClose={closeModal} wide>
           <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "adesao" && (
-        <Modal title={modal.data ? "Editar adesão" : "Nova adesão"} onClose={closeModal} wide>
-          <AdesaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveAdesao} onCancel={closeModal} />
+        <Modal title={modal.data?.id ? "Editar adesão" : "Nova adesão"} onClose={closeModal} wide>
+          <AdesaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} seguradoras={db.seguradoras} onSave={saveAdesao} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "fonte" && (
+        <Modal title={modal.data?.id ? "Regra de comissão" : "Nova fonte de comissão"} onClose={closeModal}>
+          <FonteForm initial={modal.data} outraAutomatica={db.seguradoras.some((s) => s.comissaoAutomatica && s.id !== modal.data?.id)} onSave={saveFonteComissao} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "lancamento" && (
+        <Modal title={modal.data?.id ? "Editar lançamento" : "Novo lançamento de comissão"} onClose={closeModal} wide>
+          <LancamentoForm initial={modal.data} seguradoras={db.seguradoras} clientes={db.clientes} onSave={saveLancamento} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "comissao" && (
@@ -5564,6 +6408,7 @@ export default function App() {
           <ComissaoForm initial={modal.data} clientes={db.clientes} consultoras={db.consultoras} onSave={saveComissao} onCancel={closeModal} />
         </Modal>
       )}
+      </ErrorBoundary>
     </div>
   );
 }
