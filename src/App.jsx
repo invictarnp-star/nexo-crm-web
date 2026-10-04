@@ -399,6 +399,25 @@ const STYLE = `
 .nexo-vrow > .nexo-placa { justify-self: start; }
 .nexo-vrow .nexo-icon-btn, .nexo-vgroup-head .nexo-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
 .nexo-tag-vazio { font-family: inherit; }
+.nexo-table tr.venc td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+.nexo-table tr.avencer td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+.nexo-table-foot { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--border-soft); background: var(--surface-2); font-size: 12.5px; color: var(--text-dim); }
+.nexo-table-foot strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.nexo-table-foot .tot { margin-left: auto; font-size: 14px; }
+.nexo-tag-frota { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--violet); background: color-mix(in srgb, var(--violet) 14%, transparent); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.nexo-venc-sub { font-size: 11px; margin-top: 2px; font-weight: 600; }
+.nexo-trend { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; margin-top: 5px; padding: 2px 9px; border-radius: 999px; }
+.nexo-trend.up { color: var(--success); background: var(--success-soft); }
+.nexo-trend.down { color: var(--danger); background: var(--danger-soft); }
+.nexo-two-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.nexo-lista-item { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; cursor: pointer; transition: background .12s; }
+.nexo-lista-item:hover { background: var(--surface-2); }
+.nexo-empty-mini { display: flex; align-items: center; gap: 10px; padding: 20px 8px; color: var(--text-faint); font-size: 12.5px; }
+.nexo-toolbar-fin { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+@media (max-width: 1024px) { .nexo-two-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .nexo-table-foot .tot { margin-left: 0; width: 100%; } }
+.nexo-kpi-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 940px) { .nexo-kpi-grid.c3 { grid-template-columns: 1fr; } }
 .nexo-tab-n { font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); }
 .nexo-tab.active .nexo-tab-n { background: var(--accent); color: #fff; }
 .nexo-tabs { align-items: center; }
@@ -892,7 +911,7 @@ function EmptyState({ icon, title, sub }) {
   );
 }
 
-function Kpi({ icon, label, value, tone, wide }) {
+function Kpi({ icon, label, value, tone, wide, extra }) {
   const Icon = icon;
   const colors = {
     accent: ["var(--accent)", "var(--accent-soft)"],
@@ -906,7 +925,7 @@ function Kpi({ icon, label, value, tone, wide }) {
       <div className="nexo-kpi-icon" style={{ background: colors[1], color: colors[0] }}>
         <Icon size={16} />
       </div>
-      <div className="nexo-kpi-label">{label}</div>
+      <div className="nexo-kpi-label">{label}{extra && <div>{extra}</div>}</div>
       <div className="nexo-kpi-value">{value}</div>
     </div>
   );
@@ -1531,7 +1550,7 @@ const PALETA_GRAFICOS = {
   light: { border: "#D6DEE9", textFaint: "#7A8BA1", accent: "#2563EB", violet: "#7C5CE0", surface3: "#EBEFF6", success: "#0F9F6E", info: "#5B7090", danger: "#D63A2E", warning: "#B7791F" },
 };
 
-function Dashboard({ db, onOpenModal, tema }) {
+function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   const pal = PALETA_GRAFICOS[tema === "light" ? "light" : "dark"];
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
 
@@ -1557,6 +1576,31 @@ function Dashboard({ db, onOpenModal, tema }) {
   const mesEfetivo = mesComissao === "auto" ? mesPadrao : mesComissao;
   const boletosPagosDoMes = boletosComStatus.filter((b) => b.status === "Pago" && mesRefDe(b.dataPagamento) === mesEfetivo);
   const valorBaseComissao = sum(boletosPagosDoMes.map((b) => b.valor));
+  // comparação com o mês anterior ao mês escolhido
+  const mesAnteriorChave = (() => {
+    const [ano, mes] = mesEfetivo.split("-").map(Number);
+    const d = new Date(ano, mes - 2, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const baseMesAnterior = sum(boletosComStatus.filter((b) => b.status === "Pago" && mesRefDe(b.dataPagamento) === mesAnteriorChave).map((b) => b.valor));
+  const variacaoMes = baseMesAnterior > 0 ? ((valorBaseComissao - baseMesAnterior) / baseMesAnterior) * 100 : null;
+  // listas de ação: próximos vencimentos e maiores atrasos
+  const hojeZ = new Date(); hojeZ.setHours(0, 0, 0, 0);
+  const diasAte = (iso) => Math.round((parseISODate(iso) - hojeZ) / 86400000);
+  const nomeCli = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+  const proximos = boletosComStatus
+    .filter((b) => b.status !== "Pago" && b.dataVencimento && diasAte(b.dataVencimento) >= 0)
+    .sort((x, y) => x.dataVencimento.localeCompare(y.dataVencimento))
+    .slice(0, 6);
+  const devedores = (() => {
+    const m = new Map();
+    boletosComStatus.filter((b) => b.status === "Vencido").forEach((b) => {
+      const x = m.get(b.clienteId) || { clienteId: b.clienteId, qtd: 0, total: 0, maxDias: 0 };
+      x.qtd++; x.total += Number(b.valor) || 0; x.maxDias = Math.max(x.maxDias, Math.abs(diasAte(b.dataVencimento)));
+      m.set(b.clienteId, x);
+    });
+    return Array.from(m.values()).sort((x, y) => y.total - x.total).slice(0, 6);
+  })();
   const comissaoCorretora = valorBaseComissao * (COMISSAO_CORRETORA_PERCENTUAL / 100);
 
   const valoresData = [
@@ -1622,7 +1666,60 @@ function Dashboard({ db, onOpenModal, tema }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide />
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide
+          extra={variacaoMes !== null && (
+            <span className={`nexo-trend ${variacaoMes >= 0 ? "up" : "down"}`}>
+              {variacaoMes >= 0 ? "▲" : "▼"} {Math.abs(variacaoMes).toFixed(1).replace(".", ",")}% em relação a {rotuloMes(mesAnteriorChave)}
+            </span>
+          )} />
+      </div>
+
+      <div className="nexo-two-grid">
+        <div className="nexo-card">
+          <div className="nexo-section-head" style={{ marginBottom: 8 }}>
+            <div>
+              <div className="nexo-chart-title">Próximos vencimentos</div>
+              <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Boletos a receber, do mais próximo ao mais distante</div>
+            </div>
+            <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" onClick={() => onIr("financeiro")}>Ver financeiro</button>
+          </div>
+          {proximos.length === 0 ? (
+            <div className="nexo-empty-mini"><CheckCircle2 size={18} style={{ color: "var(--success)" }} /> Nenhum boleto a vencer por enquanto.</div>
+          ) : proximos.map((b) => {
+            const d = diasAte(b.dataVencimento);
+            return (
+              <div key={b.id} className="nexo-lista-item" onClick={() => onOpenDetail(b.clienteId)}>
+                <AvatarNome nome={nomeCli(b.clienteId)} tamanho={34} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="nexo-cliente-nome">{nomeCli(b.clienteId)}</div>
+                  <div className="nexo-cliente-sub">vence {formatDateBR(b.dataVencimento)} · {d === 0 ? "hoje" : `em ${d} dia(s)`}</div>
+                </div>
+                <strong className="mono" style={{ color: d <= 7 ? "var(--warning)" : "var(--text)" }}>{formatBRL(b.valor)}</strong>
+              </div>
+            );
+          })}
+        </div>
+        <div className="nexo-card">
+          <div className="nexo-section-head" style={{ marginBottom: 8 }}>
+            <div>
+              <div className="nexo-chart-title">Maiores atrasos</div>
+              <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Clientes com boletos vencidos, do maior valor ao menor</div>
+            </div>
+            <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" onClick={() => onIr("financeiro")}>Ver financeiro</button>
+          </div>
+          {devedores.length === 0 ? (
+            <div className="nexo-empty-mini"><CheckCircle2 size={18} style={{ color: "var(--success)" }} /> Ninguém em atraso. Tudo em dia!</div>
+          ) : devedores.map((x) => (
+            <div key={x.clienteId} className="nexo-lista-item" onClick={() => onOpenDetail(x.clienteId)}>
+              <AvatarNome nome={nomeCli(x.clienteId)} tamanho={34} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="nexo-cliente-nome">{nomeCli(x.clienteId)}</div>
+                <div className="nexo-cliente-sub">{x.qtd} boleto(s) vencido(s) · há até {x.maxDias} dia(s)</div>
+              </div>
+              <strong className="mono" style={{ color: "var(--danger)" }}>{formatBRL(x.total)}</strong>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="nexo-charts-grid">
@@ -2216,6 +2313,8 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
   const [fDe, setFDe] = useState("");
   const [fAte, setFAte] = useState("");
   const [fVencimento, setFVencimento] = useState("Todos");
+  const [fMes, setFMes] = useState("todos");
+  const [ordem, setOrdem] = useState("prioridade");
   const [importandoBaixa, setImportandoBaixa] = useState(false);
   const fileInputBaixaRef = useRef(null);
 
@@ -2259,29 +2358,60 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
+  const clientePorId = useMemo(() => new Map(db.clientes.map((c) => [c.id, c])), [db.clientes]);
+  const veiculoPorId = useMemo(() => new Map(db.veiculos.map((v) => [v.id, v])), [db.veiculos]);
+  const qtdVeiculosCliente = useMemo(() => {
+    const m = new Map();
+    db.veiculos.forEach((v) => m.set(v.clienteId, (m.get(v.clienteId) || 0) + 1));
+    return m;
+  }, [db.veiculos]);
+  const mesesVenc = Array.from(new Set(boletosComStatus.map((x) => (x.dataVencimento || "").slice(0, 7)).filter(Boolean))).sort().reverse();
+  const contagemStatus = {
+    Todos: boletosComStatus.length,
+    Vencido: boletosComStatus.filter((x) => x.status === "Vencido").length,
+    "A vencer": aVencer.length,
+    "Em aberto": boletosComStatus.filter((x) => x.status === "Em aberto").length,
+    Pago: boletosComStatus.filter((x) => x.status === "Pago").length,
+  };
+  const hojeZero = new Date(); hojeZero.setHours(0, 0, 0, 0);
+  const nomeDe = (x) => clientePorId.get(x.clienteId)?.nome || "";
+  const peso = { Vencido: 0, "A vencer": 1, "Em aberto": 2, Pago: 3 };
+
   const filtered = boletosComStatus.filter((b) => {
-    const cliente = db.clientes.find((c) => c.id === b.clienteId);
-    const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
+    const cliente = clientePorId.get(b.clienteId);
+    const veiculo = veiculoPorId.get(b.veiculoId);
     if (fCliente && !(cliente && cliente.nome.toLowerCase().includes(fCliente.toLowerCase()))) return false;
     if (fCpf && !(cliente && cliente.cpf.replace(/\D/g, "").includes(fCpf.replace(/\D/g, "")))) return false;
     if (fPlaca && !(veiculo && veiculo.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
     if (fStatus !== "Todos" && b.status !== fStatus) return false;
+    if (fMes !== "todos" && (b.dataVencimento || "").slice(0, 7) !== fMes) return false;
     if (fDe && b.dataVencimento && b.dataVencimento < fDe) return false;
     if (fAte && b.dataVencimento && b.dataVencimento > fAte) return false;
     if (fVencimento !== "Todos" && b.dataVencimento) {
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-      const venc = parseISODate(b.dataVencimento);
-      const diffDays = Math.round((venc - hoje) / 86400000);
+      const diffDays = Math.round((parseISODate(b.dataVencimento) - hojeZero) / 86400000);
       if (fVencimento === "Vencidos" && diffDays >= 0) return false;
       if (fVencimento === "Hoje" && diffDays !== 0) return false;
       if (fVencimento === "Proximos7" && (diffDays < 0 || diffDays > 7)) return false;
       if (fVencimento === "Proximos30" && (diffDays < 0 || diffDays > 30)) return false;
     }
     return true;
-  }).sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || ""));
-
+  }).sort((x, y) => {
+    if (ordem === "venc-asc") return (x.dataVencimento || "").localeCompare(y.dataVencimento || "");
+    if (ordem === "venc-desc") return (y.dataVencimento || "").localeCompare(x.dataVencimento || "");
+    if (ordem === "valor") return Number(y.valor) - Number(x.valor);
+    if (ordem === "cliente") return nomeDe(x).localeCompare(nomeDe(y), "pt-BR");
+    // prioridade: o que precisa de atenção vem primeiro; pagos por último (os mais recentes antes)
+    const d = peso[x.status] - peso[y.status];
+    if (d !== 0) return d;
+    return x.status === "Pago"
+      ? (y.dataVencimento || "").localeCompare(x.dataVencimento || "")
+      : (x.dataVencimento || "").localeCompare(y.dataVencimento || "");
+  });
+  const totalSelecao = sum(filtered.map((x) => x.valor));
+  const totalPagoSel = sum(filtered.filter((x) => x.status === "Pago").map((x) => x.valor));
+  const totalAbertoSel = sum(filtered.filter((x) => x.status !== "Pago").map((x) => x.valor));
   function limparFiltros() {
-    setFCliente(""); setFCpf(""); setFPlaca(""); setFStatus("Todos"); setFDe(""); setFAte(""); setFVencimento("Todos");
+    setFCliente(""); setFCpf(""); setFPlaca(""); setFStatus("Todos"); setFDe(""); setFAte(""); setFVencimento("Todos"); setFMes("todos");
   }
 
   return (
@@ -2302,13 +2432,35 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
         </div>
       </div>
 
-      <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="nexo-kpi-grid">
         <Kpi icon={FileText} label="Boletos em aberto" value={emAberto.length} tone="info" />
         <Kpi icon={Clock} label="Boletos a vencer" value={aVencer.length} tone="warning" />
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
       </div>
 
+      <div className="nexo-toolbar-fin">
+        <div className="nexo-chips" style={{ marginBottom: 0 }}>
+          {[["Todos", "Todos"], ["Vencido", "Vencidos"], ["A vencer", "A vencer"], ["Em aberto", "Em aberto"], ["Pago", "Pagos"]].map(([k, rotulo]) => (
+            <button key={k} className={`nexo-chip ${fStatus === k ? "on" : ""}`} onClick={() => setFStatus(k)}>
+              {rotulo}<span className="nexo-chip-n">{contagemStatus[k]}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select className="nexo-select" style={{ width: "auto" }} value={fMes} onChange={(e) => setFMes(e.target.value)} title="Filtra pelo mês de vencimento">
+            <option value="todos">Todos os meses</option>
+            {mesesVenc.map((m) => <option key={m} value={m}>Vence em {rotuloMes(m)}</option>)}
+          </select>
+          <select className="nexo-select" style={{ width: "auto" }} value={ordem} onChange={(e) => setOrdem(e.target.value)} title="Ordenação da lista">
+            <option value="prioridade">Prioridade (vencidos primeiro)</option>
+            <option value="venc-asc">Vencimento: mais antigo</option>
+            <option value="venc-desc">Vencimento: mais recente</option>
+            <option value="valor">Maior valor</option>
+            <option value="cliente">Cliente (A–Z)</option>
+          </select>
+        </div>
+      </div>
       <div className="nexo-filters">
         <div className="nexo-filter-field">
           <label>Cliente</label>
@@ -2358,19 +2510,40 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
-                <tr><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Nosso Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
+                <tr><th>Cliente</th><th>Veículo</th><th>Nosso Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
                 {filtered.map((b) => {
-                  const cliente = db.clientes.find((c) => c.id === b.clienteId);
-                  const veiculo = db.veiculos.find((v) => v.id === b.veiculoId);
+                  const cliente = clientePorId.get(b.clienteId);
+                  const veiculo = veiculoPorId.get(b.veiculoId);
+                  const nFrota = !veiculo ? (qtdVeiculosCliente.get(b.clienteId) || 0) : 0;
+                  const dias = b.dataVencimento ? Math.round((parseISODate(b.dataVencimento) - hojeZero) / 86400000) : null;
                   return (
-                    <tr key={b.id}>
-                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
-                      <td className="nexo-cell-muted">{veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "—"}</td>
-                      <td className="mono nexo-cell-muted">{veiculo ? veiculo.placa : "—"}</td>
+                    <tr key={b.id} className={b.status === "Vencido" ? "venc" : b.status === "A vencer" ? "avencer" : ""}>
+                      <td>
+                        <div className="nexo-cliente-cell">
+                          <AvatarNome nome={cliente ? cliente.nome : "?"} tamanho={32} />
+                          <span className="nexo-cliente-nome">{cliente ? cliente.nome : "—"}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {veiculo ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <PlacaChip placa={veiculo.placa} />
+                            <span className="nexo-cell-muted">{veiculo.marca} {veiculo.modelo}</span>
+                          </div>
+                        ) : nFrota > 1 ? (
+                          <span className="nexo-tag-frota" title="Boleto sem veículo específico: cobre o cliente/frota">Frota · {nFrota} veículos</span>
+                        ) : (
+                          <span className="nexo-cell-muted">—</span>
+                        )}
+                      </td>
                       <td className="mono nexo-cell-muted">{b.nossoNumero || "—"}</td>
-                      <td>{formatDateBR(b.dataVencimento)}</td>
+                      <td>
+                        <div>{formatDateBR(b.dataVencimento)}</div>
+                        {b.status === "Vencido" && dias !== null && <div className="nexo-venc-sub" style={{ color: "var(--danger)" }}>há {Math.abs(dias)} dia(s)</div>}
+                        {b.status === "A vencer" && dias !== null && <div className="nexo-venc-sub" style={{ color: "var(--warning)" }}>{dias === 0 ? "vence hoje" : `em ${dias} dia(s)`}</div>}
+                      </td>
                       <td className="mono">{formatBRL(b.valor)}</td>
                       <td><StatusBadge status={b.status} /></td>
                       <td>
@@ -2387,6 +2560,12 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="nexo-table-foot">
+            <span><strong>{filtered.length}</strong> boleto(s) na seleção</span>
+            <span>Pagos: <strong style={{ color: "var(--success)" }}>{formatBRL(totalPagoSel)}</strong></span>
+            <span>Em aberto: <strong style={{ color: "var(--warning)" }}>{formatBRL(totalAbertoSel)}</strong></span>
+            <span className="tot">Total da seleção: <strong>{formatBRL(totalSelecao)}</strong></span>
           </div>
         </div>
       )}
@@ -3385,7 +3564,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida }) {
             </div>
           </div>
 
-          <div className="nexo-kpi-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+          <div className="nexo-kpi-grid c3">
             <Kpi icon={CheckCircle2} label={`Recebidas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(recebidas.map((a) => a.valorRecebido || a.valorAdesao)))} tone="success" />
             <Kpi icon={Clock} label={`Pendentes${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(pendentes.map((a) => a.valorAdesao)))} tone="warning" />
             <Kpi icon={XCircle} label={`Canceladas${mesSelecionado !== "todos" ? " no mês" : ""}`} value={formatBRL(sum(canceladas.map((a) => a.valorAdesao)))} tone="danger" />
@@ -5276,7 +5455,7 @@ export default function App() {
             </header>
 
             <main key={view === "clienteDetail" ? "d" + selectedClienteId : view} className="nexo-content">
-              {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} tema={tema} />}
+              {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} tema={tema} onOpenDetail={openDetail} onIr={goTo} />}
               {view === "clientes" && (
                 <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
               )}
