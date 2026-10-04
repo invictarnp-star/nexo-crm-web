@@ -9,7 +9,8 @@ import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
-  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer
+  CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
+  Bell, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen, Info
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -20,204 +21,399 @@ const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 .nexo {
-  --ink: #0B1015;
-  --surface: #121922;
-  --surface-2: #19222D;
-  --surface-3: #202B38;
-  --border: #263241;
-  --border-soft: #1D2732;
-  --text: #E9EEF3;
-  --text-dim: #92A2B2;
-  --text-faint: #56646F;
-  --accent: #3E86BF;
-  --accent-dim: #2C5F87;
-  --accent-soft: rgba(62,134,191,0.14);
-  --success: #34B172;
-  --success-soft: rgba(52,177,114,0.14);
-  --warning: #DB9B3D;
-  --warning-soft: rgba(219,155,61,0.14);
-  --danger: #DD5F52;
-  --danger-soft: rgba(221,95,82,0.14);
-  --info: #7A8FB0;
-  --info-soft: rgba(122,143,176,0.16);
-  font-family: 'Inter', -apple-system, sans-serif;
-  background: var(--ink);
+  /* ---------- Tema escuro (padrão) ---------- */
+  --ink: #070B11;
+  --surface: #0E141C;
+  --surface-2: #141C27;
+  --surface-3: #1B2532;
+  --border: #25324A;
+  --border-soft: #1A2431;
+  --text: #EAF0F7;
+  --text-dim: #9AABBE;
+  --text-faint: #62758B;
+  --accent: #4C97E6;
+  --accent-dim: #2F6FB3;
+  --accent-strong: #3A82D8;
+  --accent-soft: rgba(76,151,230,0.14);
+  --success: #34D399;
+  --success-soft: rgba(52,211,153,0.13);
+  --warning: #F5B544;
+  --warning-soft: rgba(245,181,68,0.13);
+  --danger: #F36B5F;
+  --danger-soft: rgba(243,107,95,0.13);
+  --info: #8FA6C9;
+  --info-soft: rgba(143,166,201,0.15);
+  --violet: #B79CFF;
+  --glass: rgba(14,20,28,0.74);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,0.028), transparent 46%);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 10px 28px -10px rgba(0,0,0,0.6);
+  --shadow-lg: 0 28px 70px -14px rgba(0,0,0,0.7);
+  --ring: 0 0 0 3px rgba(76,151,230,0.30);
+  --glow: radial-gradient(900px 420px at 88% -8%, rgba(76,151,230,0.12), transparent 65%), radial-gradient(700px 380px at -6% 0%, rgba(52,211,153,0.05), transparent 60%);
+  --overlay: rgba(4,7,11,0.64);
+  --sidebar-w: 248px;
+  color-scheme: dark;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--glow), var(--ink);
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
   width: 100%;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+/* ---------- Tema claro ---------- */
+.nexo[data-theme="light"] {
+  --ink: #EDF1F7;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7FB;
+  --surface-3: #EBEFF6;
+  --border: #D6DEE9;
+  --border-soft: #E5EAF2;
+  --text: #0D1A2C;
+  --text-dim: #46586F;
+  --text-faint: #7A8BA1;
+  --accent: #2563EB;
+  --accent-dim: #1E4FC4;
+  --accent-strong: #1D4ED8;
+  --accent-soft: rgba(37,99,235,0.09);
+  --success: #0F9F6E;
+  --success-soft: rgba(15,159,110,0.11);
+  --warning: #B7791F;
+  --warning-soft: rgba(183,121,31,0.12);
+  --danger: #D63A2E;
+  --danger-soft: rgba(214,58,46,0.10);
+  --info: #5B7090;
+  --info-soft: rgba(91,112,144,0.12);
+  --violet: #7C5CE0;
+  --glass: rgba(255,255,255,0.80);
+  --sheen: none;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.06);
+  --shadow-md: 0 10px 28px -12px rgba(16,24,40,0.20);
+  --shadow-lg: 0 28px 70px -18px rgba(16,24,40,0.30);
+  --ring: 0 0 0 3px rgba(37,99,235,0.22);
+  --glow: radial-gradient(900px 420px at 88% -8%, rgba(37,99,235,0.08), transparent 65%);
+  --overlay: rgba(13,26,44,0.38);
+  color-scheme: light;
 }
 .nexo * { box-sizing: border-box; }
-.nexo .mono { font-family: 'JetBrains Mono', monospace; }
+.nexo .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.nexo ::selection { background: var(--accent-soft); }
+.nexo ::-webkit-scrollbar { width: 10px; height: 10px; }
+.nexo ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+.nexo ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); background-clip: padding-box; border: 2px solid transparent; }
+.nexo ::-webkit-scrollbar-track { background: transparent; }
+.nexo button:focus-visible, .nexo a:focus-visible, .nexo [tabindex]:focus-visible { outline: none; box-shadow: var(--ring); }
 
-/* Layout */
-.nexo-shell { display: flex; min-height: 100vh; }
+/* ---------- Layout ---------- */
+.nexo-shell { display: flex; min-height: 100vh; --sidebar-w: 248px; }
+.nexo-shell.collapsed { --sidebar-w: 78px; }
 .nexo-sidebar {
-  width: 232px; flex-shrink: 0; background: var(--surface);
-  border-right: 1px solid var(--border-soft); padding: 20px 14px;
-  display: flex; flex-direction: column; gap: 18px;
+  width: var(--sidebar-w); flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border-soft); padding: 16px 12px 14px;
+  display: flex; flex-direction: column; gap: 14px;
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
-  transition: transform .25s ease;
+  transition: width .22s ease, transform .25s ease;
 }
-.nexo-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 10px; }
+.nexo-brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 12px; border-bottom: 1px solid var(--border-soft); }
 .nexo-brand-mark {
-  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  box-shadow: 0 8px 20px -8px var(--accent), inset 0 1px 0 rgba(255,255,255,0.25);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 15px; color: #fff; letter-spacing: -0.5px;
 }
-.nexo-brand-name { font-weight: 700; font-size: 15.5px; letter-spacing: -0.2px; line-height: 1.1;}
-.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
-.nexo-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.nexo-brand-text { min-width: 0; flex: 1; }
+.nexo-brand-name { font-weight: 700; font-size: 14.5px; letter-spacing: -0.2px; line-height: 1.15; white-space: nowrap; }
+.nexo-brand-tag { font-size: 10.5px; color: var(--text-faint); margin-top: 3px; white-space: nowrap; }
+.nexo-collapse-btn { margin-left: auto; width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent; color: var(--text-faint); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nexo-collapse-btn:hover { background: var(--surface-2); color: var(--text); }
+.nexo-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+.nexo-nav-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; color: var(--text-faint); padding: 14px 12px 6px; white-space: nowrap; }
 .nexo-nav-item {
-  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
-  border-radius: 8px; color: var(--text-dim); font-size: 13.5px; font-weight: 500;
-  cursor: pointer; border: 1px solid transparent; user-select: none;
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 9px 12px;
+  border-radius: 10px; color: var(--text-dim); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; border: 1px solid transparent; user-select: none; white-space: nowrap;
+  transition: background .15s, color .15s;
 }
+.nexo-nav-item svg { flex-shrink: 0; transition: color .15s; }
 .nexo-nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); border-color: rgba(62,134,191,0.35); }
+.nexo-nav-item.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }
 .nexo-nav-item.active svg { color: var(--accent); }
-.nexo-sidebar-foot { font-size: 10.5px; color: var(--text-faint); padding: 8px; border-top: 1px solid var(--border-soft); padding-top: 12px;}
+.nexo-nav-item.active::before { content: ""; position: absolute; left: 3px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.nexo-user { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border-soft); border-radius: 14px; background: var(--surface-2); }
+.nexo-user-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--violet)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25); }
+.nexo-user-meta { min-width: 0; flex: 1; }
+.nexo-user-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nexo-user-role { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+.nexo-shell.collapsed .nexo-brand-text,
+.nexo-shell.collapsed .nexo-nav-label,
+.nexo-shell.collapsed .nexo-nav-section-title,
+.nexo-shell.collapsed .nexo-user-meta { display: none; }
+.nexo-shell.collapsed .nexo-brand { flex-direction: column; gap: 8px; padding-bottom: 12px; }
+.nexo-shell.collapsed .nexo-collapse-btn { margin-left: 0; }
+.nexo-shell.collapsed .nexo-nav-item { justify-content: center; padding: 11px 0; }
+.nexo-shell.collapsed .nexo-user { flex-direction: column; padding: 8px 4px; }
 
-.nexo-main { margin-left: 232px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.nexo-main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; display: flex; flex-direction: column; transition: margin-left .22s ease; }
 .nexo-topbar {
-  height: 60px; border-bottom: 1px solid var(--border-soft); background: rgba(18,25,34,0.7);
-  backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: space-between;
-  padding: 0 22px; position: sticky; top: 0; z-index: 30; gap: 12px;
+  height: 64px; border-bottom: 1px solid var(--border-soft); background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; position: sticky; top: 0; z-index: 30; gap: 16px;
 }
-.nexo-topbar-title { font-size: 15.5px; font-weight: 700; display:flex; align-items:center; gap:10px;}
-.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
-.nexo-hamburger { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 6px;}
-.nexo-content { padding: 24px 26px 60px; flex: 1; }
-.nexo-overlay { display:none; }
+.nexo-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nexo-topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.25px; display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; }
+.nexo-topbar-sub { font-size: 11.5px; font-weight: 500; color: var(--text-faint); letter-spacing: 0; margin-top: 2px; }
+.nexo-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.nexo-hamburger { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 6px; }
+.nexo-content { padding: 26px 28px 64px; flex: 1; animation: nexo-fade .28s ease both; }
+.nexo-overlay { display: none; }
+@keyframes nexo-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* Buttons */
+/* ---------- Busca global ---------- */
+.nexo-gsearch { position: relative; flex: 1; max-width: 460px; min-width: 0; }
+.nexo-gsearch-box { display: flex; align-items: center; gap: 9px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 0 12px; height: 40px; transition: border-color .15s, box-shadow .15s, background .15s; }
+.nexo-gsearch-box:focus-within { border-color: var(--accent); box-shadow: var(--ring); background: var(--surface); }
+.nexo-gsearch-box svg { color: var(--text-faint); flex-shrink: 0; }
+.nexo-gsearch-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
+.nexo-gsearch-box input::placeholder { color: var(--text-faint); }
+.nexo-kbd { font-size: 10.5px; font-weight: 600; color: var(--text-faint); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; background: var(--surface); font-family: inherit; flex-shrink: 0; }
+.nexo-gsearch .nexo-gsearch-iconbtn { display: none; }
+.nexo-pop { position: absolute; top: calc(100% + 10px); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); z-index: 60; overflow: hidden; animation: nexo-pop-in .16s ease both; }
+@keyframes nexo-pop-in { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
+.nexo-gsearch-panel { left: 0; right: 0; max-height: 70vh; overflow-y: auto; padding: 6px; }
+.nexo-gsearch-group { font-size: 10px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; color: var(--text-faint); padding: 10px 10px 4px; }
+.nexo-gsearch-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 10px; cursor: pointer; }
+.nexo-gsearch-item:hover, .nexo-gsearch-item.sel { background: var(--surface-2); }
+.nexo-gsearch-ico { width: 32px; height: 32px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nexo-gsearch-main { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nexo-gsearch-sub { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.nexo-gsearch-empty { padding: 26px 16px; text-align: center; color: var(--text-faint); font-size: 12.5px; }
+
+/* ---------- Sino de avisos ---------- */
+.nexo-bell-wrap { position: relative; }
+.nexo-bell-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--surface); }
+.nexo-bell-panel { right: 0; width: 340px; max-width: calc(100vw - 24px); }
+.nexo-bell-head { padding: 14px 16px 10px; font-weight: 700; font-size: 13.5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-soft); }
+.nexo-aviso { display: flex; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-soft); }
+.nexo-aviso:last-child { border-bottom: none; }
+.nexo-aviso:hover { background: var(--surface-2); }
+.nexo-aviso-ico { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nexo-aviso-title { font-size: 13px; font-weight: 600; }
+.nexo-aviso-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+
+/* ---------- Botões ---------- */
 .nexo-btn {
-  display: inline-flex; align-items: center; gap: 7px; font-family: inherit;
-  font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit;
+  font-size: 13px; font-weight: 600; padding: 9px 15px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
-  cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s;
+  cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-sm);
+  transition: border-color .15s, background .15s, transform .08s, box-shadow .15s, filter .15s;
 }
-.nexo-btn:hover { border-color: var(--accent-dim); }
-.nexo-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.nexo-btn-primary:hover { background: #3679AC; }
-.nexo-btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
-.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.nexo-btn:hover { border-color: var(--accent-dim); background: var(--surface-3); }
+.nexo-btn:active { transform: translateY(1px); }
+.nexo-btn:disabled { opacity: .55; cursor: not-allowed; }
+.nexo-btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-strong)); border-color: var(--accent-strong); color: #fff; box-shadow: 0 8px 18px -8px var(--accent), inset 0 1px 0 rgba(255,255,255,0.22); }
+.nexo-btn-primary:hover { filter: brightness(1.08); background: linear-gradient(180deg, var(--accent), var(--accent-strong)); border-color: var(--accent-strong); }
+.nexo-btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); box-shadow: none; }
+.nexo-btn-ghost:hover { background: var(--surface-2); color: var(--text); border-color: transparent; }
 .nexo-btn-danger { color: var(--danger); }
-.nexo-btn-sm { padding: 6px 10px; font-size: 12px; }
+.nexo-btn-danger:hover { border-color: var(--danger); background: var(--danger-soft); }
+.nexo-btn-danger-solid { background: linear-gradient(180deg, var(--danger), #D2493E); border-color: #D2493E; color: #fff; }
+.nexo-btn-danger-solid:hover { filter: brightness(1.08); background: linear-gradient(180deg, var(--danger), #D2493E); border-color: #D2493E; }
+.nexo-btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 9px; }
 .nexo-icon-btn {
-  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
-  cursor: pointer;
+  position: relative; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px; border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-dim);
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
 }
-.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); }
+.nexo-icon-btn:hover { color: var(--text); border-color: var(--accent-dim); background: var(--surface-3); }
+.nexo-table .nexo-icon-btn, .nexo-veiculo-card .nexo-icon-btn, .nexo-modal .nexo-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
 
-/* Cards */
-.nexo-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 18px; }
-.nexo-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-.nexo-kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 16px 14px; position: relative; overflow: hidden;}
-.nexo-kpi-icon { width: 32px; height: 32px; border-radius: 8px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;}
-.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 500; margin-bottom: 4px;}
-.nexo-kpi-value { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
-.nexo-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;}
-.nexo-chart-title { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
-.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 14px; }
+/* ---------- Cards ---------- */
+.nexo-card { background: var(--sheen), var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-sm); }
+.nexo-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+.nexo-kpi { background: var(--sheen), var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 18px 18px 16px; position: relative; overflow: hidden; box-shadow: var(--shadow-sm); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.nexo-kpi:hover { transform: translateY(-2px); border-color: var(--border); box-shadow: var(--shadow-md); }
+.nexo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.nexo-kpi.wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 16px; padding: 16px 22px; background: linear-gradient(100deg, var(--accent-soft), transparent 60%), var(--surface); }
+.nexo-kpi.wide .nexo-kpi-icon { margin: 0; }
+.nexo-kpi.wide .nexo-kpi-label { margin: 0; font-size: 13px; }
+.nexo-kpi.wide .nexo-kpi-value { font-size: 28px; }
+.nexo-kpi-label { font-size: 12px; color: var(--text-dim); font-weight: 500; margin-bottom: 5px; }
+.nexo-kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+.nexo-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.nexo-charts-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 1280px) {
+  .nexo-charts-grid { grid-template-columns: 1.5fr 1fr 1fr; }
+  .nexo-charts-grid > :last-child:nth-child(odd) { grid-column: auto; }
+}
+.nexo-chart-title { font-size: 14px; font-weight: 650; margin-bottom: 3px; letter-spacing: -0.15px; }
+.nexo-chart-sub { font-size: 11.5px; color: var(--text-faint); margin-bottom: 16px; }
 
-/* Section header */
-.nexo-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;}
-.nexo-section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-.nexo-section-count { font-size: 12.5px; color: var(--text-faint); font-weight: 500; margin-left: 8px;}
+/* ---------- Cabeçalho de seção ---------- */
+.nexo-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.nexo-section-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+.nexo-section-count { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-left: 10px; background: var(--surface-2); border: 1px solid var(--border-soft); padding: 3px 9px; border-radius: 20px; vertical-align: middle; }
 
-/* Search & filters */
-.nexo-searchbar { display:flex; align-items:center; gap:8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; max-width: 380px; flex: 1; }
-.nexo-searchbar input { background:none; border:none; outline:none; color: var(--text); font-size: 13px; width: 100%; font-family:inherit;}
+/* ---------- Busca e filtros ---------- */
+.nexo-searchbar { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 0 13px; height: 42px; max-width: 420px; flex: 1; box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s; }
+.nexo-searchbar:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+.nexo-searchbar svg { color: var(--text-faint); }
+.nexo-searchbar input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
 .nexo-searchbar input::placeholder { color: var(--text-faint); }
-.nexo-filters { background: var(--surface); border:1px solid var(--border-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; display:flex; flex-wrap:wrap; gap: 12px; align-items:flex-end;}
-.nexo-filter-field { display:flex; flex-direction:column; gap:5px; min-width: 130px; flex:1;}
-.nexo-filter-field label { font-size: 10.5px; text-transform:uppercase; letter-spacing:.4px; color: var(--text-faint); font-weight:600;}
+.nexo-filters { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px 18px; margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; box-shadow: var(--shadow-sm); }
+.nexo-filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 130px; flex: 1; }
+.nexo-filter-field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--text-faint); font-weight: 700; }
 
-/* Inputs */
+/* ---------- Campos ---------- */
 .nexo-input, .nexo-select, .nexo-textarea {
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
+  border-radius: 10px; padding: 9px 12px; font-size: 13px; font-family: inherit; outline: none; width: 100%;
+  transition: border-color .15s, box-shadow .15s, background .15s;
 }
-.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); }
-.nexo-textarea { resize: vertical; min-height: 60px; }
-.nexo-field { display:flex; flex-direction:column; gap: 6px; }
-.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+.nexo-input:hover, .nexo-select:hover, .nexo-textarea:hover { border-color: var(--text-faint); }
+.nexo-input:focus, .nexo-select:focus, .nexo-textarea:focus { border-color: var(--accent); box-shadow: var(--ring); background: var(--surface); }
+.nexo-textarea { resize: vertical; min-height: 64px; }
+.nexo-field { display: flex; flex-direction: column; gap: 6px; }
+.nexo-field label { font-size: 12px; color: var(--text-dim); font-weight: 600; }
 .nexo-field-error { font-size: 11px; color: var(--danger); }
-.nexo-field-row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.nexo-field-row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.nexo-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.nexo-field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
-/* Table */
-.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
+/* ---------- Tabelas ---------- */
+.nexo-table-wrap { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }
 .nexo-table-scroll { overflow-x: auto; }
 .nexo-table { width: 100%; border-collapse: collapse; min-width: 640px; }
 .nexo-table th {
-  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--text-faint); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-soft);
-  white-space: nowrap;
+  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px;
+  color: var(--text-faint); font-weight: 700; padding: 13px 16px; border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap; background: var(--surface-2);
 }
-.nexo-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.nexo-table td.mono, .nexo-table td.nexo-cell-muted { white-space: nowrap; }
+.nexo-table td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 .nexo-table tr:last-child td { border-bottom: none; }
-.nexo-table tbody tr:hover { background: var(--surface-2); }
+.nexo-table tbody tr { transition: background .12s; }
+.nexo-table tbody tr:hover { background: var(--accent-soft); }
 .nexo-row-link { cursor: pointer; }
 .nexo-cell-muted { color: var(--text-faint); font-size: 12px; }
-.nexo-actions-cell { display:flex; gap: 6px; justify-content:flex-end; }
+.nexo-actions-cell { display: flex; gap: 6px; justify-content: flex-end; }
 
-/* Badges */
-.nexo-badge { display:inline-flex; align-items:center; gap:5px; font-size: 11.5px; font-weight: 600; padding: 4px 9px; border-radius: 20px; }
-.nexo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink:0; }
+/* ---------- Selos ---------- */
+.nexo-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.nexo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-/* Empty state */
-.nexo-empty { text-align:center; padding: 60px 20px; color: var(--text-faint); }
-.nexo-empty svg { margin-bottom: 12px; opacity: .5; }
+/* ---------- Estado vazio ---------- */
+.nexo-empty { text-align: center; padding: 64px 20px; color: var(--text-faint); }
+.nexo-empty svg { margin-bottom: 14px; opacity: .55; }
 .nexo-empty-title { color: var(--text-dim); font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .nexo-empty-sub { font-size: 12.5px; }
 
-/* Modal */
-.nexo-modal-overlay { position: fixed; inset: 0; background: rgba(5,8,11,0.6); z-index: 100; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding: 40px 16px; }
-.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-.nexo-modal.wide { max-width: 620px; }
-.nexo-modal-head { display:flex; align-items:center; justify-content:space-between; padding: 18px 20px; border-bottom: 1px solid var(--border-soft); }
-.nexo-modal-head h3 { font-size: 15.5px; font-weight: 700; margin: 0; }
-.nexo-modal-body { padding: 20px; display:flex; flex-direction:column; gap: 14px; }
-.nexo-modal-foot { display:flex; justify-content:flex-end; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border-soft); }
+/* ---------- Modal ---------- */
+.nexo-modal-overlay { position: fixed; inset: 0; background: var(--overlay); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 100; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 40px 16px; animation: nexo-fade-only .18s ease both; }
+@keyframes nexo-fade-only { from { opacity: 0; } to { opacity: 1; } }
+.nexo-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 500px; box-shadow: var(--shadow-lg); animation: nexo-pop-in .2s ease both; }
+.nexo-modal.wide { max-width: 640px; }
+.nexo-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border-soft); }
+.nexo-modal-head h3 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.2px; }
+.nexo-modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+.nexo-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--border-soft); }
 
-/* Client detail */
-.nexo-detail-grid { display:grid; grid-template-columns: 300px 1fr; gap: 16px; align-items:start; }
-.nexo-info-row { display:flex; align-items:center; gap: 9px; font-size: 13px; color: var(--text-dim); padding: 7px 0; border-bottom: 1px solid var(--border-soft); }
+/* ---------- Mensagens (toasts) e confirmações ---------- */
+.nexo-toasts { position: fixed; top: 76px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.nexo-toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--tone); box-shadow: var(--shadow-lg); animation: nexo-toast-in .26s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes nexo-toast-in { from { opacity: 0; transform: translateX(24px) scale(.97); } to { opacity: 1; transform: none; } }
+.nexo-toast-ico { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--tone) 16%, transparent); color: var(--tone); }
+.nexo-toast-msg { font-size: 13px; line-height: 1.45; flex: 1; padding-top: 5px; word-break: break-word; }
+.nexo-toast-x { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 4px; border-radius: 6px; }
+.nexo-toast-x:hover { color: var(--text); background: var(--surface-2); }
+.nexo-dialog-overlay { position: fixed; inset: 0; background: var(--overlay); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; animation: nexo-fade-only .16s ease both; }
+.nexo-dialog { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 440px; box-shadow: var(--shadow-lg); padding: 26px 26px 20px; animation: nexo-pop-in .2s ease both; }
+.nexo-dialog-ico { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; background: color-mix(in srgb, var(--tone) 15%, transparent); color: var(--tone); }
+.nexo-dialog h3 { margin: 0 0 8px; font-size: 16.5px; font-weight: 700; letter-spacing: -0.2px; }
+.nexo-dialog-msg { font-size: 13.5px; line-height: 1.55; color: var(--text-dim); white-space: pre-line; max-height: 50vh; overflow-y: auto; }
+.nexo-dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+
+/* ---------- Carregando ---------- */
+.nexo-loading { display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; height: 100vh; color: var(--text-dim); font-size: 13px; }
+.nexo-spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); animation: nexo-spin .8s linear infinite; }
+@keyframes nexo-spin { to { transform: rotate(360deg); } }
+
+/* ---------- Detalhe do cliente ---------- */
+.nexo-detail-grid { display: grid; grid-template-columns: 310px 1fr; gap: 18px; align-items: start; }
+.nexo-info-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
 .nexo-info-row:last-child { border-bottom: none; }
-.nexo-info-row svg { color: var(--text-faint); flex-shrink:0; }
-.nexo-avatar { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display:flex; align-items:center; justify-content:center; font-weight: 700; font-size: 19px; }
-.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: var(--surface-2); }
-.nexo-veiculo-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; }
-.nexo-mini-kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
-.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 14px; }
-.nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
-.nexo-mini-kpi-value { font-size: 16px; font-weight: 700; }
-.nexo-tabs { display:flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px; }
-.nexo-tab { padding: 8px 4px; margin-right: 18px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor:pointer; border-bottom: 2px solid transparent; }
+.nexo-info-row svg { color: var(--text-faint); flex-shrink: 0; }
+.nexo-avatar { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--accent-soft), var(--surface-3)); border: 1px solid var(--border-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; }
+.nexo-veiculo-card { border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; background: var(--surface-2); transition: border-color .15s; }
+.nexo-veiculo-card:hover { border-color: var(--border); }
+.nexo-veiculo-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.nexo-mini-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 16px; }
+.nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 5px; font-weight: 500; }
+.nexo-mini-kpi-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+.nexo-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px; }
+.nexo-tab { padding: 10px 4px; margin-right: 20px; font-size: 13px; font-weight: 600; color: var(--text-faint); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+.nexo-tab:hover { color: var(--text-dim); }
 .nexo-tab.active { color: var(--text); border-color: var(--accent); }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* ---------- Responsivo ---------- */
+.nexo-novo-wide { display: flex; gap: 8px; }
+.nexo-novo-menu { display: none; position: relative; }
+.nexo-pop-right { right: 0; min-width: 210px; padding: 6px; }
+@media (max-width: 1240px) {
+  .nexo-novo-wide { display: none; }
+  .nexo-novo-menu { display: block; }
+}
+@media (max-width: 1100px) {
+  .nexo-kbd { display: none; }
+  .nexo-topbar { padding: 0 16px; gap: 10px; }
+}
+@media (max-width: 1024px) and (min-width: 941px) {
+  .nexo-kpi-grid { gap: 12px; }
+  .nexo-kpi { padding: 14px; }
+  .nexo-kpi-value { font-size: 19px; }
+}
+@media (max-width: 940px) {
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 1024px) {
   .nexo-charts-grid { grid-template-columns: 1fr; }
   .nexo-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
-  .nexo-sidebar { transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.3); }
+  .hide-mobile { display: none !important; }
+  .nexo-shell, .nexo-shell.collapsed { --sidebar-w: 270px; }
+  .nexo-sidebar { transform: translateX(-100%); box-shadow: 24px 0 48px rgba(0,0,0,0.35); }
   .nexo-sidebar.open { transform: translateX(0); }
   .nexo-main { margin-left: 0; }
-  .nexo-hamburger { display: inline-flex; align-items:center; justify-content:center; }
-  .nexo-content { padding: 16px 14px 40px; }
+  .nexo-hamburger { display: inline-flex; align-items: center; justify-content: center; }
+  .nexo-content { padding: 18px 14px 48px; }
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .nexo-mini-kpis { grid-template-columns: repeat(2,1fr); }
+  .nexo-kpi-value { font-size: 20px; }
+  .nexo-mini-kpis { grid-template-columns: repeat(2, 1fr); }
   .nexo-field-row, .nexo-field-row3 { grid-template-columns: 1fr; }
-  .nexo-overlay.open { display:block; position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 39; }
-  .nexo-topbar { padding: 0 14px; }
-  .nexo-topbar-title span.hide-mobile { display:none; }
+  .nexo-overlay.open { display: block; position: fixed; inset: 0; background: var(--overlay); z-index: 39; }
+  .nexo-topbar { padding: 0 12px; }
+  .nexo-topbar-sub { display: none; }
+  .nexo-topbar-title { font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
+  .nexo-topbar-left { overflow: hidden; }
+  .nexo-collapse-btn { display: none; }
+  .nexo-shell.collapsed .nexo-brand-text, .nexo-shell.collapsed .nexo-nav-label, .nexo-shell.collapsed .nexo-nav-section-title, .nexo-shell.collapsed .nexo-user-meta { display: revert; }
+  .nexo-shell.collapsed .nexo-nav-item { justify-content: flex-start; padding: 9px 12px; }
+  .nexo-shell.collapsed .nexo-brand { flex-direction: row; }
+  .nexo-shell.collapsed .nexo-user { flex-direction: row; padding: 10px; }
+  .nexo-gsearch { flex: 0 0 auto; max-width: none; }
+  .nexo-gsearch-box { display: none; }
+  .nexo-gsearch .nexo-gsearch-iconbtn { display: inline-flex; }
+  .nexo-gsearch.open .nexo-gsearch-box { display: flex; position: fixed; left: 12px; right: 12px; top: 12px; z-index: 70; box-shadow: var(--shadow-lg); background: var(--surface); }
+  .nexo-gsearch.open .nexo-gsearch-panel { position: fixed; left: 12px; right: 12px; top: 62px; }
+  .nexo-toasts { top: 70px; right: 12px; }
 }
 `;
 
@@ -641,7 +837,7 @@ function EmptyState({ icon, title, sub }) {
   );
 }
 
-function Kpi({ icon, label, value, tone }) {
+function Kpi({ icon, label, value, tone, wide }) {
   const Icon = icon;
   const colors = {
     accent: ["var(--accent)", "var(--accent-soft)"],
@@ -651,7 +847,7 @@ function Kpi({ icon, label, value, tone }) {
     info: ["var(--info)", "var(--info-soft)"],
   }[tone || "accent"];
   return (
-    <div className="nexo-kpi">
+    <div className={`nexo-kpi ${wide ? "wide" : ""}`}>
       <div className="nexo-kpi-icon" style={{ background: colors[1], color: colors[0] }}>
         <Icon size={16} />
       </div>
@@ -1275,7 +1471,13 @@ function BoletoForm({ initial, clientes, veiculos, defaultClienteId, defaultVeic
 
 const COMISSAO_CORRETORA_PERCENTUAL = 10; // ajuste aqui se o percentual de recorrência mudar
 
-function Dashboard({ db, onOpenModal }) {
+const PALETA_GRAFICOS = {
+  dark:  { border: "#25324A", textFaint: "#62758B", accent: "#4C97E6", violet: "#B79CFF", surface3: "#1B2532", success: "#34D399", info: "#8FA6C9", danger: "#F36B5F", warning: "#F5B544" },
+  light: { border: "#D6DEE9", textFaint: "#7A8BA1", accent: "#2563EB", violet: "#7C5CE0", surface3: "#EBEFF6", success: "#0F9F6E", info: "#5B7090", danger: "#D63A2E", warning: "#B7791F" },
+};
+
+function Dashboard({ db, onOpenModal, tema }) {
+  const pal = PALETA_GRAFICOS[tema === "light" ? "light" : "dark"];
   const boletosComStatus = useMemo(() => db.boletos.map((b) => ({ ...b, status: computeBoletoStatus(b) })), [db.boletos]);
 
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
@@ -1303,19 +1505,19 @@ function Dashboard({ db, onOpenModal }) {
   const comissaoCorretora = valorBaseComissao * (COMISSAO_CORRETORA_PERCENTUAL / 100);
 
   const valoresData = [
-    { name: "Recebido", valor: valorRecebido, color: "var(--success)" },
-    { name: "Em aberto", valor: valorEmAberto, color: "var(--info)" },
-    { name: "A vencer", valor: valorAReceber, color: "var(--warning)" },
-    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: "#B08BF0" },
+    { name: "Recebido", valor: valorRecebido, color: pal.success },
+    { name: "Em aberto", valor: valorEmAberto, color: pal.info },
+    { name: "A vencer", valor: valorAReceber, color: pal.warning },
+    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: pal.violet },
   ];
 
   const contagem = { Pago: 0, "Em aberto": 0, Vencido: 0, "A vencer": 0 };
   boletosComStatus.forEach((b) => { contagem[b.status] = (contagem[b.status] || 0) + 1; });
   const qtdData = [
-    { name: "Pagos", value: contagem["Pago"], fill: "#34B172" },
-    { name: "Em aberto", value: contagem["Em aberto"], fill: "#7A8FB0" },
-    { name: "Vencidos", value: contagem["Vencido"], fill: "#DD5F52" },
-    { name: "A vencer", value: contagem["A vencer"], fill: "#DB9B3D" },
+    { name: "Pagos", value: contagem["Pago"], fill: pal.success },
+    { name: "Em aberto", value: contagem["Em aberto"], fill: pal.info },
+    { name: "Vencidos", value: contagem["Vencido"], fill: pal.danger },
+    { name: "A vencer", value: contagem["A vencer"], fill: pal.warning },
   ];
 
   const evolucao = useMemo(() => {
@@ -1353,9 +1555,6 @@ function Dashboard({ db, onOpenModal }) {
               <option key={m} value={m}>Comissão de {rotuloMes(m)}</option>
             ))}
           </select>
-          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
-          <button className="nexo-btn" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
-          <button className="nexo-btn" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
         </div>
       </div>
 
@@ -1368,7 +1567,7 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" />
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide />
       </div>
 
       <div className="nexo-charts-grid">
@@ -1378,12 +1577,12 @@ function Dashboard({ db, onOpenModal }) {
           <div style={{ height: 240 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={valoresData} margin={{ left: 0, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
-                <XAxis dataKey="name" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
+                <CartesianGrid strokeDasharray="3 3" stroke={pal.border} vertical={false} />
+                <XAxis dataKey="name" stroke={pal.textFaint} fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke={pal.textFaint} fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
                 <Tooltip
-                  contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: "#E9EEF3" }}
+                  contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-md)", color: "var(--text)" }}
+                  labelStyle={{ color: "var(--text)" }}
                   formatter={(v) => formatBRL(v)}
                 />
                 <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
@@ -1406,9 +1605,9 @@ function Dashboard({ db, onOpenModal }) {
                 <Legend
                   verticalAlign="bottom"
                   height={30}
-                  formatter={(v) => <span style={{ color: "#92A2B2", fontSize: 12 }}>{v}</span>}
+                  formatter={(v) => <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{v}</span>}
                 />
-                <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-md)", color: "var(--text)" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -1433,11 +1632,11 @@ function Dashboard({ db, onOpenModal }) {
                   endAngle={-270}
                   paddingAngle={0}
                 >
-                  <Cell fill="#B08BF0" stroke="none" />
-                  <Cell fill="#202B38" stroke="none" />
+                  <Cell fill={pal.violet} stroke="none" />
+                  <Cell fill={pal.surface3} stroke="none" />
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-md)", color: "var(--text)" }}
                   formatter={(v, n) => [n.includes("Comissão") ? `${v}%` : `${v}%`, n]}
                 />
               </PieChart>
@@ -1448,7 +1647,7 @@ function Dashboard({ db, onOpenModal }) {
                 alignItems: "center", justifyContent: "center", pointerEvents: "none", paddingBottom: 24,
               }}
             >
-              <div style={{ fontSize: 26, fontWeight: 800, color: "#B08BF0", lineHeight: 1 }}>{COMISSAO_CORRETORA_PERCENTUAL}%</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--violet)", lineHeight: 1 }}>{COMISSAO_CORRETORA_PERCENTUAL}%</div>
               <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>recorrência mensal</div>
             </div>
           </div>
@@ -1463,11 +1662,11 @@ function Dashboard({ db, onOpenModal }) {
         <div style={{ height: 240 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={evolucao} margin={{ left: 0, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#263241" vertical={false} />
-              <XAxis dataKey="label" stroke="#56646F" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#56646F" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
-              <Tooltip contentStyle={{ background: "#19222D", border: "1px solid #263241", borderRadius: 8, fontSize: 12 }} formatter={(v) => formatBRL(v)} />
-              <Line type="monotone" dataKey="total" stroke="#3E86BF" strokeWidth={2.5} dot={{ r: 3, fill: "#3E86BF" }} activeDot={{ r: 5 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={pal.border} vertical={false} />
+              <XAxis dataKey="label" stroke={pal.textFaint} fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke={pal.textFaint} fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
+              <Tooltip contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-md)", color: "var(--text)" }} formatter={(v) => formatBRL(v)} />
+              <Line type="monotone" dataKey="total" stroke={pal.accent} strokeWidth={2.5} dot={{ r: 3, fill: pal.accent }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -1523,12 +1722,12 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
         }))
         .filter((c) => c.nome && c.cpf);
       if (clientesNovos.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
+        notify("Nenhuma linha válida encontrada. Confira se o arquivo tem as colunas Nome e CPF/CNPJ.");
       } else {
         await onImportarClientes(clientesNovos);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      notify("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportando(false);
     }
@@ -1690,12 +1889,12 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
         });
       }
       if (todos.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Placa (ou Placas).");
+        notify("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Placa (ou Placas).");
       } else {
         await onImportarVeiculos(todos, semPlaca);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      notify("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportando(false);
     }
@@ -1854,12 +2053,12 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
         }))
         .filter((l) => l.nossoNumero);
       if (linhasBaixa.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.");
+        notify("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Nosso Número.");
       } else {
         await onImportarBaixa(linhasBaixa);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      notify("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportandoBaixa(false);
     }
@@ -2479,12 +2678,12 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
         }))
         .filter((p) => p.seguradoraNome && p.planoNome);
       if (planosNovos.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.");
+        notify("Nenhuma linha válida encontrada. Confira as colunas Seguradora e Plano.");
       } else {
         await onImportarPlanos(planosNovos);
       }
     } catch (err) {
-      alert("Não foi possível ler o arquivo: " + err.message);
+      notify("Não foi possível ler o arquivo: " + err.message);
     } finally {
       setImportando(false);
     }
@@ -3345,7 +3544,7 @@ function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
       if (!resp.ok) throw new Error(data.erro || "Não foi possível alterar o perfil.");
       onRecarregarUsuarios();
     } catch (e) {
-      alert(e.message);
+      notify(e.message);
     } finally {
       setAlterando(null);
     }
@@ -3353,10 +3552,10 @@ function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
 
   async function excluirUsuario(userId, nome) {
     if (userId === meuUserId) {
-      alert("Você não pode excluir seu próprio usuário.");
+      notify("Você não pode excluir seu próprio usuário.");
       return;
     }
-    if (!window.confirm(`Excluir o acesso de "${nome}"? Essa ação não pode ser desfeita.`)) return;
+    if (!await confirmDialog(`Excluir o acesso de "${nome}"? Essa ação não pode ser desfeita.`)) return;
     setAlterando(userId);
     try {
       const resp = await fetch("/api/gerenciar-usuarios", {
@@ -3368,7 +3567,7 @@ function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
       if (!resp.ok) throw new Error(data.erro || "Não foi possível excluir o usuário.");
       onRecarregarUsuarios();
     } catch (e) {
-      alert(e.message);
+      notify(e.message);
     } finally {
       setAlterando(null);
     }
@@ -3427,6 +3626,341 @@ function UsuariosView({ db, sessao, meuUserId, onRecarregarUsuarios }) {
 /* ------------------------------------------------------------------ */
 /* App shell                                                            */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Mensagens elegantes (toast) e confirmações — no lugar de alert()    */
+/* ------------------------------------------------------------------ */
+
+let _abrirToast = null;
+let _abrirDialogo = null;
+
+function showToast(mensagem, tipo = "info") {
+  if (_abrirToast) _abrirToast(String(mensagem), tipo);
+  else window.alert(String(mensagem));
+}
+
+/** Substitui alert(): mensagem curta vira aviso no canto; mensagem longa/com várias linhas vira uma janela. */
+function notify(mensagem) {
+  const texto = String(mensagem ?? "");
+  const t = normalizarTexto(texto);
+  const tipo = /nao foi possivel|erro|falha|invalid/.test(t) ? "error"
+    : /conclu|sucesso|importad|cadastrad|salv|atualizad/.test(t) ? "success"
+    : /preencha|confira|nenhuma|selecione|informe|nao pode|ja existe/.test(t) ? "warning" : "info";
+  if ((texto.includes("\n") || texto.length > 150) && _abrirDialogo) {
+    _abrirDialogo({
+      tipo, mensagem: texto, somenteOk: true,
+      titulo: tipo === "error" ? "Algo deu errado" : tipo === "success" ? "Tudo certo" : "Aviso",
+    });
+    return;
+  }
+  showToast(texto, tipo);
+}
+
+/** Substitui confirm(): devolve uma Promise<boolean>. Use com await. */
+function confirmDialog(mensagem, opcoes = {}) {
+  const ehExclusao = /^excluir/i.test(String(mensagem));
+  return new Promise((resolve) => {
+    if (!_abrirDialogo) { resolve(window.confirm(String(mensagem))); return; }
+    _abrirDialogo({
+      tipo: ehExclusao ? "error" : "warning", mensagem: String(mensagem),
+      titulo: opcoes.titulo || (ehExclusao ? "Confirmar exclusão" : "Confirmar"),
+      textoConfirmar: opcoes.textoConfirmar || (ehExclusao ? "Excluir" : "Confirmar"),
+      textoCancelar: opcoes.textoCancelar || "Cancelar",
+      perigo: opcoes.perigo ?? ehExclusao, resolve,
+    });
+  });
+}
+
+function MensagensHost() {
+  const [toasts, setToasts] = useState([]);
+  const [dialogo, setDialogo] = useState(null);
+
+  useEffect(() => {
+    _abrirToast = (mensagem, tipo) => {
+      const id = Math.random().toString(36).slice(2);
+      setToasts((prev) => [...prev.slice(-3), { id, mensagem, tipo }]);
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), tipo === "error" ? 7000 : 4500);
+    };
+    _abrirDialogo = (d) => setDialogo(d);
+    return () => { _abrirToast = null; _abrirDialogo = null; };
+  }, []);
+
+  useEffect(() => {
+    if (!dialogo) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") fechar(false);
+      if (e.key === "Enter") fechar(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const tom = { success: "var(--success)", error: "var(--danger)", warning: "var(--warning)", info: "var(--accent)" };
+  const Icone = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
+
+  function fechar(resultado) {
+    if (dialogo?.resolve) dialogo.resolve(resultado);
+    setDialogo(null);
+  }
+
+  const IconeDialogo = dialogo ? Icone[dialogo.tipo] || Info : Info;
+  return (
+    <>
+      <div className="nexo-toasts">
+        {toasts.map((t) => {
+          const I = Icone[t.tipo] || Info;
+          return (
+            <div key={t.id} className="nexo-toast" style={{ "--tone": tom[t.tipo] }}>
+              <div className="nexo-toast-ico"><I size={16} /></div>
+              <div className="nexo-toast-msg">{t.mensagem}</div>
+              <button className="nexo-toast-x" onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}><X size={14} /></button>
+            </div>
+          );
+        })}
+      </div>
+      {dialogo && (
+        <div className="nexo-dialog-overlay" onClick={() => fechar(false)}>
+          <div className="nexo-dialog" style={{ "--tone": tom[dialogo.tipo] }} onClick={(e) => e.stopPropagation()}>
+            <div className="nexo-dialog-ico"><IconeDialogo size={22} /></div>
+            <h3>{dialogo.titulo}</h3>
+            <div className="nexo-dialog-msg">{dialogo.mensagem}</div>
+            <div className="nexo-dialog-foot">
+              {!dialogo.somenteOk && <button className="nexo-btn" onClick={() => fechar(false)}>{dialogo.textoCancelar}</button>}
+              <button className={`nexo-btn ${dialogo.perigo ? "nexo-btn-danger-solid" : "nexo-btn-primary"}`} autoFocus onClick={() => fechar(true)}>
+                {dialogo.somenteOk ? "Entendi" : dialogo.textoConfirmar}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Busca global, sino de avisos, menu "Novo" e alternância de tema     */
+/* ------------------------------------------------------------------ */
+
+function BuscaGlobal({ db, onAbrirCliente }) {
+  const [q, setQ] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const [mobileAberto, setMobileAberto] = useState(false);
+  const [sel, setSel] = useState(0);
+  const inputRef = useRef(null);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    function onKey(e) {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      const digitando = tag === "input" || tag === "textarea" || tag === "select" || e.target?.isContentEditable;
+      if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !digitando)) {
+        e.preventDefault();
+        setMobileAberto(true);
+        setAberto(true);
+        setTimeout(() => inputRef.current?.focus(), 30);
+      }
+    }
+    function onDoc(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) { setAberto(false); setMobileAberto(false); }
+    }
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDoc);
+    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onDoc); };
+  }, []);
+
+  const grupos = useMemo(() => {
+    const termo = normalizarTexto(q);
+    if (termo.length < 2) return null;
+    const digitos = q.replace(/\D/g, "");
+    const nomeDe = (id) => db.clientes.find((c) => c.id === id)?.nome || "—";
+    const clientes = db.clientes
+      .filter((c) =>
+        normalizarTexto(c.nome).includes(termo) ||
+        (digitos.length >= 3 && (c.cpf || "").replace(/\D/g, "").includes(digitos)) ||
+        (c.codigoSga && normalizarTexto(c.codigoSga).includes(termo))
+      )
+      .slice(0, 6)
+      .map((c) => ({ chave: "c" + c.id, clienteId: c.id, Icone: Users, titulo: c.nome, sub: [c.cpf, c.telefone || c.whatsapp].filter(Boolean).join(" · ") || "Cliente" }));
+    const placa = normPlaca(q);
+    const veiculos = db.veiculos
+      .filter((v) => (placa.length >= 2 && normPlaca(v.placa).includes(placa)) || normalizarTexto(`${v.marca} ${v.modelo}`).includes(termo))
+      .slice(0, 6)
+      .map((v) => ({ chave: "v" + v.id, clienteId: v.clienteId, Icone: Car, titulo: `${v.placa} · ${v.marca} ${v.modelo}`.trim(), sub: nomeDe(v.clienteId) }));
+    const boletos = db.boletos
+      .filter((b) => (b.nossoNumero && normalizarTexto(b.nossoNumero).includes(termo)) || (b.numero && normalizarTexto(b.numero).includes(termo)))
+      .slice(0, 6)
+      .map((b) => ({ chave: "b" + b.id, clienteId: b.clienteId, Icone: Receipt, titulo: `Boleto ${b.nossoNumero || b.numero}`, sub: `${nomeDe(b.clienteId)} · ${formatBRL(b.valor)} · ${computeBoletoStatus(b)}` }));
+    return [
+      { titulo: "Clientes", itens: clientes },
+      { titulo: "Veículos", itens: veiculos },
+      { titulo: "Boletos", itens: boletos },
+    ].filter((g) => g.itens.length > 0);
+  }, [q, db.clientes, db.veiculos, db.boletos]);
+
+  const lista = grupos ? grupos.flatMap((g) => g.itens) : [];
+
+  function abrir(item) {
+    if (!item) return;
+    onAbrirCliente(item.clienteId);
+    setQ(""); setAberto(false); setMobileAberto(false); setSel(0);
+    inputRef.current?.blur();
+  }
+  function onKeyDown(e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(s + 1, Math.max(lista.length - 1, 0))); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(s - 1, 0)); }
+    else if (e.key === "Enter") { abrir(lista[sel]); }
+    else if (e.key === "Escape") { setQ(""); setAberto(false); setMobileAberto(false); inputRef.current?.blur(); }
+  }
+
+  let indice = -1;
+  return (
+    <div ref={wrapRef} className={`nexo-gsearch ${mobileAberto ? "open" : ""}`}>
+      <button className="nexo-icon-btn nexo-gsearch-iconbtn" title="Buscar" onClick={() => { setMobileAberto(true); setAberto(true); setTimeout(() => inputRef.current?.focus(), 30); }}>
+        <Search size={16} />
+      </button>
+      <div className="nexo-gsearch-box">
+        <Search size={16} />
+        <input
+          ref={inputRef}
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setSel(0); setAberto(true); }}
+          onFocus={() => setAberto(true)}
+          onKeyDown={onKeyDown}
+          placeholder="Buscar cliente, CPF, placa ou Nosso Número…"
+        />
+        {q ? (
+          <button className="nexo-toast-x" onClick={() => { setQ(""); inputRef.current?.focus(); }}><X size={14} /></button>
+        ) : (
+          <span className="nexo-kbd">/</span>
+        )}
+      </div>
+      {aberto && grupos && (
+        <div className="nexo-pop nexo-gsearch-panel">
+          {grupos.length === 0 ? (
+            <div className="nexo-gsearch-empty">Nada encontrado para “{q}”.</div>
+          ) : (
+            grupos.map((g) => (
+              <div key={g.titulo}>
+                <div className="nexo-gsearch-group">{g.titulo}</div>
+                {g.itens.map((item) => {
+                  indice++;
+                  const meuIndice = indice;
+                  const Icone = item.Icone;
+                  return (
+                    <div key={item.chave} className={`nexo-gsearch-item ${meuIndice === sel ? "sel" : ""}`} onMouseEnter={() => setSel(meuIndice)} onClick={() => abrir(item)}>
+                      <div className="nexo-gsearch-ico"><Icone size={15} /></div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="nexo-gsearch-main">{item.titulo}</div>
+                        <div className="nexo-gsearch-sub">{item.sub}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function calcularAvisos(db) {
+  const hoje = todayISO();
+  const base = new Date(hoje + "T00:00:00");
+  const dias = (iso) => (iso ? Math.round((new Date(iso + "T00:00:00") - base) / 86400000) : null);
+  const boletos = db.boletos.map((b) => ({ ...b, _st: computeBoletoStatus(b) }));
+  const vencidos = boletos.filter((b) => b._st === "Vencido");
+  const aVencer = boletos.filter((b) => b._st === "A vencer");
+  const ativos = db.clientes.filter((c) => c.status !== "Inativo");
+  const cnh = ativos.filter((c) => c.cnhValidade && dias(c.cnhValidade) !== null && dias(c.cnhValidade) <= 30);
+  const aniversariantes = ativos.filter((c) => c.nascimento && c.nascimento.slice(5) === hoje.slice(5));
+  const avisos = [];
+  if (vencidos.length) avisos.push({ chave: "venc", tom: "danger", Icone: AlertTriangle, titulo: `${vencidos.length} boleto(s) vencido(s)`, sub: `${formatBRL(sum(vencidos.map((b) => b.valor)))} em atraso`, destino: "financeiro" });
+  if (aVencer.length) avisos.push({ chave: "avencer", tom: "warning", Icone: Clock, titulo: `${aVencer.length} boleto(s) a vencer`, sub: `${formatBRL(sum(aVencer.map((b) => b.valor)))} nos próximos 7 dias`, destino: "financeiro" });
+  if (cnh.length) avisos.push({ chave: "cnh", tom: "warning", Icone: CreditCard, titulo: `${cnh.length} CNH vencida(s) ou vencendo`, sub: "Vencem em até 30 dias", destino: "clientes" });
+  if (aniversariantes.length) avisos.push({ chave: "aniv", tom: "accent", Icone: Calendar, titulo: `${aniversariantes.length} aniversariante(s) hoje`, sub: aniversariantes.slice(0, 3).map((c) => c.nome.split(" ")[0]).join(", "), destino: "clientes" });
+  return avisos;
+}
+
+function SinoAvisos({ db, onIr }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  const avisos = useMemo(() => calcularAvisos(db), [db.boletos, db.clientes]);
+  useEffect(() => {
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) setAberto(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+  const cor = { danger: ["var(--danger)", "var(--danger-soft)"], warning: ["var(--warning)", "var(--warning-soft)"], accent: ["var(--accent)", "var(--accent-soft)"] };
+  return (
+    <div ref={ref} className="nexo-bell-wrap">
+      <button className="nexo-icon-btn" title="Avisos" onClick={() => setAberto((v) => !v)}>
+        <Bell size={16} />
+        {avisos.length > 0 && <span className="nexo-bell-badge">{avisos.length}</span>}
+      </button>
+      {aberto && (
+        <div className="nexo-pop nexo-bell-panel">
+          <div className="nexo-bell-head">Avisos</div>
+          {avisos.length === 0 ? (
+            <div className="nexo-gsearch-empty"><CheckCircle2 size={22} style={{ color: "var(--success)", marginBottom: 8 }} /><div>Tudo em dia. Nenhum aviso no momento.</div></div>
+          ) : (
+            avisos.map((a) => (
+              <div key={a.chave} className="nexo-aviso" onClick={() => { setAberto(false); onIr(a.destino); }}>
+                <div className="nexo-aviso-ico" style={{ background: cor[a.tom][1], color: cor[a.tom][0] }}><a.Icone size={16} /></div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="nexo-aviso-title">{a.titulo}</div>
+                  <div className="nexo-aviso-sub">{a.sub}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuNovo({ onNovo }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) setAberto(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+  const itens = [["cliente", "Novo cliente", Users], ["veiculo", "Novo veículo", Car], ["boleto", "Novo boleto", Receipt]];
+  return (
+    <div ref={ref} className="nexo-novo-menu">
+      <button className="nexo-btn nexo-btn-primary nexo-btn-sm" onClick={() => setAberto((v) => !v)}><Plus size={14} /> Novo</button>
+      {aberto && (
+        <div className="nexo-pop nexo-pop-right">
+          {itens.map(([tipo, rotulo, Icone]) => (
+            <div key={tipo} className="nexo-gsearch-item" onClick={() => { setAberto(false); onNovo(tipo); }}>
+              <div className="nexo-gsearch-ico"><Icone size={15} /></div>
+              <div className="nexo-gsearch-main">{rotulo}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const NAV_GRUPOS = [
+  { titulo: "", chaves: ["dashboard"] },
+  { titulo: "Cadastros", chaves: ["clientes", "veiculos"] },
+  { titulo: "Financeiro", chaves: ["financeiro", "comissoes", "adesoes"] },
+  { titulo: "Seguros", chaves: ["cotacoes", "consultoras"] },
+  { titulo: "Gestão", chaves: ["relatorios", "usuarios"] },
+];
+
+const SUBTITULOS = {
+  dashboard: "Visão geral do negócio", clientes: "Cadastro e histórico", veiculos: "Frota cadastrada",
+  financeiro: "Boletos e recebimentos", relatorios: "Exportações", cotacoes: "Seguradoras, planos e cotações",
+  consultoras: "Equipe de vendas", adesoes: "Adesões e recebimentos", comissoes: "Comissões e fechamento",
+  usuarios: "Acessos e permissões", clienteDetail: "Dados, veículos e boletos",
+};
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -3559,6 +4093,19 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tema, setTema] = useState(() => {
+    try { return localStorage.getItem("nexo-tema") === "light" ? "light" : "dark"; } catch { return "dark"; }
+  });
+  const [menuRecolhido, setMenuRecolhido] = useState(() => {
+    try { return localStorage.getItem("nexo-menu") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("nexo-tema", tema); } catch {}
+    document.body.style.background = tema === "light" ? "#EDF1F7" : "#070B11";
+  }, [tema]);
+  useEffect(() => {
+    try { localStorage.setItem("nexo-menu", menuRecolhido ? "1" : "0"); } catch {}
+  }, [menuRecolhido]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSessao(data.session));
@@ -3649,7 +4196,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o cliente: " + e.message);
+      notify("Não foi possível salvar o cliente: " + e.message);
     }
   };
 
@@ -3687,7 +4234,7 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o veículo: " + e.message);
+      notify("Não foi possível salvar o veículo: " + e.message);
     }
   };
 
@@ -3722,12 +4269,12 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o boleto: " + e.message);
+      notify("Não foi possível salvar o boleto: " + e.message);
     }
   };
 
   const deleteCliente = async (id) => {
-    if (!window.confirm("Excluir este cliente? Os veículos e boletos vinculados também serão removidos.")) return;
+    if (!await confirmDialog("Excluir este cliente? Os veículos e boletos vinculados também serão removidos.")) return;
     try {
       const { error } = await supabase.from("clientes").delete().eq("id", id);
       if (error) throw error;
@@ -3741,12 +4288,12 @@ export default function App() {
       });
       if (selectedClienteId === id) { setSelectedClienteId(null); setView("clientes"); }
     } catch (e) {
-      alert("Não foi possível excluir o cliente: " + e.message);
+      notify("Não foi possível excluir o cliente: " + e.message);
     }
   };
 
   const deleteVeiculo = async (id) => {
-    if (!window.confirm("Excluir este veículo? Os boletos vinculados também serão removidos.")) return;
+    if (!await confirmDialog("Excluir este veículo? Os boletos vinculados também serão removidos.")) return;
     try {
       const { error } = await supabase.from("veiculos").delete().eq("id", id);
       if (error) throw error;
@@ -3756,18 +4303,18 @@ export default function App() {
         boletos: prev.boletos.filter((b) => b.veiculoId !== id),
       }));
     } catch (e) {
-      alert("Não foi possível excluir o veículo: " + e.message);
+      notify("Não foi possível excluir o veículo: " + e.message);
     }
   };
 
   const deleteBoleto = async (id) => {
-    if (!window.confirm("Excluir este boleto?")) return;
+    if (!await confirmDialog("Excluir este boleto?")) return;
     try {
       const { error } = await supabase.from("boletos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.filter((b) => b.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir o boleto: " + e.message);
+      notify("Não foi possível excluir o boleto: " + e.message);
     }
   };
 
@@ -3777,7 +4324,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => (b.id === id ? rowToBoleto(data) : b)) }));
     } catch (e) {
-      alert("Não foi possível atualizar o boleto: " + e.message);
+      notify("Não foi possível atualizar o boleto: " + e.message);
     }
   };
 
@@ -3791,7 +4338,7 @@ export default function App() {
       setDb((prev) => ({ ...prev, seguradoras: [...prev.seguradoras, rowToSeguradora(data)] }));
       return data.id;
     } catch (e) {
-      alert("Não foi possível salvar a seguradora: " + e.message);
+      notify("Não foi possível salvar a seguradora: " + e.message);
       return null;
     }
   };
@@ -3802,12 +4349,12 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, seguradoras: prev.seguradoras.map((s) => (s.id === id ? rowToSeguradora(data) : s)) }));
     } catch (e) {
-      alert("Não foi possível salvar o link do portal: " + e.message);
+      notify("Não foi possível salvar o link do portal: " + e.message);
     }
   };
 
   const deleteSeguradora = async (id) => {
-    if (!window.confirm("Excluir esta seguradora? Os planos vinculados também serão removidos.")) return;
+    if (!await confirmDialog("Excluir esta seguradora? Os planos vinculados também serão removidos.")) return;
     try {
       const { error } = await supabase.from("seguradoras").delete().eq("id", id);
       if (error) throw error;
@@ -3817,7 +4364,7 @@ export default function App() {
         planos: prev.planos.filter((p) => p.seguradoraId !== id),
       }));
     } catch (e) {
-      alert("Não foi possível excluir a seguradora: " + e.message);
+      notify("Não foi possível excluir a seguradora: " + e.message);
     }
   };
 
@@ -3834,18 +4381,18 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar o plano: " + e.message);
+      notify("Não foi possível salvar o plano: " + e.message);
     }
   };
 
   const deletePlano = async (id) => {
-    if (!window.confirm("Excluir este plano?")) return;
+    if (!await confirmDialog("Excluir este plano?")) return;
     try {
       const { error } = await supabase.from("planos").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, planos: prev.planos.filter((p) => p.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir o plano: " + e.message);
+      notify("Não foi possível excluir o plano: " + e.message);
     }
   };
 
@@ -3862,18 +4409,18 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a cotação: " + e.message);
+      notify("Não foi possível salvar a cotação: " + e.message);
     }
   };
 
   const deleteCotacao = async (id) => {
-    if (!window.confirm("Excluir esta cotação?")) return;
+    if (!await confirmDialog("Excluir esta cotação?")) return;
     try {
       const { error } = await supabase.from("cotacoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, cotacoes: prev.cotacoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a cotação: " + e.message);
+      notify("Não foi possível excluir a cotação: " + e.message);
     }
   };
 
@@ -3891,11 +4438,11 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a consultora: " + e.message);
+      notify("Não foi possível salvar a consultora: " + e.message);
     }
   };
   const deleteConsultora = async (id) => {
-    if (!window.confirm("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
+    if (!await confirmDialog("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
     try {
       const { error } = await supabase.from("consultoras").delete().eq("id", id);
       if (error) throw error;
@@ -3906,7 +4453,7 @@ export default function App() {
         comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
       }));
     } catch (e) {
-      alert("Não foi possível excluir a consultora: " + e.message);
+      notify("Não foi possível excluir a consultora: " + e.message);
     }
   };
 
@@ -3924,17 +4471,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a adesão: " + e.message);
+      notify("Não foi possível salvar a adesão: " + e.message);
     }
   };
   const deleteAdesao = async (id) => {
-    if (!window.confirm("Excluir esta adesão?")) return;
+    if (!await confirmDialog("Excluir esta adesão?")) return;
     try {
       const { error } = await supabase.from("adesoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.filter((a) => a.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a adesão: " + e.message);
+      notify("Não foi possível excluir a adesão: " + e.message);
     }
   };
   const marcarRecebidaAdesao = async (id) => {
@@ -3949,7 +4496,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, adesoes: prev.adesoes.map((a) => (a.id === id ? rowToAdesao(data) : a)) }));
     } catch (e) {
-      alert("Não foi possível atualizar a adesão: " + e.message);
+      notify("Não foi possível atualizar a adesão: " + e.message);
     }
   };
 
@@ -3967,17 +4514,17 @@ export default function App() {
       }
       closeModal();
     } catch (e) {
-      alert("Não foi possível salvar a comissão: " + e.message);
+      notify("Não foi possível salvar a comissão: " + e.message);
     }
   };
   const deleteComissao = async (id) => {
-    if (!window.confirm("Excluir esta comissão?")) return;
+    if (!await confirmDialog("Excluir esta comissão?")) return;
     try {
       const { error } = await supabase.from("comissoes").delete().eq("id", id);
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.filter((c) => c.id !== id) }));
     } catch (e) {
-      alert("Não foi possível excluir a comissão: " + e.message);
+      notify("Não foi possível excluir a comissão: " + e.message);
     }
   };
   const marcarPagaComissao = async (id) => {
@@ -3986,7 +4533,7 @@ export default function App() {
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: prev.comissoes.map((c) => (c.id === id ? rowToComissao(data) : c)) }));
     } catch (e) {
-      alert("Não foi possível atualizar a comissão: " + e.message);
+      notify("Não foi possível atualizar a comissão: " + e.message);
     }
   };
 
@@ -4015,9 +4562,9 @@ export default function App() {
         importados = data?.length || 0;
         setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...(data || []).map(rowToCliente)] }));
       }
-      alert(`${importados} cliente(s) importado(s) com sucesso.` + (duplicados > 0 ? `\n${duplicados} ignorado(s) por já existir um cliente com esse CPF/CNPJ.` : ""));
+      notify(`${importados} cliente(s) importado(s) com sucesso.` + (duplicados > 0 ? `\n${duplicados} ignorado(s) por já existir um cliente com esse CPF/CNPJ.` : ""));
     } catch (e) {
-      alert("Não foi possível importar os clientes: " + e.message);
+      notify("Não foi possível importar os clientes: " + e.message);
     }
   };
 
@@ -4176,7 +4723,7 @@ export default function App() {
       }
       valoresVeiculosPreenchidos = await atualizarValoresMensaisVeiculos(valoresVeiculos);
 
-      alert(
+      notify(
         `Importação concluída:\n` +
         `${baixados} boleto(s) existente(s) baixado(s) agora\n` +
         `${veiculosVinculados} boleto(s) vinculado(s) ao veículo (boletos de 1 veículo)\n` +
@@ -4191,7 +4738,7 @@ export default function App() {
         `   • ${semDadosParaCriarBoleto} criado(s) sem o valor real (o relatório não trouxe valor — edite esses boletos depois para corrigir o valor)`
       );
     } catch (e) {
-      alert("Não foi possível importar a baixa de boletos: " + e.message);
+      notify("Não foi possível importar a baixa de boletos: " + e.message);
     }
   };
 
@@ -4296,7 +4843,7 @@ export default function App() {
 
       const valoresAtualizados = await atualizarValoresMensaisVeiculos(valoresAtualizar);
 
-      alert(
+      notify(
         `Importação de veículos concluída:\n` +
         `${cadastrados} veículo(s) cadastrado(s) no proprietário\n` +
         `${valoresAtualizados} veículo(s) já cadastrado(s) com o valor mensal preenchido\n` +
@@ -4306,7 +4853,7 @@ export default function App() {
         `${semPlaca} linha(s) sem placa ignorada(s)`
       );
     } catch (e) {
-      alert("Não foi possível importar os veículos: " + e.message);
+      notify("Não foi possível importar os veículos: " + e.message);
     }
   };
 
@@ -4340,9 +4887,9 @@ export default function App() {
         seguradoras: [...prev.seguradoras, ...seguradorasNovasCriadas.map(rowToSeguradora)],
         planos: [...prev.planos, ...(planosData || []).map(rowToPlano)],
       }));
-      alert(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`);
+      notify(`${planosData?.length || 0} plano(s) importado(s), em ${seguradorasNovasCriadas.length} seguradora(s) nova(s).`);
     } catch (e) {
-      alert("Não foi possível importar a tabela de preços: " + e.message);
+      notify("Não foi possível importar a tabela de preços: " + e.message);
     }
   };
 
@@ -4361,32 +4908,33 @@ export default function App() {
 
   if (sessao === undefined) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme={tema}>
         <style>{STYLE}</style>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13 }}>
-          Verificando acesso…
-        </div>
+        <div className="nexo-loading"><div className="nexo-spinner" />Verificando acesso…</div>
       </div>
     );
   }
 
   if (!sessao) {
     return (
-      <div className="nexo">
+      <div className="nexo" data-theme="dark">
         <style>{STYLE}</style>
         <LoginScreen onEntrar={() => {}} />
+        <MensagensHost />
       </div>
     );
   }
 
+  const iniciaisUsuario = (perfil?.nome || sessao?.user?.email || "?")
+    .split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+
   return (
-    <div className="nexo">
+    <div className="nexo" data-theme={tema}>
       <style>{STYLE}</style>
+      <MensagensHost />
 
       {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13 }}>
-          Carregando dados…
-        </div>
+        <div className="nexo-loading"><div className="nexo-spinner" />Carregando dados…</div>
       ) : loadError ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-dim)", fontSize: 13, padding: 24, textAlign: "center" }}>
           <div style={{ color: "var(--danger)", fontWeight: 600 }}>Não foi possível conectar ao banco de dados</div>
@@ -4395,51 +4943,76 @@ export default function App() {
           <button className="nexo-btn nexo-btn-primary" onClick={carregarTudo}>Tentar novamente</button>
         </div>
       ) : (
-        <div className="nexo-shell">
+        <div className={`nexo-shell ${menuRecolhido ? "collapsed" : ""}`}>
           <div className={`nexo-overlay ${sidebarOpen ? "open" : ""}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`nexo-sidebar ${sidebarOpen ? "open" : ""}`}>
             <div className="nexo-brand">
               <div className="nexo-brand-mark">SS</div>
-              <div>
-                <div className="nexo-brand-name">Seu Seguro Corretora</div>
-                <div className="nexo-brand-tag">Clientes · Veículos · Financeiro</div>
+              <div className="nexo-brand-text">
+                <div className="nexo-brand-name">Seu Seguro</div>
+                <div className="nexo-brand-tag">Corretora · Gestão</div>
               </div>
+              <button className="nexo-collapse-btn" onClick={() => setMenuRecolhido((v) => !v)} title={menuRecolhido ? "Expandir menu" : "Recolher menu"}>
+                {menuRecolhido ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+              </button>
             </div>
             <nav className="nexo-nav">
-              {NAV_ITEMS.filter(({ key }) => podeVer(key)).map(({ key, label, Icon }) => (
-                <div
-                  key={key}
-                  className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
-                  onClick={() => goTo(key)}
-                >
-                  <Icon size={16} /> {label}
-                </div>
-              ))}
+              {NAV_GRUPOS.map((grupo) => {
+                const itens = grupo.chaves.map((k) => NAV_ITEMS.find((n) => n.key === k)).filter((n) => n && podeVer(n.key));
+                if (itens.length === 0) return null;
+                return (
+                  <React.Fragment key={grupo.titulo || "inicio"}>
+                    {grupo.titulo && <div className="nexo-nav-section-title">{grupo.titulo}</div>}
+                    {itens.map(({ key, label, Icon }) => (
+                      <div
+                        key={key}
+                        className={`nexo-nav-item ${view === key || (view === "clienteDetail" && key === "clientes") ? "active" : ""}`}
+                        onClick={() => goTo(key)}
+                        title={menuRecolhido ? label : undefined}
+                      >
+                        <Icon size={17} /> <span className="nexo-nav-label">{label}</span>
+                      </div>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </nav>
-            <div className="nexo-sidebar-foot">
-              <div style={{ marginBottom: 2, wordBreak: "break-all" }}>{sessao?.user?.email}</div>
-              <div style={{ marginBottom: 8, color: "var(--text-faint)" }}>{ehAdmin ? "Administrador" : "Operador"}</div>
-              <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => supabase.auth.signOut()}>
-                Sair
-              </button>
+            <div className="nexo-user">
+              <div className="nexo-user-avatar">{iniciaisUsuario}</div>
+              <div className="nexo-user-meta">
+                <div className="nexo-user-name" title={sessao?.user?.email}>{perfil?.nome || sessao?.user?.email}</div>
+                <div className="nexo-user-role">{ehAdmin ? "Administrador" : "Operador"}</div>
+              </div>
+              <button className="nexo-icon-btn" title="Sair" onClick={() => supabase.auth.signOut()}><LogOut size={15} /></button>
             </div>
           </aside>
 
           <div className="nexo-main">
             <header className="nexo-topbar">
-              <div className="nexo-topbar-title">
+              <div className="nexo-topbar-left">
                 <button className="nexo-hamburger" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
-                {titleMap[view]}
+                <div className="nexo-topbar-title">
+                  {titleMap[view]}
+                  <span className="nexo-topbar-sub">{SUBTITULOS[view]}</span>
+                </div>
               </div>
-              <div className="nexo-topbar-actions hide-mobile">
-                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
-                <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
-                <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
+              <BuscaGlobal db={db} onAbrirCliente={openDetail} />
+              <div className="nexo-topbar-actions">
+                <div className="nexo-novo-wide hide-mobile">
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("cliente")}><Plus size={13} /> Cliente</button>
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => openModal("veiculo")}><Plus size={13} /> Veículo</button>
+                  <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => openModal("boleto")}><Plus size={13} /> Boleto</button>
+                </div>
+                <MenuNovo onNovo={(tipo) => openModal(tipo)} />
+                <SinoAvisos db={db} onIr={goTo} />
+                <button className="nexo-icon-btn" onClick={() => setTema((t) => (t === "dark" ? "light" : "dark"))} title={tema === "dark" ? "Mudar para o modo claro" : "Mudar para o modo escuro"}>
+                  {tema === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
               </div>
             </header>
 
-            <main className="nexo-content">
-              {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} />}
+            <main key={view === "clienteDetail" ? "d" + selectedClienteId : view} className="nexo-content">
+              {view === "dashboard" && <Dashboard db={db} onOpenModal={openModal} tema={tema} />}
               {view === "clientes" && (
                 <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
               )}
