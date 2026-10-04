@@ -1815,8 +1815,8 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
           nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nossonumer"]),
           situacao: valorDaColuna(cabecalhos, linha, ["situacao", "status"]),
           dataPagamento: paraDataISO(valorDaColuna(cabecalhos, linha, ["datadopagamento", "datapagamento", "databaixa"])),
-          valor: valorDaColuna(cabecalhos, linha, ["valor", "valordoboleto"]),
-          dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datadevencimento"])),
+          valor: valorDaColuna(cabecalhos, linha, ["valor", "valordoboleto", "valorboleto", "valorpago", "valorrecebido", "valornominal", "valortitulo", "valordabaixa", "mensalidade"]),
+          dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datadevencimento", "datavencimento", "venc"])),
           placa: valorDaColuna(cabecalhos, linha, ["placa"]),
         }))
         .filter((l) => l.nossoNumero);
@@ -3991,7 +3991,7 @@ export default function App() {
   const importarBaixaBoletosCSV = async (linhas) => {
     if (linhas.length === 0) return;
     try {
-      let baixados = 0, naoEncontrados = 0, jaBaixados = 0, ignoradosAberto = 0;
+      let baixados = 0, naoEncontrados = 0, jaBaixados = 0, ignoradosAberto = 0, valoresCorrigidos = 0;
       let clientesCriados = 0, boletosCriados = 0, semDadosParaCriarBoleto = 0;
       const atualizacoes = [];
       const boletosParaCriar = [];
@@ -4034,12 +4034,21 @@ export default function App() {
         const boleto = db.boletos.find((b) => b.nossoNumero && normalizarTexto(b.nossoNumero) === normalizarTexto(linha.nossoNumero));
 
         if (boleto) {
-          if (situacaoNorm === "aberto") { ignoradosAberto++; continue; } // nunca reverte uma baixa já feita
-          if (situacaoNorm === "baixado" || situacaoNorm === "pago") {
-            if (boleto.dataPagamento) { jaBaixados++; continue; }
-            atualizacoes.push({ id: boleto.id, data_pagamento: linha.dataPagamento || todayISO() });
-            baixados++;
+          const campos = {};
+          // Corrige o valor quando o boleto foi criado sem valor (R$ 0,00) e o relatório traz o valor real.
+          const valorRelatorio = paraNumeroBR(linha.valor);
+          if (valorRelatorio > 0 && !(Number(boleto.valor) > 0)) { campos.valor = valorRelatorio; valoresCorrigidos++; }
+          // Corrige o vencimento quando ele era só um "palpite" (igual à data de pagamento) ou estava vazio.
+          if (linha.dataVencimento && linha.dataVencimento !== boleto.dataVencimento && (!boleto.dataVencimento || boleto.dataVencimento === boleto.dataPagamento)) {
+            campos.data_vencimento = linha.dataVencimento;
           }
+          if (situacaoNorm === "aberto") {
+            ignoradosAberto++; // nunca reverte uma baixa já feita
+          } else if (situacaoNorm === "baixado" || situacaoNorm === "pago") {
+            if (boleto.dataPagamento) jaBaixados++;
+            else { campos.data_pagamento = linha.dataPagamento || todayISO(); baixados++; }
+          }
+          if (Object.keys(campos).length > 0) atualizacoes.push({ id: boleto.id, campos });
           continue;
         }
 
@@ -4086,7 +4095,7 @@ export default function App() {
       }
       if (atualizacoes.length > 0) {
         const resultados = await Promise.all(
-          atualizacoes.map((a) => supabase.from("boletos").update({ data_pagamento: a.data_pagamento }).eq("id", a.id).select().single())
+          atualizacoes.map((a) => supabase.from("boletos").update(a.campos).eq("id", a.id).select().single())
         );
         const erro = resultados.find((r) => r.error);
         if (erro) throw erro.error;
@@ -4100,6 +4109,7 @@ export default function App() {
       alert(
         `Importação concluída:\n` +
         `${baixados} boleto(s) existente(s) baixado(s) agora\n` +
+        `${valoresCorrigidos} boleto(s) existente(s) com o valor corrigido pelo relatório\n` +
         `${jaBaixados} já estavam baixados (sem alteração)\n` +
         `${ignoradosAberto} ainda em aberto no relatório (sem alteração)\n` +
         `${naoEncontrados} não encontrado(s) pelo Nosso Número, sendo:\n` +
