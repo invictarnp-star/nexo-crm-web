@@ -289,6 +289,16 @@ function normalizarCabecalho(s) {
   return normalizarTexto(s).replace(/[^a-z0-9]/g, "");
 }
 
+/** Converte "R$ 1.234,56", "1234,56", "209.00" ou número para number. Se não entender, devolve 0. */
+function paraNumeroBR(v) {
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const s = String(v ?? "").replace(/[^\d,.-]/g, "");
+  if (!s) return 0;
+  const normalizado = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s;
+  const n = Number(normalizado);
+  return Number.isFinite(n) ? n : 0;
+}
+
 /** Converte dd/mm/aaaa (ou aaaa-mm-dd já pronto) para o formato aaaa-mm-dd usado nos inputs de data. */
 function paraDataISO(v) {
   const s = (v || "").toString().trim();
@@ -296,6 +306,8 @@ function paraDataISO(v) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (m2) return `20${m2[3]}-${m2[2].padStart(2, "0")}-${m2[1].padStart(2, "0")}`;
   return "";
 }
 
@@ -386,6 +398,109 @@ function parseRelatorioTexto(texto) {
     return parseTabelaHTML(texto);
   }
   return parseCSVTexto(texto);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Leitor universal de arquivos de importação                          */
+/* (Excel .xlsx/.xls de verdade, PDF, HTML do SGA e CSV)               */
+/* ------------------------------------------------------------------ */
+
+const PALAVRAS_CABECALHO = ["nome", "nossonumero", "cpf", "cpfcnpj", "placa", "seguradora", "plano", "cliente", "valor", "situacao", "datapagamento", "vencimento", "status", "telefone"];
+
+/**
+ * Recebe uma matriz (linhas x colunas de texto) e devolve {cabecalhos, linhas}
+ * no mesmo formato do parser de CSV: acha a linha de cabeçalho de verdade
+ * (ignora títulos no topo), pula linhas vazias, cabeçalhos repetidos (PDF com
+ * várias páginas) e para no resumo/rodapé.
+ */
+function matrizParaTabela(matriz) {
+  const limpa = matriz.map((l) => l.map((c) => String(c ?? "").replace(/\s+/g, " ").trim()));
+  let idx = limpa.findIndex((l) => l.some((c) => PALAVRAS_CABECALHO.includes(normalizarCabecalho(c))) && l.filter(Boolean).length >= 2);
+  if (idx === -1) idx = limpa.findIndex((l) => l.filter(Boolean).length >= 2);
+  if (idx === -1) return { cabecalhos: [], linhas: [] };
+
+  const cabecalhos = limpa[idx].map(normalizarCabecalho);
+  const chaveCab = cabecalhos.join("|");
+  const linhas = [];
+  for (let i = idx + 1; i < limpa.length; i++) {
+    const linha = limpa[i];
+    if (linha.every((c) => !c)) continue;
+    if (linha.map(normalizarCabecalho).join("|") === chaveCab) continue; // cabeçalho repetido em outra página
+    const primeira = normalizarTexto(linha[0] || "");
+    if (primeira.startsWith("resumo") || primeira.startsWith("total de")) break;
+    linhas.push(linha);
+  }
+  return { cabecalhos, linhas };
+}
+
+async function lerExcelBinario(buffer) {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.read(buffer, { type: "array" });
+  // usa a primeira aba que tiver conteúdo
+  for (const nomeAba of wb.SheetNames) {
+    const matriz = XLSX.utils.sheet_to_json(wb.Sheets[nomeAba], { header: 1, raw: false, defval: "", dateNF: "dd/mm/yyyy" });
+    const tabela = matrizParaTabela(matriz);
+    if (tabela.linhas.length > 0) return tabela;
+  }
+  return { cabecalhos: [], linhas: [] };
+}
+
+async function lerPdfComoTabela(file) {
+  const pdfjs = await import("pdfjs-dist");
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.js?url")).default;
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+
+  const matriz = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const pagina = await pdf.getPage(p);
+    const conteudo = await pagina.getTextContent();
+    const itens = conteudo.items
+      .filter((it) => it.str && it.str.trim())
+      .map((it) => ({ texto: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0 }))
+      .sort((a, b) => b.y - a.y || a.x - b.x);
+
+    // agrupa por linha (mesma altura, com tolerância)
+    const linhasPdf = [];
+    for (const it of itens) {
+      const atual = linhasPdf[linhasPdf.length - 1];
+      if (atual && Math.abs(atual.y - it.y) <= 3) atual.itens.push(it);
+      else linhasPdf.push({ y: it.y, itens: [it] });
+    }
+    // dentro de cada linha, separa em colunas pelos "buracos" horizontais
+    for (const l of linhasPdf) {
+      l.itens.sort((a, b) => a.x - b.x);
+      const celulas = [];
+      let celula = "";
+      let fimAnterior = null;
+      for (const it of l.itens) {
+        if (fimAnterior !== null && it.x - fimAnterior > 8) { celulas.push(celula.trim()); celula = ""; }
+        celula += (celula && !celula.endsWith(" ") && !it.texto.startsWith(" ") ? " " : "") + it.texto;
+        fimAnterior = it.x + it.w;
+      }
+      celulas.push(celula.trim());
+      matriz.push(celulas);
+    }
+  }
+  return matrizParaTabela(matriz);
+}
+
+/** Aceita CSV, HTML do SGA (.xls "disfarçado"), Excel de verdade (.xlsx/.xls/.ods) e PDF. */
+async function lerArquivoComoTabela(file) {
+  const nome = (file.name || "").toLowerCase();
+  if (nome.endsWith(".pdf") || file.type === "application/pdf") return lerPdfComoTabela(file);
+
+  if (/\.(xlsx|xlsm|xlsb|xls|ods)$/.test(nome)) {
+    const buffer = await file.arrayBuffer();
+    const b = new Uint8Array(buffer.slice(0, 4));
+    const ehZip = b[0] === 0x50 && b[1] === 0x4b; // .xlsx / .ods
+    const ehOle = b[0] === 0xd0 && b[1] === 0xcf; // .xls binário antigo
+    if (ehZip || ehOle) return lerExcelBinario(buffer);
+    // não é binário: provavelmente HTML/CSV com extensão .xls (caso do SGA)
+  }
+  const texto = await lerArquivoTexto(file);
+  return parseRelatorioTexto(texto);
 }
 
 function valorDaColuna(cabecalhos, linha, candidatos) {
@@ -1367,8 +1482,7 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
     if (!arquivo) return;
     setImportando(true);
     try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
       const clientesNovos = linhas
         .map((linha) => ({
           nome: valorDaColuna(cabecalhos, linha, ["nome", "nomecompleto"]),
@@ -1419,9 +1533,9 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
             Baixar modelo
           </button>
           <button className="nexo-btn" disabled={importando} onClick={() => fileInputRef.current?.click()}>
-            {importando ? "Importando…" : "Importar CSV"}
+            {importando ? "Importando…" : "Importar arquivo"}
           </button>
-          <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+          <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
           <button
             className="nexo-btn"
             onClick={() =>
@@ -1626,8 +1740,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
     if (!arquivo) return;
     setImportandoBaixa(true);
     try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
       const linhasBaixa = linhas
         .map((linha) => ({
           nomeCliente: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
@@ -1691,7 +1804,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
       <div className="nexo-section-head">
         <div className="nexo-section-title">Financeiro<span className="nexo-section-count">{db.boletos.length} boletos</span></div>
         <div className="nexo-topbar-actions">
-          <input ref={fileInputBaixaRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoBaixa} />
+          <input ref={fileInputBaixaRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={handleArquivoBaixa} />
           <button
             className="nexo-btn"
             disabled={importandoBaixa}
@@ -2256,8 +2369,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
     if (!arquivo) return;
     setImportando(true);
     try {
-      const texto = await lerArquivoTexto(arquivo);
-      const { cabecalhos, linhas } = parseRelatorioTexto(texto);
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
       const planosNovos = linhas
         .map((linha) => ({
           seguradoraNome: valorDaColuna(cabecalhos, linha, ["seguradora"]),
@@ -2306,9 +2418,9 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
               Baixar modelo
             </button>
             <button className="nexo-btn nexo-btn-sm" disabled={importando} onClick={() => fileInputRef.current?.click()}>
-              {importando ? "Importando…" : "Importar tabela (CSV)"}
+              {importando ? "Importando…" : "Importar tabela (Excel/PDF/CSV)"}
             </button>
-            <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.html" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+            <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
           </div>
         </div>
 
@@ -3335,7 +3447,7 @@ const rowToBoleto = (r) => ({
 const boletoToRow = (b) => ({
   cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, nosso_numero: b.nossoNumero || null,
   data_emissao: b.dataEmissao || null,
-  data_vencimento: b.dataVencimento || null, valor: Number(b.valor), data_pagamento: b.dataPagamento || null,
+  data_vencimento: b.dataVencimento || null, valor: paraNumeroBR(b.valor), data_pagamento: b.dataPagamento || null,
 });
 
 export default function App() {
