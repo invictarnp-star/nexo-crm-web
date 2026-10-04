@@ -362,6 +362,61 @@ const STYLE = `
 .nexo-tab:hover { color: var(--text-dim); }
 .nexo-tab.active { color: var(--text); border-color: var(--accent); }
 
+/* ---------- Avatares, chips, placa, grupos de veículos ---------- */
+.nexo-av { --av-h: 210; width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; letter-spacing: .2px; background: hsl(var(--av-h) 70% 55% / 0.16); color: hsl(var(--av-h) 85% 70%); border: 1px solid hsl(var(--av-h) 70% 55% / 0.24); }
+.nexo[data-theme="light"] .nexo-av { color: hsl(var(--av-h) 65% 34%); background: hsl(var(--av-h) 70% 50% / 0.12); border-color: hsl(var(--av-h) 70% 50% / 0.26); }
+.nexo-cliente-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nexo-cliente-nome { font-weight: 600; font-size: 13px; line-height: 1.25; }
+.nexo-cliente-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+.nexo-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.nexo-toolbar .nexo-searchbar { margin-bottom: 0 !important; }
+.nexo-chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.nexo-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 8px 7px 13px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--surface); color: var(--text-dim); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s, background .15s; }
+.nexo-chip:hover { border-color: var(--border); color: var(--text); }
+.nexo-chip.on { background: var(--accent-soft); border-color: var(--accent-dim); color: var(--text); }
+.nexo-chip-n { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.nexo-chip.on .nexo-chip-n { background: var(--accent); color: #fff; }
+.nexo-chip-link { background: none; border: none; color: var(--accent); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 6px 4px; font-family: inherit; }
+.nexo-chip-link:hover { text-decoration: underline; }
+.nexo-seg { display: inline-flex; padding: 3px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--border-soft); margin-left: auto; }
+.nexo-seg button { border: none; background: transparent; color: var(--text-dim); font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+.nexo-seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.nexo-placa { display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px; font-weight: 700; letter-spacing: 1.3px; color: #11181F; background: linear-gradient(180deg, #FAFBFC, #E8ECF0); border: 1px solid #B6C0CB; border-top: 5px solid #1F55B8; border-radius: 6px; padding: 1px 9px; line-height: 1.55; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+.nexo-tag-vazio { display: inline-flex; font-size: 11px; font-weight: 600; color: var(--text-faint); border: 1px dashed var(--border); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.nexo-vgroup { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.nexo-vgroup-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background .12s; }
+.nexo-vgroup-head:hover { background: var(--surface-2); }
+.nexo-chev { color: var(--text-faint); transition: transform .2s ease; flex-shrink: 0; }
+.nexo-chev.open { transform: rotate(90deg); }
+.nexo-vgroup-mensal { display: flex; align-items: baseline; gap: 8px; font-size: 13px; white-space: nowrap; }
+.nexo-vgroup-body { border-top: 1px solid var(--border-soft); }
+.nexo-vrow { display: grid; grid-template-columns: 112px minmax(0, 1.6fr) 130px 120px 90px auto; gap: 12px; align-items: center; padding: 10px 16px 10px 60px; border-bottom: 1px solid var(--border-soft); transition: background .12s; }
+.nexo-vrow:last-child { border-bottom: none; }
+.nexo-vrow:hover { background: var(--accent-soft); }
+.nexo-vrow.plano { padding: 10px 4px; }
+.nexo-vrow-nome { font-size: 13px; font-weight: 600; }
+.nexo-btn { text-decoration: none; }
+.nexo-vrow > .nexo-placa { justify-self: start; }
+.nexo-vrow .nexo-icon-btn, .nexo-vgroup-head .nexo-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
+.nexo-tag-vazio { font-family: inherit; }
+.nexo-tab-n { font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); }
+.nexo-tab.active .nexo-tab-n { background: var(--accent); color: #fff; }
+.nexo-tabs { align-items: center; }
+html .nexo-nav { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.nexo .nexo-nav::-webkit-scrollbar { width: 6px; }
+@media (max-width: 768px) {
+  .nexo-vrow { display: flex; flex-wrap: wrap; padding-left: 16px; row-gap: 6px; }
+  .nexo-vrow > .nexo-vrow-main { flex: 1; min-width: 0; }
+  .nexo-vrow > .nexo-actions-cell { order: 3; }
+  .nexo-vrow > .nexo-vrow-val { order: 4; flex-basis: 100%; }
+  .nexo-vrow-fipe, .nexo-vrow-status { display: none; }
+  .nexo-seg { margin-left: 0; }
+  .nexo-vgroup-head { gap: 10px; padding: 12px; }
+  .nexo-vgroup-head .nexo-av { display: none; }
+  .nexo-vgroup-head .nexo-actions-cell .nexo-icon-btn:first-child:not(:last-child) { display: none; }
+  .nexo-vgroup-mensal .nexo-cell-muted { display: none; }
+}
+
 /* ---------- Responsivo ---------- */
 .nexo-novo-wide { display: flex; gap: 8px; }
 .nexo-novo-menu { display: none; position: relative; }
@@ -1684,21 +1739,53 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
   const [importando, setImportando] = useState(false);
   const fileInputRef = useRef(null);
 
+  const [filtro, setFiltro] = useState("todos");
+
+  // Índice por cliente (veículos, boletos, totais e situação) calculado uma vez, não a cada linha.
+  const info = useMemo(() => {
+    const veic = new Map();
+    db.veiculos.forEach((v) => { if (!veic.has(v.clienteId)) veic.set(v.clienteId, []); veic.get(v.clienteId).push(v); });
+    const bol = new Map();
+    db.boletos.forEach((b) => { if (!bol.has(b.clienteId)) bol.set(b.clienteId, []); bol.get(b.clienteId).push({ ...b, status: computeBoletoStatus(b) }); });
+    const mapa = new Map();
+    db.clientes.forEach((c) => {
+      const veiculos = veic.get(c.id) || [];
+      const boletos = bol.get(c.id) || [];
+      mapa.set(c.id, {
+        veiculos, boletos,
+        emAberto: sum(boletos.filter((x) => x.status !== "Pago").map((x) => x.valor)),
+        recebido: sum(boletos.filter((x) => x.status === "Pago").map((x) => x.valor)),
+        mensal: sum(veiculos.filter((v) => v.status === "Ativo").map((v) => v.valorMensal)),
+        sit: situacaoFinanceira(c, boletos),
+      });
+    });
+    return mapa;
+  }, [db.clientes, db.veiculos, db.boletos]);
+
+  const contagens = useMemo(() => {
+    const n = { todos: db.clientes.length, emdia: 0, aberto: 0, inadimplente: 0, semcpf: 0, inativo: 0 };
+    db.clientes.forEach((c) => {
+      const chave = info.get(c.id)?.sit.chave;
+      if (chave && n[chave] !== undefined) n[chave]++;
+      if (!c.cpf) n.semcpf++;
+    });
+    return n;
+  }, [db.clientes, info]);
+
   const filtered = db.clientes.filter((c) => {
+    const s = info.get(c.id);
+    if (filtro === "semcpf") { if (c.cpf) return false; }
+    else if (filtro !== "todos" && s?.sit.chave !== filtro) return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    const nomeMatch = c.nome.toLowerCase().includes(q);
-    const cpfMatch = c.cpf.replace(/\D/g, "").includes(q.replace(/\D/g, ""));
-    const placaMatch = db.veiculos.filter((v) => v.clienteId === c.id).some((v) => v.placa.toLowerCase().includes(q));
-    return nomeMatch || cpfMatch || placaMatch;
+    const digitos = q.replace(/\D/g, "");
+    const placa = normPlaca(query);
+    return (
+      c.nome.toLowerCase().includes(q) ||
+      (digitos.length >= 3 && (c.cpf || "").replace(/\D/g, "").includes(digitos)) ||
+      (placa.length >= 2 && (s?.veiculos || []).some((v) => normPlaca(v.placa).includes(placa)))
+    );
   });
-
-  function totaisBoletosDoCliente(clienteId) {
-    const boletosDoCliente = db.boletos.filter((b) => b.clienteId === clienteId).map((b) => ({ ...b, status: computeBoletoStatus(b) }));
-    const emAberto = sum(boletosDoCliente.filter((b) => b.status !== "Pago").map((b) => b.valor));
-    const recebido = sum(boletosDoCliente.filter((b) => b.status === "Pago").map((b) => b.valor));
-    return { emAberto, recebido, total: boletosDoCliente.length };
-  }
 
   async function handleArquivoSelecionado(e) {
     const arquivo = e.target.files?.[0];
@@ -1786,41 +1873,52 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
         </div>
       </div>
 
-      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
-        <Search size={15} color="var(--text-faint)" />
-        <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="nexo-toolbar">
+        <div className="nexo-searchbar">
+          <Search size={15} />
+          <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
       </div>
-
+      <div className="nexo-chips">
+        {[["todos", "Todos"], ["emdia", "Em dia"], ["aberto", "Em aberto"], ["inadimplente", "Inadimplentes"], ["semcpf", "Sem CPF"], ["inativo", "Inativos"]].map(([k, rotulo]) => (
+          <button key={k} className={`nexo-chip ${filtro === k ? "on" : ""}`} onClick={() => setFiltro(k)}>
+            {rotulo}<span className="nexo-chip-n">{contagens[k]}</span>
+          </button>
+        ))}
+      </div>
       {db.clientes.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum cliente cadastrado" sub="Clique em “Novo cliente” para começar." /></div>
       ) : filtered.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro nome, CPF ou placa." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente outro nome, CPF ou placa, ou troque o filtro acima." /></div>
       ) : (
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Nome</th><th>CPF</th><th>Contato</th><th>Veículos</th><th>Em aberto</th><th>Recebido</th><th>Status</th><th></th>
+                  <th>Cliente</th><th>Contato</th><th>Veículos</th><th>Mensal</th><th>Em aberto</th><th>Recebido</th><th>Situação</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => {
-                  const nVeiculos = db.veiculos.filter((v) => v.clienteId === c.id).length;
-                  const totaisBoletos = totaisBoletosDoCliente(c.id);
+                  const s = info.get(c.id);
                   return (
-                    <tr key={c.id} className="nexo-row-link" onClick={() => onOpenDetail(c.id)}>
-                      <td style={{ fontWeight: 600 }}>{c.nome}</td>
-                      <td className="mono nexo-cell-muted">{c.cpf || "—"}</td>
+                    <tr key={c.id} className="nexo-row-link" style={c.status === "Inativo" ? { opacity: 0.66 } : undefined} onClick={() => onOpenDetail(c.id)}>
+                      <td>
+                        <div className="nexo-cliente-cell">
+                          <AvatarNome nome={c.nome} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className="nexo-cliente-nome">{c.nome}</div>
+                            <div className="nexo-cliente-sub mono">{c.cpf || "CPF não informado"}</div>
+                          </div>
+                        </div>
+                      </td>
                       <td className="nexo-cell-muted">{c.telefone || c.whatsapp || "—"}</td>
-                      <td className="nexo-cell-muted">{nVeiculos}</td>
-                      <td className="mono" style={{ color: totaisBoletos.emAberto > 0 ? "var(--warning)" : "var(--text-faint)" }}>
-                        {totaisBoletos.emAberto > 0 ? formatBRL(totaisBoletos.emAberto) : "—"}
-                      </td>
-                      <td className="mono" style={{ color: totaisBoletos.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>
-                        {totaisBoletos.recebido > 0 ? formatBRL(totaisBoletos.recebido) : "—"}
-                      </td>
-                      <td><AtivoInativoBadge ativo={c.status} /></td>
+                      <td>{s.veiculos.length > 0 ? s.veiculos.length : <span className="nexo-cell-muted">—</span>}</td>
+                      <td className="mono">{s.mensal > 0 ? formatBRL(s.mensal) : <SemValor />}</td>
+                      <td className="mono" style={{ color: s.emAberto > 0 ? "var(--warning)" : "var(--text-faint)" }}>{s.emAberto > 0 ? formatBRL(s.emAberto) : "—"}</td>
+                      <td className="mono" style={{ color: s.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>{s.recebido > 0 ? formatBRL(s.recebido) : "—"}</td>
+                      <td><PillTom tom={s.sit.tom}>{s.sit.rotulo}</PillTom></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
                           <button className="nexo-icon-btn" onClick={() => onOpenModal("cliente", c)}><Pencil size={13} /></button>
@@ -1848,6 +1946,10 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
   const [query, setQuery] = useState("");
   const [importando, setImportando] = useState(false);
   const fileInputRef = useRef(null);
+  const [filtro, setFiltro] = useState("todos");
+  const [modo, setModo] = useState("clientes"); // clientes | lista
+  const [expandir, setExpandir] = useState("auto"); // auto | todos | nenhum
+  const [overrides, setOverrides] = useState({});
   const getCliente = (id) => db.clientes.find((c) => c.id === id);
 
   async function handleArquivoVeiculos(e) {
@@ -1900,7 +2002,18 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
     }
   }
 
+  const contagens = {
+    todos: db.veiculos.length,
+    ativos: db.veiculos.filter((v) => v.status === "Ativo").length,
+    inativos: db.veiculos.filter((v) => v.status !== "Ativo").length,
+    semvalor: db.veiculos.filter((v) => !(Number(v.valorMensal) > 0)).length,
+    semfipe: db.veiculos.filter((v) => !v.codigoFipe).length,
+  };
   const filtered = db.veiculos.filter((v) => {
+    if (filtro === "ativos" && v.status !== "Ativo") return false;
+    if (filtro === "inativos" && v.status === "Ativo") return false;
+    if (filtro === "semvalor" && Number(v.valorMensal) > 0) return false;
+    if (filtro === "semfipe" && v.codigoFipe) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     const cliente = getCliente(v.clienteId);
@@ -1911,7 +2024,23 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
       (cliente && cliente.nome.toLowerCase().includes(q))
     );
   });
-
+  const grupos = (() => {
+    const m = new Map();
+    filtered.forEach((v) => { const k = v.clienteId || "sem"; if (!m.has(k)) m.set(k, []); m.get(k).push(v); });
+    return Array.from(m.entries())
+      .map(([clienteId, veiculos]) => ({
+        clienteId, cliente: getCliente(clienteId), veiculos,
+        mensal: sum(veiculos.filter((v) => v.status === "Ativo").map((v) => v.valorMensal)),
+      }))
+      .sort((x, y) => (x.cliente?.nome || "~").localeCompare(y.cliente?.nome || "~", "pt-BR"));
+  })();
+  const estaAberto = (g) => {
+    if (overrides[g.clienteId] !== undefined) return overrides[g.clienteId];
+    if (query) return true; // ao buscar, os resultados sempre aparecem abertos
+    if (expandir === "todos") return true;
+    if (expandir === "nenhum") return false;
+    return g.veiculos.length <= 3; // frotas grandes começam recolhidas
+  };
   return (
     <div>
       <div className="nexo-section-head">
@@ -1969,15 +2098,68 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
         </div>
       </div>
 
-      <div className="nexo-searchbar" style={{ marginBottom: 16 }}>
-        <Search size={15} color="var(--text-faint)" />
-        <input placeholder="Pesquisar por placa, modelo ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="nexo-toolbar">
+        <div className="nexo-searchbar">
+          <Search size={15} />
+          <input placeholder="Pesquisar por placa, modelo ou cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="nexo-seg">
+          <button className={modo === "clientes" ? "on" : ""} onClick={() => setModo("clientes")}>Por cliente</button>
+          <button className={modo === "lista" ? "on" : ""} onClick={() => setModo("lista")}>Lista</button>
+        </div>
       </div>
-
+      <div className="nexo-chips">
+        {[["todos", "Todos"], ["ativos", "Ativos"], ["inativos", "Inativos"], ["semvalor", "Sem valor mensal"], ["semfipe", "Sem Fipe"]].map(([k, rotulo]) => (
+          <button key={k} className={`nexo-chip ${filtro === k ? "on" : ""}`} onClick={() => setFiltro(k)}>
+            {rotulo}<span className="nexo-chip-n">{contagens[k]}</span>
+          </button>
+        ))}
+        {modo === "clientes" && (
+          <>
+            <button className="nexo-chip-link" onClick={() => { setExpandir("todos"); setOverrides({}); }}>Expandir tudo</button>
+            <button className="nexo-chip-link" onClick={() => { setExpandir("nenhum"); setOverrides({}); }}>Recolher tudo</button>
+          </>
+        )}
+      </div>
       {db.veiculos.length === 0 ? (
         <div className="nexo-table-wrap"><EmptyState icon={Car} title="Nenhum veículo cadastrado" sub="Clique em “Novo veículo” para começar." /></div>
       ) : filtered.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente pesquisar por outro termo." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Search} title="Nenhum resultado" sub="Tente outro termo ou troque o filtro acima." /></div>
+      ) : modo === "clientes" ? (
+        <div>
+          {grupos.map((g) => {
+            const aberto = estaAberto(g);
+            return (
+              <div className="nexo-vgroup" key={g.clienteId}>
+                <div className="nexo-vgroup-head" onClick={() => setOverrides((o) => ({ ...o, [g.clienteId]: !aberto }))}>
+                  <ChevronRight size={16} className={`nexo-chev ${aberto ? "open" : ""}`} />
+                  <AvatarNome nome={g.cliente?.nome || "?"} tamanho={36} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="nexo-cliente-nome">{g.cliente ? g.cliente.nome : "Sem proprietário"}</div>
+                    <div className="nexo-cliente-sub">
+                      {g.veiculos.length} veículo(s)
+                      {!aberto && ` · ${g.veiculos.slice(0, 3).map((v) => v.placa).join(", ")}${g.veiculos.length > 3 ? "…" : ""}`}
+                    </div>
+                  </div>
+                  <div className="nexo-vgroup-mensal">
+                    {g.mensal > 0 ? (<><span className="nexo-cell-muted">mensal</span><strong className="mono">{formatBRL(g.mensal)}</strong></>) : <SemValor />}
+                  </div>
+                  <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
+                    {g.cliente && <button className="nexo-icon-btn" title="Novo veículo para este cliente" onClick={() => onOpenModal("veiculo", null, g.clienteId)}><Plus size={13} /></button>}
+                    {g.cliente && <button className="nexo-icon-btn" title="Abrir cliente" onClick={() => onOpenDetail(g.clienteId)}><Eye size={13} /></button>}
+                  </div>
+                </div>
+                {aberto && (
+                  <div className="nexo-vgroup-body">
+                    {g.veiculos.map((v) => (
+                      <VeiculoLinha key={v.id} v={v} onEditar={() => onOpenModal("veiculo", v)} onExcluir={() => onDeleteVeiculo(v.id)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
@@ -1992,11 +2174,16 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
                   const cliente = getCliente(v.clienteId);
                   return (
                     <tr key={v.id} className="nexo-row-link" onClick={() => cliente && onOpenDetail(cliente.id)}>
-                      <td style={{ fontWeight: 600 }}>{cliente ? cliente.nome : "—"}</td>
+                      <td>
+                        <div className="nexo-cliente-cell">
+                          <AvatarNome nome={cliente ? cliente.nome : "?"} tamanho={30} />
+                          <span className="nexo-cliente-nome">{cliente ? cliente.nome : "—"}</span>
+                        </div>
+                      </td>
                       <td>{v.marca} {v.modelo}</td>
-                      <td className="mono nexo-cell-muted">{v.placa}</td>
+                      <td><PlacaChip placa={v.placa} /></td>
                       <td className="nexo-cell-muted">{v.anoFabricacao || v.ano ? `${v.anoFabricacao || "—"}/${v.ano || "—"}` : "—"}</td>
-                      <td className="mono">{formatBRL(v.valorMensal)}</td>
+                      <td className="mono">{Number(v.valorMensal) > 0 ? formatBRL(v.valorMensal) : <SemValor />}</td>
                       <td className="nexo-cell-muted">{v.codigoFipe ? `${v.codigoFipe} · ${formatBRL(v.valorFipe)}` : "—"}</td>
                       <td><AtivoInativoBadge ativo={v.status} /></td>
                       <td>
@@ -2212,6 +2399,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
 /* ------------------------------------------------------------------ */
 
 function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo, onMarcarPago }) {
+  const [aba, setAba] = useState(null);
   const cliente = db.clientes.find((c) => c.id === clienteId);
   if (!cliente) return <EmptyState icon={Users} title="Cliente não encontrado" sub="Ele pode ter sido removido." />;
 
@@ -2225,7 +2413,10 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
   const totalEmAberto = sum(emAberto.map((b) => b.valor));
   const totalRecebido = sum(pagos.map((b) => b.valor));
 
-  const iniciais = cliente.nome.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
+  const abaAtual = aba || (veiculosDoCliente.length > 0 ? "veiculos" : "boletos");
+  const digitosWhats = (cliente.whatsapp || cliente.telefone || "").replace(/\D/g, "");
+  const linkWhats = digitosWhats.length >= 10 ? `https://wa.me/${digitosWhats.startsWith("55") && digitosWhats.length >= 12 ? digitosWhats : "55" + digitosWhats}` : "";
+  const boletosOrdenados = [...boletosDoCliente].sort((x, y) => (y.dataVencimento || "").localeCompare(x.dataVencimento || ""));
 
   return (
     <div>
@@ -2234,7 +2425,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
       <div className="nexo-detail-grid">
         <div className="nexo-card">
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 14 }}>
-            <div className="nexo-avatar">{iniciais || "?"}</div>
+            <AvatarNome nome={cliente.nome} tamanho={56} />
             <div>
               <div style={{ fontWeight: 700, fontSize: 15.5 }}>{cliente.nome}</div>
               <div style={{ marginTop: 4 }}><AtivoInativoBadge ativo={cliente.status} /></div>
@@ -2258,6 +2449,11 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
           <button className="nexo-btn" style={{ width: "100%", justifyContent: "center", marginTop: 14 }} onClick={() => onOpenModal("cliente", cliente)}>
             <Pencil size={14} /> Editar dados pessoais
           </button>
+          {linkWhats && (
+            <a className="nexo-btn" style={{ width: "100%", marginTop: 8 }} href={linkWhats} target="_blank" rel="noopener noreferrer">
+              <MessageCircle size={14} /> Chamar no WhatsApp
+            </a>
+          )}
         </div>
 
         <div>
@@ -2268,58 +2464,61 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
             <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Total recebido</div><div className="nexo-mini-kpi-value">{formatBRL(totalRecebido)}</div></div>
           </div>
 
-          <div className="nexo-card" style={{ marginBottom: 14 }}>
-            <div className="nexo-section-head" style={{ marginBottom: 12 }}>
-              <div className="nexo-chart-title" style={{ marginBottom: 0 }}>Veículos vinculados</div>
-              <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
-            </div>
-            {veiculosDoCliente.length === 0 ? (
-              <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
-            ) : veiculosDoCliente.map((v) => (
-              <div key={v.id} className="nexo-veiculo-card">
-                <div className="nexo-veiculo-card-head">
-                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.marca} {v.modelo} {v.ano && `· ${v.ano}`}</div>
-                  <AtivoInativoBadge ativo={v.status} />
-                </div>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-dim)" }}>
-                  <span className="mono">{v.placa}</span>
-                  <span>Mensal: <strong className="mono">{formatBRL(v.valorMensal)}</strong></span>
-                  <span>Cadastro: {formatDateBR(v.dataCadastro)}</span>
-                  {v.codigoFipe && <span>Fipe: <strong className="mono">{v.codigoFipe}</strong> ({formatBRL(v.valorFipe)})</span>}
-                </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", v)}><Pencil size={12} /> Editar</button>
-                  <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onDeleteVeiculo(v.id)}><Trash2 size={12} /> Excluir</button>
-                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId, v.id)}><Plus size={12} /> Novo boleto</button>
-                </div>
-              </div>
-            ))}
-          </div>
-
           <div className="nexo-card">
-            <div className="nexo-chart-title">Boletos do cliente</div>
-            <div className="nexo-chart-sub">{boletosDoCliente.length} lançamento(s)</div>
-            {boletosDoCliente.length === 0 ? (
+            <div className="nexo-tabs">
+              <div className={`nexo-tab ${abaAtual === "veiculos" ? "active" : ""}`} onClick={() => setAba("veiculos")}>Veículos<span className="nexo-tab-n">{veiculosDoCliente.length}</span></div>
+              <div className={`nexo-tab ${abaAtual === "boletos" ? "active" : ""}`} onClick={() => setAba("boletos")}>Boletos<span className="nexo-tab-n">{boletosDoCliente.length}</span></div>
+              <div style={{ marginLeft: "auto", paddingBottom: 6 }}>
+                {abaAtual === "veiculos" ? (
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("veiculo", null, clienteId)}><Plus size={13} /> Novo veículo</button>
+                ) : (
+                  <button className="nexo-btn nexo-btn-sm" onClick={() => onOpenModal("boleto", null, clienteId)}><Plus size={13} /> Novo boleto</button>
+                )}
+              </div>
+            </div>
+            {abaAtual === "veiculos" ? (
+              veiculosDoCliente.length === 0 ? (
+                <div className="nexo-empty-sub">Nenhum veículo vinculado a este cliente.</div>
+              ) : (
+                <div>
+                  {veiculosDoCliente.map((v) => (
+                    <VeiculoLinha
+                      key={v.id} v={v} plano
+                      onEditar={() => onOpenModal("veiculo", v)}
+                      onExcluir={() => onDeleteVeiculo(v.id)}
+                      onNovoBoleto={() => onOpenModal("boleto", null, clienteId, v.id)}
+                    />
+                  ))}
+                </div>
+              )
+            ) : boletosDoCliente.length === 0 ? (
               <div className="nexo-empty-sub">Nenhum boleto lançado para este cliente ainda.</div>
             ) : (
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Número</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Número</th><th>Veículo</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
                   <tbody>
-                    {boletosDoCliente.sort((a, b) => (a.dataVencimento || "").localeCompare(b.dataVencimento || "")).map((b) => (
-                      <tr key={b.id}>
-                        <td className="mono">{b.numero}</td>
-                        <td>{formatDateBR(b.dataVencimento)}</td>
-                        <td className="mono">{formatBRL(b.valor)}</td>
-                        <td><StatusBadge status={b.status} /></td>
-                        <td>
-                          <div className="nexo-actions-cell">
-                            {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
-                            <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {boletosOrdenados.map((b) => {
+                      const veic = veiculosDoCliente.find((v) => v.id === b.veiculoId);
+                      return (
+                        <tr key={b.id}>
+                          <td>
+                            <div className="mono">{b.numero}</div>
+                            {b.nossoNumero && <div className="nexo-cliente-sub mono">Nosso nº {b.nossoNumero}</div>}
+                          </td>
+                          <td>{veic ? <PlacaChip placa={veic.placa} /> : <span className="nexo-cell-muted">—</span>}</td>
+                          <td>{formatDateBR(b.dataVencimento)}</td>
+                          <td className="mono">{formatBRL(b.valor)}</td>
+                          <td><StatusBadge status={b.status} /></td>
+                          <td>
+                            <div className="nexo-actions-cell">
+                              {b.status !== "Pago" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarPago(b.id)}>Marcar pago</button>}
+                              <button className="nexo-icon-btn" onClick={() => onOpenModal("boleto", b)}><Pencil size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3947,6 +4146,70 @@ function MenuNovo({ onNovo }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Peças visuais compartilhadas: avatar, placa, selos, linha de veículo */
+/* ------------------------------------------------------------------ */
+
+function AvatarNome({ nome, tamanho = 38 }) {
+  const ini = (nome || "?").split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase() || "?";
+  let h = 0;
+  for (const ch of nome || "") h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return (
+    <div className="nexo-av" style={{ "--av-h": h, width: tamanho, height: tamanho, fontSize: Math.round(tamanho * 0.34), borderRadius: Math.round(tamanho * 0.32) }}>
+      {ini}
+    </div>
+  );
+}
+
+function PlacaChip({ placa }) {
+  return <span className="nexo-placa">{String(placa || "—").toUpperCase()}</span>;
+}
+
+function SemValor() {
+  return <span className="nexo-tag-vazio">sem valor</span>;
+}
+
+function PillTom({ tom, children }) {
+  const cor = { success: "var(--success)", warning: "var(--warning)", danger: "var(--danger)", info: "var(--info)" }[tom] || "var(--info)";
+  const fundo = { success: "var(--success-soft)", warning: "var(--warning-soft)", danger: "var(--danger-soft)", info: "var(--info-soft)" }[tom] || "var(--info-soft)";
+  return (
+    <span className="nexo-badge" style={{ color: cor, background: fundo }}>
+      <span className="nexo-dot" style={{ background: cor }} />{children}
+    </span>
+  );
+}
+
+/** Situação financeira do cliente a partir dos boletos (já com status calculado). */
+function situacaoFinanceira(cliente, boletos) {
+  if (cliente.status === "Inativo") return { chave: "inativo", rotulo: "Inativo", tom: "info" };
+  if (boletos.some((b) => b.status === "Vencido")) return { chave: "inadimplente", rotulo: "Inadimplente", tom: "danger" };
+  if (boletos.some((b) => b.status !== "Pago")) return { chave: "aberto", rotulo: boletos.some((b) => b.status === "A vencer") ? "A vencer" : "Em aberto", tom: "warning" };
+  if (boletos.length > 0) return { chave: "emdia", rotulo: "Em dia", tom: "success" };
+  return { chave: "sem", rotulo: "Sem boletos", tom: "info" };
+}
+
+function VeiculoLinha({ v, onEditar, onExcluir, onNovoBoleto, plano }) {
+  const temMensal = Number(v.valorMensal) > 0;
+  const anos = v.anoFabricacao && v.ano ? `${v.anoFabricacao}/${v.ano}` : (v.ano || v.anoFabricacao || "");
+  return (
+    <div className={`nexo-vrow ${plano ? "plano" : ""}`}>
+      <PlacaChip placa={v.placa} />
+      <div className="nexo-vrow-main">
+        <div className="nexo-vrow-nome">{v.marca} {v.modelo}</div>
+        <div className="nexo-cliente-sub">{[anos, v.cor].filter(Boolean).join(" · ") || "—"}</div>
+      </div>
+      <div className="nexo-vrow-val">{temMensal ? <strong className="mono">{formatBRL(v.valorMensal)}</strong> : <SemValor />}</div>
+      <div className="nexo-vrow-fipe nexo-cell-muted">{v.codigoFipe ? `Fipe ${formatBRL(v.valorFipe)}` : ""}</div>
+      <div className="nexo-vrow-status"><AtivoInativoBadge ativo={v.status} /></div>
+      <div className="nexo-actions-cell">
+        {onNovoBoleto && <button className="nexo-icon-btn" title="Novo boleto deste veículo" onClick={onNovoBoleto}><Receipt size={13} /></button>}
+        <button className="nexo-icon-btn" title="Editar" onClick={onEditar}><Pencil size={13} /></button>
+        <button className="nexo-icon-btn" title="Excluir" onClick={onExcluir}><Trash2 size={13} /></button>
+      </div>
+    </div>
+  );
+}
+
 const NAV_GRUPOS = [
   { titulo: "", chaves: ["dashboard"] },
   { titulo: "Cadastros", chaves: ["clientes", "veiculos"] },
@@ -4102,6 +4365,7 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem("nexo-tema", tema); } catch {}
     document.body.style.background = tema === "light" ? "#EDF1F7" : "#070B11";
+    document.documentElement.style.colorScheme = tema;
   }, [tema]);
   useEffect(() => {
     try { localStorage.setItem("nexo-menu", menuRecolhido ? "1" : "0"); } catch {}
