@@ -365,8 +365,12 @@ function parseCSVTexto(texto) {
  */
 function parseTabelaHTML(texto) {
   const doc = new DOMParser().parseFromString(texto, "text/html");
+  // Células com várias linhas (ex.: várias placas num boleto de frota) usam <br>; viram " | ".
+  doc.querySelectorAll("br").forEach((br) => br.replaceWith(doc.createTextNode(" | ")));
   const todasLinhas = Array.from(doc.querySelectorAll("tr")).map((tr) =>
-    Array.from(tr.querySelectorAll("td,th")).map((cel) => (cel.textContent || "").replace(/\s+/g, " ").trim())
+    Array.from(tr.querySelectorAll("td,th")).map((cel) =>
+      (cel.textContent || "").replace(/\s+/g, " ").replace(/^(\s*\|\s*)+|(\s*\|\s*)+$/g, "").trim()
+    )
   );
   return matrizParaTabela(todasLinhas);
 }
@@ -482,6 +486,26 @@ async function lerArquivoComoTabela(file) {
   }
   const texto = await lerArquivoTexto(file);
   return parseRelatorioTexto(texto);
+}
+
+const normPlaca = (p) => String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+const semSeparador = (s) => String(s || "").replace(/\s*\|\s*/g, " ").replace(/\s+/g, " ").trim();
+const PLACA_REGEX = /^[A-Z]{3}\d[A-Z0-9]\d{2}$/;
+
+/** Extrai uma ou várias placas de uma célula ("ABC1D23 | XYZ9K88", "ABC-1234", placas coladas...). */
+function separarPlacas(texto) {
+  const t = String(texto || "").toUpperCase().replace(/([A-Z]{3})\s*-\s*(\d[A-Z0-9]\d{2})/g, "$1$2");
+  const achadas = [];
+  for (const tok of t.split(/[^A-Z0-9]+/)) {
+    if (PLACA_REGEX.test(tok)) achadas.push(tok);
+    else if (tok.length > 7 && tok.length % 7 === 0) {
+      const partes = tok.match(/.{7}/g);
+      if (partes.every((p) => PLACA_REGEX.test(p))) achadas.push(...partes);
+    }
+  }
+  if (achadas.length > 0) return Array.from(new Set(achadas));
+  const unica = normPlaca(t);
+  return unica.length >= 5 && unica.length <= 8 ? [unica] : [];
 }
 
 function valorDaColuna(cabecalhos, linha, candidatos) {
@@ -1634,32 +1658,41 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
     setImportando(true);
     try {
       const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
-      const todos = linhas.map((linha) => {
+      const ehRelatorioBoletos = cabecalhos.includes("nossonumero");
+      const todos = [];
+      let semPlaca = 0;
+      for (const linha of linhas) {
         const col = (...candidatos) => valorDaColuna(cabecalhos, linha, candidatos);
-        return {
-          placa: col("placa", "placadoveiculo"),
-          marca: col("marca", "montadora", "fabricante"),
-          modelo: col("modelo", "veiculo", "descricao", "descricaodoveiculo"),
-          ano: col("anomodelo", "ano", "anomod"),
-          anoFabricacao: col("anofabricacao", "anofab"),
-          chassi: col("chassi"),
-          renavam: col("renavam"),
-          cor: col("cor"),
-          combustivel: col("combustivel"),
-          codigoFipe: col("codigofipe", "codfipe"),
-          dataContrato: paraDataISO(col("datacontrato", "datacadastro", "dataadesao")),
-          valorMensal: col("valormensal", "mensalidade"),
-          status: col("situacao", "status"),
-          proprietario: col("proprietario", "nomedoproprietario", "nomedocliente", "cliente", "associado", "nome"),
-          cpf: col("cpfcnpj", "cpf", "cnpj", "cpfdoproprietario", "cpfproprietario"),
-          codigoSga: col("codigosga", "codigocliente", "matricula", "codigo"),
-        };
-      });
-      const comPlaca = todos.filter((v) => v.placa);
-      if (comPlaca.length === 0) {
-        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Placa.");
+        const placas = separarPlacas(col("placas", "placa", "placadoveiculo"));
+        if (placas.length === 0) { semPlaca++; continue; }
+        const statusLista = String(col("situacaoveiculo")).split("|").map((s) => s.trim()).filter(Boolean);
+        // Em relatório de boletos, o "Valor" é do boleto: só vale como valor mensal quando o boleto é de 1 veículo.
+        const valorBoleto = ehRelatorioBoletos && placas.length === 1 ? col("valor") : "";
+        placas.forEach((placa, i) => {
+          todos.push({
+            placa,
+            marca: semSeparador(col("marca", "montadora", "fabricante")),
+            modelo: semSeparador(col("modelo", "veiculo", "descricao", "descricaodoveiculo")),
+            ano: col("anomodelo", "ano", "anomod"),
+            anoFabricacao: col("anofabricacao", "anofab"),
+            chassi: col("chassi"),
+            renavam: col("renavam"),
+            cor: semSeparador(col("cor")),
+            combustivel: col("combustivel"),
+            codigoFipe: col("codigofipe", "codfipe"),
+            dataContrato: paraDataISO(col("datacontrato", "datacadastro", "dataadesao")),
+            valorMensal: col("valormensal", "mensalidade") || valorBoleto,
+            status: statusLista.length === placas.length ? statusLista[i] : (col("situacaoveiculo") || (ehRelatorioBoletos ? "" : col("situacao", "status"))),
+            proprietario: semSeparador(col("proprietario", "nomedoproprietario", "nomedocliente", "cliente", "associado", "nome")),
+            cpf: col("cpfcnpj", "cpf", "cnpj", "cpfdoproprietario", "cpfproprietario"),
+            codigoSga: col("codigosga", "codigocliente", "matricula", "codigo"),
+          });
+        });
+      }
+      if (todos.length === 0) {
+        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Placa (ou Placas).");
       } else {
-        await onImportarVeiculos(comPlaca, todos.length - comPlaca.length);
+        await onImportarVeiculos(todos, semPlaca);
       }
     } catch (err) {
       alert("Não foi possível ler o arquivo: " + err.message);
@@ -1809,7 +1842,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
       const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
       const linhasBaixa = linhas
         .map((linha) => ({
-          nomeCliente: valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"]),
+          nomeCliente: semSeparador(valorDaColuna(cabecalhos, linha, ["nomedocliente", "nome", "cliente"])),
           cpf: valorDaColuna(cabecalhos, linha, ["cpfcnpj", "cpf", "cnpj"]),
           codigoSga: valorDaColuna(cabecalhos, linha, ["codigosga", "codigocliente", "codigo"]),
           nossoNumero: valorDaColuna(cabecalhos, linha, ["nossonumero", "nossonumer"]),
@@ -1817,7 +1850,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
           dataPagamento: paraDataISO(valorDaColuna(cabecalhos, linha, ["datadopagamento", "datapagamento", "databaixa"])),
           valor: valorDaColuna(cabecalhos, linha, ["valor", "valordoboleto", "valorboleto", "valorpago", "valorrecebido", "valornominal", "valortitulo", "valordabaixa", "mensalidade"]),
           dataVencimento: paraDataISO(valorDaColuna(cabecalhos, linha, ["vencimento", "datadevencimento", "datavencimento", "venc"])),
-          placa: valorDaColuna(cabecalhos, linha, ["placa"]),
+          placa: valorDaColuna(cabecalhos, linha, ["placas", "placa"]),
         }))
         .filter((l) => l.nossoNumero);
       if (linhasBaixa.length === 0) {
@@ -3993,7 +4026,26 @@ export default function App() {
     try {
       let baixados = 0, naoEncontrados = 0, jaBaixados = 0, ignoradosAberto = 0, valoresCorrigidos = 0;
       let clientesCriados = 0, boletosCriados = 0, semDadosParaCriarBoleto = 0;
+      let cpfsPreenchidos = 0, veiculosVinculados = 0, valoresVeiculosPreenchidos = 0;
       const atualizacoes = [];
+      const cpfsParaPreencher = new Map(); // clienteId -> cpf
+      const valoresVeiculos = new Map(); // veiculoId -> valor mensal
+      const cpfsEmUso = new Set(db.clientes.map((c) => (c.cpf || "").replace(/\D/g, "")).filter(Boolean));
+
+      function registrarCpf(clienteObj, linha) {
+        if (!clienteObj || clienteObj.cpf || !linha.cpf) return;
+        const limpo = linha.cpf.replace(/\D/g, "");
+        if (limpo.length < 11 || cpfsEmUso.has(limpo) || cpfsParaPreencher.has(clienteObj.id)) return;
+        cpfsEmUso.add(limpo);
+        cpfsParaPreencher.set(clienteObj.id, maskCpfCnpj(linha.cpf));
+      }
+      function veiculoUnicoDaLinha(linha) {
+        const placas = separarPlacas(linha.placa);
+        return placas.length === 1 ? db.veiculos.find((v) => normPlaca(v.placa) === placas[0]) || null : null;
+      }
+      function registrarValorMensal(veiculo, valor) {
+        if (veiculo && valor > 0 && !(Number(veiculo.valorMensal) > 0)) valoresVeiculos.set(veiculo.id, valor);
+      }
       const boletosParaCriar = [];
 
       // Cache local (nesta importação) de clientes já encontrados/criados, pra não duplicar
@@ -4048,6 +4100,13 @@ export default function App() {
             if (boleto.dataPagamento) jaBaixados++;
             else { campos.data_pagamento = linha.dataPagamento || todayISO(); baixados++; }
           }
+          // Boleto de 1 veículo só: vincula ao veículo e preenche o "valor mensal" dele.
+          const veiculoUnico = veiculoUnicoDaLinha(linha);
+          if (veiculoUnico) {
+            registrarValorMensal(veiculoUnico, valorRelatorio);
+            if (!boleto.veiculoId && veiculoUnico.clienteId === boleto.clienteId) { campos.veiculo_id = veiculoUnico.id; veiculosVinculados++; }
+          }
+          registrarCpf(db.clientes.find((cl) => cl.id === boleto.clienteId), linha);
           if (Object.keys(campos).length > 0) atualizacoes.push({ id: boleto.id, campos });
           continue;
         }
@@ -4058,15 +4117,16 @@ export default function App() {
         if (!cliente) continue; // sem nome do cliente na linha, não dá pra criar nada
 
         const estaPago = situacaoNorm === "baixado" || situacaoNorm === "pago";
+        registrarCpf(cliente, linha);
 
         // Sempre que a linha já vier paga, criamos o boleto também — mesmo que o
         // relatório não traga valor/vencimento (relatórios de baixa do SGA
         // normalmente só confirmam o pagamento, sem repetir esses dados).
         // Nesse caso o valor fica 0,00 até você editar manualmente com o valor real.
         if (estaPago || (linha.valor && linha.dataVencimento)) {
-          const veiculo = linha.placa
-            ? db.veiculos.find((v) => v.clienteId === cliente.id && v.placa.toUpperCase() === linha.placa.toUpperCase())
-            : null;
+          const veiculoUnico = veiculoUnicoDaLinha(linha);
+          const veiculo = veiculoUnico && veiculoUnico.clienteId === cliente.id ? veiculoUnico : null;
+          registrarValorMensal(veiculoUnico, paraNumeroBR(linha.valor));
           boletosParaCriar.push(
             boletoToRow({
               clienteId: cliente.id,
@@ -4106,9 +4166,22 @@ export default function App() {
         }));
       }
 
+      if (cpfsParaPreencher.size > 0) {
+        const lista = Array.from(cpfsParaPreencher.entries());
+        const res = await Promise.all(lista.map(([id, cpf]) => supabase.from("clientes").update({ cpf }).eq("id", id)));
+        const erro = res.find((r) => r.error);
+        if (erro) throw erro.error;
+        cpfsPreenchidos = lista.length;
+        setDb((prev) => ({ ...prev, clientes: prev.clientes.map((cl) => (cpfsParaPreencher.has(cl.id) ? { ...cl, cpf: cpfsParaPreencher.get(cl.id) } : cl)) }));
+      }
+      valoresVeiculosPreenchidos = await atualizarValoresMensaisVeiculos(valoresVeiculos);
+
       alert(
         `Importação concluída:\n` +
         `${baixados} boleto(s) existente(s) baixado(s) agora\n` +
+        `${veiculosVinculados} boleto(s) vinculado(s) ao veículo (boletos de 1 veículo)\n` +
+        `${valoresVeiculosPreenchidos} veículo(s) com o valor mensal preenchido\n` +
+        `${cpfsPreenchidos} cliente(s) com CPF/CNPJ completado\n` +
         `${valoresCorrigidos} boleto(s) existente(s) com o valor corrigido pelo relatório\n` +
         `${jaBaixados} já estavam baixados (sem alteração)\n` +
         `${ignoradosAberto} ainda em aberto no relatório (sem alteração)\n` +
@@ -4120,6 +4193,16 @@ export default function App() {
     } catch (e) {
       alert("Não foi possível importar a baixa de boletos: " + e.message);
     }
+  };
+
+  const atualizarValoresMensaisVeiculos = async (mapa) => {
+    if (!mapa || mapa.size === 0) return 0;
+    const lista = Array.from(mapa.entries());
+    const resultados = await Promise.all(lista.map(([id, valor]) => supabase.from("veiculos").update({ valor_mensal: valor }).eq("id", id)));
+    const erro = resultados.find((r) => r.error);
+    if (erro) throw erro.error;
+    setDb((prev) => ({ ...prev, veiculos: prev.veiculos.map((v) => (mapa.has(v.id) ? { ...v, valorMensal: mapa.get(v.id) } : v)) }));
+    return lista.length;
   };
 
   const importarVeiculosCSV = async (linhas, semPlaca = 0) => {
@@ -4172,11 +4255,19 @@ export default function App() {
       // 2) Veículos: pula placa repetida e linha sem proprietário
       const placasNoArquivo = new Set();
       let jaExistiam = 0, semProprietario = 0;
+      const valoresAtualizar = new Map();
       const payload = [];
       for (const l of linhas) {
         const placa = normPlaca(l.placa);
         if (!placa) continue;
-        if (placasExistentes.has(placa) || placasNoArquivo.has(placa)) { jaExistiam++; continue; }
+        if (placasExistentes.has(placa)) {
+          jaExistiam++;
+          const existente = db.veiculos.find((x) => normPlaca(x.placa) === placa);
+          const valor = l.valorMensal ? paraNumeroBR(l.valorMensal) : 0;
+          if (existente && valor > 0 && !(Number(existente.valorMensal) > 0)) valoresAtualizar.set(existente.id, valor);
+          continue;
+        }
+        if (placasNoArquivo.has(placa)) { jaExistiam++; continue; }
         const dono = acharDono(l);
         if (!dono) { semProprietario++; continue; }
         placasNoArquivo.add(placa);
@@ -4190,7 +4281,7 @@ export default function App() {
             quilometragem: "", valorVeiculo: "", valorCoberto: "", valorFipe: "", diaVencimento: "",
             valorMensal: l.valorMensal ? paraNumeroBR(l.valorMensal) : "",
             dataCadastro: l.dataContrato || todayISO(),
-            status: st.includes("inativ") || st.includes("cancel") ? "Inativo" : "Ativo",
+            status: st.includes("inativ") || st.includes("cancel") || st.includes("perda") || st.includes("titularidade") ? "Inativo" : "Ativo",
           })
         );
       }
@@ -4203,9 +4294,12 @@ export default function App() {
         setDb((prev) => ({ ...prev, veiculos: [...prev.veiculos, ...(data || []).map(rowToVeiculo)] }));
       }
 
+      const valoresAtualizados = await atualizarValoresMensaisVeiculos(valoresAtualizar);
+
       alert(
         `Importação de veículos concluída:\n` +
         `${cadastrados} veículo(s) cadastrado(s) no proprietário\n` +
+        `${valoresAtualizados} veículo(s) já cadastrado(s) com o valor mensal preenchido\n` +
         `${clientesCriados} proprietário(s) novo(s) cadastrado(s) como cliente\n` +
         `${jaExistiam} ignorado(s) por já existir veículo com a mesma placa\n` +
         `${semProprietario} ignorado(s) sem proprietário identificado (falta nome, CPF/CNPJ ou código SGA)\n` +
