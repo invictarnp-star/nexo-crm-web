@@ -1620,9 +1620,50 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
 /* Veículos                                                             */
 /* ------------------------------------------------------------------ */
 
-function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
+function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImportarVeiculos }) {
   const [query, setQuery] = useState("");
+  const [importando, setImportando] = useState(false);
+  const fileInputRef = useRef(null);
   const getCliente = (id) => db.clientes.find((c) => c.id === id);
+
+  async function handleArquivoVeiculos(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    setImportando(true);
+    try {
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
+      const todos = linhas.map((linha) => {
+        const col = (...candidatos) => valorDaColuna(cabecalhos, linha, candidatos);
+        return {
+          placa: col("placa", "placadoveiculo"),
+          marca: col("marca", "fabricante"),
+          modelo: col("modelo", "veiculo", "descricao", "descricaodoveiculo"),
+          ano: col("anomodelo", "ano", "anomod"),
+          anoFabricacao: col("anofabricacao", "anofab"),
+          chassi: col("chassi"),
+          renavam: col("renavam"),
+          cor: col("cor"),
+          combustivel: col("combustivel"),
+          valorMensal: col("valormensal", "mensalidade"),
+          status: col("situacao", "status"),
+          proprietario: col("proprietario", "nomedoproprietario", "nomedocliente", "cliente", "associado", "nome"),
+          cpf: col("cpfcnpj", "cpf", "cnpj", "cpfdoproprietario", "cpfproprietario"),
+          codigoSga: col("codigosga", "codigocliente", "matricula", "codigo"),
+        };
+      });
+      const comPlaca = todos.filter((v) => v.placa);
+      if (comPlaca.length === 0) {
+        alert("Nenhuma linha válida encontrada. Confira se o arquivo tem a coluna Placa.");
+      } else {
+        await onImportarVeiculos(comPlaca, todos.length - comPlaca.length);
+      }
+    } catch (err) {
+      alert("Não foi possível ler o arquivo: " + err.message);
+    } finally {
+      setImportando(false);
+    }
+  }
 
   const filtered = db.veiculos.filter((v) => {
     if (!query) return true;
@@ -1641,6 +1682,28 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail }) {
       <div className="nexo-section-head">
         <div className="nexo-section-title">Veículos<span className="nexo-section-count">{db.veiculos.length} cadastrados</span></div>
         <div className="nexo-topbar-actions">
+          <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={handleArquivoVeiculos} />
+          <button
+            className="nexo-btn nexo-btn-ghost"
+            title="Baixa uma planilha de exemplo com as colunas que o sistema entende"
+            onClick={() =>
+              exportarCSV(
+                "modelo-importacao-veiculos.csv",
+                ["Placa", "Marca", "Modelo", "Ano modelo", "Ano fabricação", "Chassi", "Renavam", "Cor", "Proprietário", "CPF/CNPJ", "Código SGA"].map((t) => ({ titulo: t, valor: () => "" })),
+                []
+              )
+            }
+          >
+            Baixar modelo
+          </button>
+          <button
+            className="nexo-btn"
+            disabled={importando}
+            title="Importa uma lista de veículos (Excel, PDF, CSV) e cadastra cada um direto no proprietário"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={14} /> {importando ? "Importando…" : "Importar veículos"}
+          </button>
           <button
             className="nexo-btn"
             onClick={() =>
@@ -4046,6 +4109,99 @@ export default function App() {
     }
   };
 
+  const importarVeiculosCSV = async (linhas, semPlaca = 0) => {
+    if (linhas.length === 0) return;
+    try {
+      const normPlaca = (p) => String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const placasExistentes = new Set(db.veiculos.map((v) => normPlaca(v.placa)));
+
+      const porCpf = new Map(db.clientes.filter((c) => c.cpf).map((c) => [c.cpf.replace(/\D/g, ""), c]));
+      const porCodigo = new Map(db.clientes.filter((c) => c.codigoSga).map((c) => [normalizarTexto(c.codigoSga), c]));
+      const porNome = new Map(db.clientes.map((c) => [normalizarTexto(c.nome), c]));
+
+      const chaves = (l) => ({
+        cpf: (l.cpf || "").replace(/\D/g, ""),
+        codigo: normalizarTexto(l.codigoSga),
+        nome: normalizarTexto(l.proprietario),
+      });
+      const acharDono = (l) => {
+        const k = chaves(l);
+        return (k.cpf && porCpf.get(k.cpf)) || (k.codigo && porCodigo.get(k.codigo)) || (k.nome && porNome.get(k.nome)) || null;
+      };
+
+      // 1) Proprietários que ainda não existem: cria todos de uma vez (sem duplicar)
+      const novosDonos = new Map();
+      for (const l of linhas) {
+        if (acharDono(l) || !l.proprietario) continue;
+        const k = chaves(l);
+        const chave = k.cpf || (k.codigo ? "sga:" + k.codigo : "nome:" + k.nome);
+        if (!novosDonos.has(chave)) novosDonos.set(chave, l);
+      }
+      let clientesCriados = 0;
+      if (novosDonos.size > 0) {
+        const payloadClientes = Array.from(novosDonos.values()).map((l) =>
+          clienteToRow({ nome: l.proprietario, cpf: l.cpf ? maskCpfCnpj(l.cpf) : "", codigoSga: l.codigoSga, status: "Ativo" })
+        );
+        const { data, error } = await supabase.from("clientes").insert(payloadClientes).select();
+        if (error) throw error;
+        const criados = (data || []).map(rowToCliente);
+        for (const novo of criados) {
+          const cpfLimpo = (novo.cpf || "").replace(/\D/g, "");
+          if (cpfLimpo) porCpf.set(cpfLimpo, novo);
+          if (novo.codigoSga) porCodigo.set(normalizarTexto(novo.codigoSga), novo);
+          porNome.set(normalizarTexto(novo.nome), novo);
+        }
+        clientesCriados = criados.length;
+        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...criados] }));
+      }
+
+      // 2) Veículos: pula placa repetida e linha sem proprietário
+      const placasNoArquivo = new Set();
+      let jaExistiam = 0, semProprietario = 0;
+      const payload = [];
+      for (const l of linhas) {
+        const placa = normPlaca(l.placa);
+        if (!placa) continue;
+        if (placasExistentes.has(placa) || placasNoArquivo.has(placa)) { jaExistiam++; continue; }
+        const dono = acharDono(l);
+        if (!dono) { semProprietario++; continue; }
+        placasNoArquivo.add(placa);
+        const st = normalizarTexto(l.status);
+        payload.push(
+          veiculoToRow({
+            clienteId: dono.id, tipoVeiculo: "Carro ou utilitário",
+            marca: l.marca || "Não informada", modelo: l.modelo || "Não informado",
+            ano: String(l.ano || "").slice(0, 4), anoFabricacao: String(l.anoFabricacao || "").slice(0, 4),
+            placa, renavam: l.renavam, chassi: l.chassi, cor: l.cor, combustivel: l.combustivel,
+            quilometragem: "", valorVeiculo: "", valorCoberto: "", valorFipe: "", diaVencimento: "",
+            valorMensal: l.valorMensal ? paraNumeroBR(l.valorMensal) : "",
+            dataCadastro: todayISO(),
+            status: st.includes("inativ") || st.includes("cancel") ? "Inativo" : "Ativo",
+          })
+        );
+      }
+
+      let cadastrados = 0;
+      for (let i = 0; i < payload.length; i += 500) {
+        const { data, error } = await supabase.from("veiculos").insert(payload.slice(i, i + 500)).select();
+        if (error) throw error;
+        cadastrados += data?.length || 0;
+        setDb((prev) => ({ ...prev, veiculos: [...prev.veiculos, ...(data || []).map(rowToVeiculo)] }));
+      }
+
+      alert(
+        `Importação de veículos concluída:\n` +
+        `${cadastrados} veículo(s) cadastrado(s) no proprietário\n` +
+        `${clientesCriados} proprietário(s) novo(s) cadastrado(s) como cliente\n` +
+        `${jaExistiam} ignorado(s) por já existir veículo com a mesma placa\n` +
+        `${semProprietario} ignorado(s) sem proprietário identificado (falta nome, CPF/CNPJ ou código SGA)\n` +
+        `${semPlaca} linha(s) sem placa ignorada(s)`
+      );
+    } catch (e) {
+      alert("Não foi possível importar os veículos: " + e.message);
+    }
+  };
+
   const importarPlanosCSV = async (linhas) => {
     if (linhas.length === 0) return;
     try {
@@ -4180,7 +4336,7 @@ export default function App() {
                 <ClientesView db={db} onOpenModal={openModal} onDeleteCliente={deleteCliente} onOpenDetail={openDetail} onImportarClientes={importarClientesCSV} />
               )}
               {view === "veiculos" && (
-                <VeiculosView db={db} onOpenModal={openModal} onDeleteVeiculo={deleteVeiculo} onOpenDetail={openDetail} />
+                <VeiculosView db={db} onOpenModal={openModal} onDeleteVeiculo={deleteVeiculo} onOpenDetail={openDetail} onImportarVeiculos={importarVeiculosCSV} />
               )}
               {view === "financeiro" && (
                 <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} onImportarBaixa={importarBaixaBoletosCSV} />
