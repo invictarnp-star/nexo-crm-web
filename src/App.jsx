@@ -1263,20 +1263,26 @@ function Dashboard({ db, onOpenModal }) {
   const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
   const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
-  // Comissão recorrente da corretora: 10% sobre os boletos que vencem
-  // (serão baixados) NO MÊS ATUAL — não sobre o total acumulado de todos
-  // os boletos já cadastrados, pra não misturar com os totais do Financeiro.
-  const hojeRef = new Date();
-  const chaveMesAtual = `${hojeRef.getFullYear()}-${String(hojeRef.getMonth() + 1).padStart(2, "0")}`;
-  const boletosDoMesAtual = boletosComStatus.filter((b) => (b.dataVencimento || "").slice(0, 7) === chaveMesAtual);
-  const valorBoletosDoMesAtual = sum(boletosDoMesAtual.map((b) => b.valor));
-  const comissaoCorretora = valorBoletosDoMesAtual * (COMISSAO_CORRETORA_PERCENTUAL / 100);
+  // Comissão recorrente da corretora: 10% sobre os boletos BAIXADOS (pagos) no mês escolhido.
+  // Por padrão mostra o mês atual; se ele ainda não tem pagamentos (ex.: você importa o relatório de
+  // setembro só em outubro), mostra automaticamente o último mês que tem boletos pagos.
+  // Dá pra trocar o mês no seletor do topo pra fechar qualquer mês.
+  const chaveMesAtual = mesRefDe(todayISO());
+  const [mesComissao, setMesComissao] = useState("auto");
+  const mesesComPagamento = Array.from(
+    new Set(boletosComStatus.filter((b) => b.status === "Pago" && b.dataPagamento).map((b) => mesRefDe(b.dataPagamento)))
+  ).sort().reverse();
+  const mesPadrao = mesesComPagamento.includes(chaveMesAtual) ? chaveMesAtual : (mesesComPagamento[0] || chaveMesAtual);
+  const mesEfetivo = mesComissao === "auto" ? mesPadrao : mesComissao;
+  const boletosPagosDoMes = boletosComStatus.filter((b) => b.status === "Pago" && mesRefDe(b.dataPagamento) === mesEfetivo);
+  const valorBaseComissao = sum(boletosPagosDoMes.map((b) => b.valor));
+  const comissaoCorretora = valorBaseComissao * (COMISSAO_CORRETORA_PERCENTUAL / 100);
 
   const valoresData = [
     { name: "Recebido", valor: valorRecebido, color: "var(--success)" },
     { name: "Em aberto", valor: valorEmAberto, color: "var(--info)" },
     { name: "A vencer", valor: valorAReceber, color: "var(--warning)" },
-    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`, valor: comissaoCorretora, color: "#B08BF0" },
+    { name: `Comissão (${COMISSAO_CORRETORA_PERCENTUAL}%)`, valor: comissaoCorretora, color: "#B08BF0" },
   ];
 
   const contagem = { Pago: 0, "Em aberto": 0, Vencido: 0, "A vencer": 0 };
@@ -1312,6 +1318,17 @@ function Dashboard({ db, onOpenModal }) {
           <div className="nexo-section-title">Visão geral</div>
         </div>
         <div className="nexo-topbar-actions">
+          <select
+            className="nexo-select"
+            style={{ width: "auto", minWidth: 190 }}
+            title="Mês usado no cálculo da comissão da corretora (boletos pagos nesse mês)"
+            value={mesComissao === "auto" ? mesPadrao : mesComissao}
+            onChange={(e) => setMesComissao(e.target.value)}
+          >
+            {Array.from(new Set([...mesesComPagamento, chaveMesAtual])).sort().reverse().map((m) => (
+              <option key={m} value={m}>Comissão de {rotuloMes(m)}</option>
+            ))}
+          </select>
           <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("cliente")}><Plus size={15} /> Novo cliente</button>
           <button className="nexo-btn" onClick={() => onOpenModal("veiculo")}><Plus size={15} /> Novo veículo</button>
           <button className="nexo-btn" onClick={() => onOpenModal("boleto")}><Plus size={15} /> Novo boleto</button>
@@ -1327,7 +1344,7 @@ function Dashboard({ db, onOpenModal }) {
         <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
         <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
         <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
-        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% do mês)`} value={formatBRL(comissaoCorretora)} tone="accent" />
+        <Kpi icon={CreditCard} label={`Comissão da corretora (${COMISSAO_CORRETORA_PERCENTUAL}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" />
       </div>
 
       <div className="nexo-charts-grid">
@@ -1375,7 +1392,7 @@ function Dashboard({ db, onOpenModal }) {
 
         <div className="nexo-card">
           <div className="nexo-chart-title">Comissão da corretora</div>
-          <div className="nexo-chart-sub">{COMISSAO_CORRETORA_PERCENTUAL}% sobre os boletos que vencem neste mês (não é acumulado)</div>
+          <div className="nexo-chart-sub">{COMISSAO_CORRETORA_PERCENTUAL}% sobre os boletos pagos em {rotuloMes(mesEfetivo)}</div>
           <div style={{ height: 240, position: "relative" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -1412,6 +1429,7 @@ function Dashboard({ db, onOpenModal }) {
             </div>
           </div>
           <div style={{ textAlign: "center", fontSize: 15, fontWeight: 700, marginTop: 4 }}>{formatBRL(comissaoCorretora)}</div>
+          <div className="nexo-cell-muted" style={{ textAlign: "center", marginTop: 2 }}>sobre {formatBRL(valorBaseComissao)} em {boletosPagosDoMes.length} boleto(s) pago(s)</div>
         </div>
       </div>
 
