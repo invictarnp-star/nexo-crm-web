@@ -368,27 +368,7 @@ function parseTabelaHTML(texto) {
   const todasLinhas = Array.from(doc.querySelectorAll("tr")).map((tr) =>
     Array.from(tr.querySelectorAll("td,th")).map((cel) => (cel.textContent || "").replace(/\s+/g, " ").trim())
   );
-
-  let idxCabecalho = -1;
-  for (let i = 0; i < todasLinhas.length; i++) {
-    const norm = todasLinhas[i].map(normalizarCabecalho);
-    if (norm.includes("nome") && (norm.includes("nossonumero") || norm.includes("cpf") || norm.includes("cpfcnpj"))) {
-      idxCabecalho = i;
-      break;
-    }
-  }
-  if (idxCabecalho === -1) return { cabecalhos: [], linhas: [] };
-
-  const cabecalhos = todasLinhas[idxCabecalho].map(normalizarCabecalho);
-  const linhas = [];
-  for (let i = idxCabecalho + 1; i < todasLinhas.length; i++) {
-    const linha = todasLinhas[i];
-    if (linha.every((c) => !c)) continue; // linha em branco entre o cabeçalho e os dados
-    const primeiraCelula = normalizarTexto(linha[0] || "");
-    if (!linha[0] || primeiraCelula.includes("resumo") || primeiraCelula.includes("total de")) break; // chegou no rodapé
-    linhas.push(linha);
-  }
-  return { cabecalhos, linhas };
+  return matrizParaTabela(todasLinhas);
 }
 
 /** Detecta automaticamente se o arquivo é HTML (tipo o relatório do SGA) ou um CSV de verdade. */
@@ -406,7 +386,7 @@ function parseRelatorioTexto(texto) {
 /* (Excel .xlsx/.xls de verdade, PDF, HTML do SGA e CSV)               */
 /* ------------------------------------------------------------------ */
 
-const PALAVRAS_CABECALHO = ["nome", "nossonumero", "cpf", "cpfcnpj", "placa", "seguradora", "plano", "cliente", "valor", "situacao", "datapagamento", "vencimento", "status", "telefone"];
+const PALAVRAS_CABECALHO = ["nome", "nossonumero", "cpf", "cpfcnpj", "placa", "seguradora", "plano", "cliente", "valor", "situacao", "datapagamento", "vencimento", "status", "telefone", "modelo", "renavam", "montadora", "marca"];
 
 /**
  * Recebe uma matriz (linhas x colunas de texto) e devolve {cabecalhos, linhas}
@@ -426,6 +406,7 @@ function matrizParaTabela(matriz) {
   for (let i = idx + 1; i < limpa.length; i++) {
     const linha = limpa[i];
     if (linha.every((c) => !c)) continue;
+    if (linha.length > cabecalhos.length * 2) continue; // linha "gigante" = artefato de HTML mal formado
     if (linha.map(normalizarCabecalho).join("|") === chaveCab) continue; // cabeçalho repetido em outra página
     const primeira = normalizarTexto(linha[0] || "");
     if (primeira.startsWith("resumo") || primeira.startsWith("total de")) break;
@@ -511,13 +492,15 @@ function valorDaColuna(cabecalhos, linha, candidatos) {
   return "";
 }
 
-function lerArquivoTexto(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsText(file, "utf-8");
-  });
+async function lerArquivoTexto(file) {
+  // Muitos sistemas antigos (como o SGA) exportam em latin-1 (ISO-8859). Tenta UTF-8 "estrito";
+  // se o arquivo não for UTF-8 válido, lê como windows-1252 pra não corromper acentos.
+  const buffer = await file.arrayBuffer();
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buffer);
+  }
 }
 
 function exportarCSV(nomeArquivo, colunas, linhas) {
@@ -1637,7 +1620,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
         const col = (...candidatos) => valorDaColuna(cabecalhos, linha, candidatos);
         return {
           placa: col("placa", "placadoveiculo"),
-          marca: col("marca", "fabricante"),
+          marca: col("marca", "montadora", "fabricante"),
           modelo: col("modelo", "veiculo", "descricao", "descricaodoveiculo"),
           ano: col("anomodelo", "ano", "anomod"),
           anoFabricacao: col("anofabricacao", "anofab"),
@@ -1645,6 +1628,8 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
           renavam: col("renavam"),
           cor: col("cor"),
           combustivel: col("combustivel"),
+          codigoFipe: col("codigofipe", "codfipe"),
+          dataContrato: paraDataISO(col("datacontrato", "datacadastro", "dataadesao")),
           valorMensal: col("valormensal", "mensalidade"),
           status: col("situacao", "status"),
           proprietario: col("proprietario", "nomedoproprietario", "nomedocliente", "cliente", "associado", "nome"),
@@ -4117,12 +4102,13 @@ export default function App() {
 
       const porCpf = new Map(db.clientes.filter((c) => c.cpf).map((c) => [c.cpf.replace(/\D/g, ""), c]));
       const porCodigo = new Map(db.clientes.filter((c) => c.codigoSga).map((c) => [normalizarTexto(c.codigoSga), c]));
-      const porNome = new Map(db.clientes.map((c) => [normalizarTexto(c.nome), c]));
+      const normNome = (s) => normalizarTexto(s).replace(/\s+/g, " ");
+      const porNome = new Map(db.clientes.map((c) => [normNome(c.nome), c]));
 
       const chaves = (l) => ({
         cpf: (l.cpf || "").replace(/\D/g, ""),
         codigo: normalizarTexto(l.codigoSga),
-        nome: normalizarTexto(l.proprietario),
+        nome: normNome(l.proprietario),
       });
       const acharDono = (l) => {
         const k = chaves(l);
@@ -4149,7 +4135,7 @@ export default function App() {
           const cpfLimpo = (novo.cpf || "").replace(/\D/g, "");
           if (cpfLimpo) porCpf.set(cpfLimpo, novo);
           if (novo.codigoSga) porCodigo.set(normalizarTexto(novo.codigoSga), novo);
-          porNome.set(normalizarTexto(novo.nome), novo);
+          porNome.set(normNome(novo.nome), novo);
         }
         clientesCriados = criados.length;
         setDb((prev) => ({ ...prev, clientes: [...prev.clientes, ...criados] }));
@@ -4172,10 +4158,10 @@ export default function App() {
             clienteId: dono.id, tipoVeiculo: "Carro ou utilitário",
             marca: l.marca || "Não informada", modelo: l.modelo || "Não informado",
             ano: String(l.ano || "").slice(0, 4), anoFabricacao: String(l.anoFabricacao || "").slice(0, 4),
-            placa, renavam: l.renavam, chassi: l.chassi, cor: l.cor, combustivel: l.combustivel,
+            placa, renavam: l.renavam, chassi: l.chassi, cor: l.cor, combustivel: l.combustivel, codigoFipe: l.codigoFipe,
             quilometragem: "", valorVeiculo: "", valorCoberto: "", valorFipe: "", diaVencimento: "",
             valorMensal: l.valorMensal ? paraNumeroBR(l.valorMensal) : "",
-            dataCadastro: todayISO(),
+            dataCadastro: l.dataContrato || todayISO(),
             status: st.includes("inativ") || st.includes("cancel") ? "Inativo" : "Ativo",
           })
         );
