@@ -616,6 +616,35 @@ const STYLE = `
   .nexo-cob-linha { grid-template-columns: auto 1fr auto; }
   .nexo-cob-linha input:nth-child(3) { grid-column: 2 / 3; }
 }
+.nexo-env-aviso { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; font-size: 12.5px; background: var(--surface-2); color: var(--text-dim); flex-wrap: wrap; }
+.nexo-env-aviso.erro { background: var(--danger-soft); color: var(--danger); }
+.nexo-env-aviso.erro div div { color: var(--text-dim); margin-top: 2px; }
+.nexo-env-aviso.ok { background: var(--success-soft); color: var(--success); font-weight: 600; }
+.nexo-env-aviso.aviso { background: var(--warning-soft); color: var(--warning); }
+.nexo-env-aviso.aviso div div { color: var(--text-dim); margin-top: 2px; }
+.nexo-cfg-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+.nexo-cfg-logo { width: 150px; height: 64px; border: 1px dashed var(--border); border-radius: 10px; object-fit: contain; background: var(--surface-2); padding: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 12px; }
+.nexo-cfg-prev { background: #fff; color: #1b2430; border: 1px solid var(--border); border-radius: 14px; padding: 18px; font-size: 13px; box-shadow: var(--shadow-md); }
+.nexo-cfg-prev .nexo-cliente-sub { color: #6b7686; }
+.nexo-cfg-prev-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.nexo-cfg-prev-faixa { background: var(--cor); color: #fff; font-weight: 700; padding: 7px 10px; margin-top: 10px; border-radius: 4px 4px 0 0; font-size: 12px; }
+.nexo-cfg-prev-linha { display: flex; justify-content: space-between; padding: 7px 10px; border: 1px solid #e1e5ea; border-top: none; font-size: 12px; }
+.nexo-diag-item { display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); }
+.nexo-diag-item:last-child { border-bottom: none; }
+.nexo-diag-ico { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.nexo-diag-ico.ok { background: var(--success-soft); color: var(--success); }
+.nexo-diag-ico.erro { background: var(--danger-soft); color: var(--danger); }
+.nexo-grade { width: 100%; border-collapse: collapse; min-width: 520px; }
+.nexo-grade th { padding: 12px 10px; text-align: left; vertical-align: top; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 12px; min-width: 150px; }
+.nexo-grade th:first-child { min-width: 130px; }
+.nexo-grade td { padding: 6px 8px; border-bottom: 1px solid var(--border-soft); }
+.nexo-grade-plano { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.nexo-grade-extra { margin-bottom: 4px; }
+.nexo-grade-extra label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 10.5px; color: var(--text-faint); font-weight: 600; }
+.nexo-grade-extra input { width: 78px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 3px 6px; font-size: 12px; font-family: inherit; text-align: right; }
+.nexo-grade-input { width: 100%; border: 1px solid var(--border-soft); background: var(--surface); color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; font-variant-numeric: tabular-nums; outline: none; }
+.nexo-grade-input:focus { border-color: var(--accent); }
+@media (max-width: 1000px) { .nexo-cfg-grid { grid-template-columns: 1fr; } }
 .nexo-tab-n { font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); }
 .nexo-tab.active .nexo-tab-n { background: var(--accent); color: #fff; }
 .nexo-tabs { align-items: center; }
@@ -3162,7 +3191,7 @@ function gerarPdfCotacao(cotacao, db) {
   doc.save(`cotacao-${(cliente?.nome || "cliente").replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
 
-function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos, onAtualizarLinkPortal }) {
+function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, onDeletePlano, onDeleteCotacao, onImportarPlanos, onAtualizarLinkPortal, onDuplicarPlano }) {
   const [nomeSeguradora, setNomeSeguradora] = useState("");
   const [linkPortalNovo, setLinkPortalNovo] = useState("");
   const [importando, setImportando] = useState(false);
@@ -3317,12 +3346,13 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{p.nome}</div>
                         <div className="nexo-cell-muted" style={{ fontSize: 12 }}>
-                          Mensal: {formatBRL(p.valorMensal)} · Franquia: {formatBRL(p.valorFranquia)}
+                          {p.tabela ? `${p.tabela} · ` : ""}Mensal: {formatBRL(p.valorMensal)}{p.faixas?.length ? ` (${p.faixas.length} faixas)` : ""} · Franquia: {p.franquiaPercentual !== "" ? `${p.franquiaPercentual}% do Fipe` : formatBRL(p.valorFranquia)} · {p.coberturas?.length || 0} coberturas
                           {p.beneficios ? ` · ${p.beneficios}` : ""}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button className="nexo-icon-btn" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
+                        <button className="nexo-icon-btn" title="Duplicar plano" onClick={() => onDuplicarPlano && onDuplicarPlano(p)}><Copy size={13} /></button>
+                        <button className="nexo-icon-btn" title="Editar plano" onClick={() => onOpenModal("plano", p)}><Pencil size={13} /></button>
                         <button className="nexo-icon-btn" onClick={() => onDeletePlano(p.id)}><Trash2 size={13} /></button>
                       </div>
                     </div>
@@ -3471,7 +3501,7 @@ function StatusPill({ status }) {
 
 function ConsultoraForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState({
-    nome: "", telefone: "", email: "", status: "Ativa", percentualAdesao: "", valorFixoContrato: "", percentualRecorrente: "", metaMensal: "",
+    nome: "", telefone: "", email: "", status: "Ativo", percentualAdesao: "", valorFixoContrato: "", percentualRecorrente: "", metaMensal: "",
     ...(initial || {}),
   });
   const [errors, setErrors] = useState({});
@@ -3484,7 +3514,7 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
   }
   return (
     <>
-      <Field label="Nome da consultora *" error={errors.nome}>
+      <Field label="Nome do consultor *" error={errors.nome}>
         <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Nome completo" />
       </Field>
       <div className="nexo-field-row">
@@ -3495,7 +3525,7 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
           <input type="email" className="nexo-input" value={f.email} onChange={set("email")} placeholder="nome@email.com" />
         </Field>
       </div>
-      <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>Quanto ela ganha</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>Quanto ele ganha</div>
       <div className="nexo-cliente-sub" style={{ marginTop: -8 }}>Preencha o que se aplica. Dá para ajustar o valor em cada adesão.</div>
       <div className="nexo-field-row3">
         <Field label="% da adesão">
@@ -3514,14 +3544,14 @@ function ConsultoraForm({ initial, onSave, onCancel }) {
         </Field>
         <Field label="Status">
           <select className="nexo-select" value={f.status} onChange={set("status")}>
-            <option>Ativa</option>
-            <option>Inativa</option>
+            <option>Ativo</option>
+            <option>Inativo</option>
           </select>
         </Field>
       </div>
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultora</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar consultor</button>
       </div>
     </>
   );
@@ -3546,14 +3576,14 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora, onDeleteComissao
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Consultoras<span className="nexo-section-count">{db.consultoras.length} cadastradas</span></div>
+        <div className="nexo-section-title">Consultores<span className="nexo-section-count">{db.consultoras.length} cadastrados</span></div>
         <div className="nexo-topbar-actions">
           {aba === "desempenho" && (
             <select className="nexo-select" style={{ width: "auto" }} value={mes} onChange={(e) => setMesEscolhido(e.target.value)} title="Mês de referência">
               {mesesOpcoes.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
             </select>
           )}
-          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Nova consultora</button>
+          <button className="nexo-btn nexo-btn-primary" onClick={() => onOpenModal("consultora")}><Plus size={15} /> Novo consultor</button>
         </div>
       </div>
 
@@ -3565,7 +3595,7 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora, onDeleteComissao
       {aba === "pagamentos" ? (
         <PagamentosConsultoresView db={db} onOpenModal={onOpenModal} onDeleteComissao={onDeleteComissao} onMarcarPagaComissao={onMarcarPagaComissao} />
       ) : db.consultoras.length === 0 ? (
-        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhuma consultora cadastrada" sub="Clique em “Nova consultora” para começar." /></div>
+        <div className="nexo-table-wrap"><EmptyState icon={Users} title="Nenhum consultor cadastrado" sub="Clique em “Novo consultor” para começar." /></div>
       ) : (
         <>
           <div className="nexo-kpi-grid">
@@ -3576,7 +3606,7 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora, onDeleteComissao
           </div>
           <div className="nexo-table-wrap">
             {ranking.map(({ c, d }, i) => (
-              <div className="nexo-rank" key={c.id} style={c.status === "Inativa" ? { opacity: 0.6 } : undefined}>
+              <div className="nexo-rank" key={c.id} style={c.status === "Inativo" ? { opacity: 0.6 } : undefined}>
                 <div className={`nexo-rank-pos ${d.qtd > 0 && i < 3 ? "p" + (i + 1) : ""}`}>{i + 1}º</div>
                 <div className="nexo-cliente-cell">
                   <AvatarNome nome={c.nome} tamanho={40} />
@@ -3598,7 +3628,7 @@ function ConsultorasView({ db, onOpenModal, onDeleteConsultora, onDeleteComissao
                   ) : <div className="nexo-cliente-sub">Sem meta definida</div>}
                 </div>
                 <div className="nexo-actions-cell">
-                  <button className="nexo-icon-btn" title="Nova adesão desta consultora" onClick={() => onOpenModal("adesao", { consultoraId: c.id })}><Plus size={13} /></button>
+                  <button className="nexo-icon-btn" title="Nova adesão deste consultor" onClick={() => onOpenModal("adesao", { consultoraId: c.id })}><Plus size={13} /></button>
                   <button className="nexo-icon-btn" title="Editar" onClick={() => onOpenModal("consultora", c)}><Pencil size={13} /></button>
                   <button className="nexo-icon-btn" title="Excluir" onClick={() => onDeleteConsultora(c.id)}><Trash2 size={13} /></button>
                 </div>
@@ -3634,7 +3664,7 @@ function AdesaoForm({ initial, clientes, consultoras, seguradoras, onSave, onCan
   function submit() {
     const errs = {};
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
-    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
     if (!f.valorAdesao || Number(f.valorAdesao) <= 0) errs.valorAdesao = "Informe um valor válido.";
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
@@ -3650,7 +3680,7 @@ function AdesaoForm({ initial, clientes, consultoras, seguradoras, onSave, onCan
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </Field>
-        <Field label="Consultora responsável *" error={errors.consultoraId}>
+        <Field label="Consultor responsável *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={setCalc("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -3672,13 +3702,13 @@ function AdesaoForm({ initial, clientes, consultoras, seguradoras, onSave, onCan
         <Field label="Valor da adesão (R$) *" error={errors.valorAdesao}>
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorAdesao} onChange={setCalc("valorAdesao")} placeholder="0,00" />
         </Field>
-        <Field label="Ganho da consultora (R$)">
+        <Field label="Ganho do consultor (R$)">
           <input type="number" step="0.01" min="0" className="nexo-input" value={f.comissaoConsultora} onChange={(e) => { setComissaoManual(true); setF({ ...f, comissaoConsultora: e.target.value }); }} placeholder="Calculado pelas regras dela" />
         </Field>
       </div>
       {valor > 0 && (
         <div className="nexo-card" style={{ padding: "12px 16px", display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, background: "var(--surface-2)" }}>
-          <span>Consultora fica com <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(ganho)}</strong></span>
+          <span>Consultor fica com <strong className="mono" style={{ color: "var(--warning)" }}>{formatBRL(ganho)}</strong></span>
           <span>Corretora fica com <strong className="mono" style={{ color: "var(--success)" }}>{formatBRL(Math.max(0, valor - ganho))}</strong></span>
           {consultora && !comissaoManual && <span className="nexo-cliente-sub">calculado pelas regras de {consultora.nome.split(" ")[0]}</span>}
         </div>
@@ -3750,11 +3780,11 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida, onGera
 
   const colunasExportacao = [
     { titulo: "Cliente", valor: (a) => nomeCliente(a.clienteId) },
-    { titulo: "Consultora", valor: (a) => nomeConsultora(a.consultoraId) },
+    { titulo: "Consultor", valor: (a) => nomeConsultora(a.consultoraId) },
     { titulo: "Seguradora/associação", valor: (a) => nomeFonte(a.seguradoraId) },
     { titulo: "Data da venda", valor: (a) => formatDateBR(a.dataVenda) },
     { titulo: "Valor da adesão", valor: (a) => a.valorAdesao },
-    { titulo: "Ganho da consultora", valor: (a) => ganhoDe(a) },
+    { titulo: "Ganho do consultor", valor: (a) => ganhoDe(a) },
     { titulo: "Fica com a corretora", valor: (a) => round2((Number(a.valorAdesao) || 0) - ganhoDe(a)) },
     { titulo: "Valor recebido", valor: (a) => a.valorRecebido },
     { titulo: "Status", valor: (a) => a.status },
@@ -3837,7 +3867,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida, onGera
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Cliente</th><th>Consultora</th><th>Data</th><th>Valor</th><th>Divisão</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Cliente</th><th>Consultor</th><th>Data</th><th>Valor</th><th>Divisão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {filtradas.map((a) => {
                       const ganho = ganhoDe(a);
@@ -3856,7 +3886,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida, onGera
                           <td>{formatDateBR(a.dataVenda)}</td>
                           <td className="mono">{formatBRL(a.valorAdesao)}</td>
                           <td className="mono">
-                            <div style={{ color: ganho > 0 ? "var(--warning)" : "var(--text-faint)" }}>{ganho > 0 ? formatBRL(ganho) : "—"} <span className="nexo-cliente-sub">consultora</span></div>
+                            <div style={{ color: ganho > 0 ? "var(--warning)" : "var(--text-faint)" }}>{ganho > 0 ? formatBRL(ganho) : "—"} <span className="nexo-cliente-sub">consultor</span></div>
                             <div style={{ color: "var(--success)" }}>{formatBRL(round2((Number(a.valorAdesao) || 0) - ganho))} <span className="nexo-cliente-sub">corretora</span></div>
                           </td>
                           <td><StatusPill status={a.status} /></td>
@@ -3865,7 +3895,7 @@ function AdesoesView({ db, onOpenModal, onDeleteAdesao, onMarcarRecebida, onGera
                               {a.status === "Pendente" && <button className="nexo-btn nexo-btn-sm" onClick={() => onMarcarRecebida(a.id)}>Marcar recebida</button>}
                               {a.status === "Recebida" && ganho > 0 && (
                                 pagamentoGerado(a)
-                                  ? <span className="nexo-tag-frota" title="O pagamento desta adesão já está na aba Pagamentos das consultoras">pagamento gerado</span>
+                                  ? <span className="nexo-tag-frota" title="O pagamento desta adesão já está na aba Pagamentos dos consultores">pagamento gerado</span>
                                   : <button className="nexo-btn nexo-btn-sm" title="Cria o pagamento do consultor na aba Pagamentos" onClick={() => onGerarPagamento(a)}>Gerar pagamento</button>
                               )}
                               <button className="nexo-icon-btn" onClick={() => onOpenModal("adesao", a)}><Pencil size={13} /></button>
@@ -3938,7 +3968,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
 
   function submit() {
     const errs = {};
-    if (!f.consultoraId) errs.consultoraId = "Selecione a consultora.";
+    if (!f.consultoraId) errs.consultoraId = "Selecione o consultor.";
     if (!f.clienteId) errs.clienteId = "Selecione o cliente.";
     if (!f.valorBase || Number(f.valorBase) <= 0) errs.valorBase = "Informe o valor do contrato/adesão.";
     if (!f.percentual || Number(f.percentual) <= 0) errs.percentual = "Informe o percentual.";
@@ -3949,7 +3979,7 @@ function ComissaoForm({ initial, clientes, consultoras, onSave, onCancel }) {
   return (
     <>
       <div className="nexo-field-row">
-        <Field label="Consultora *" error={errors.consultoraId}>
+        <Field label="Consultor *" error={errors.consultoraId}>
           <select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}>
             <option value="">Selecione</option>
             {consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -4045,7 +4075,7 @@ function PagamentosConsultoresView({ db, onOpenModal, onDeleteComissao, onMarcar
 
       <div className="nexo-tabs">
         <div className={`nexo-tab ${aba === "lista" ? "active" : ""}`} onClick={() => setAba("lista")}>Lançamentos</div>
-        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultora</div>
+        <div className={`nexo-tab ${aba === "fechamento" ? "active" : ""}`} onClick={() => setAba("fechamento")}>Fechamento por consultor</div>
       </div>
 
       {aba === "lista" ? (
@@ -4064,7 +4094,7 @@ function PagamentosConsultoresView({ db, onOpenModal, onDeleteComissao, onMarcar
             <div className="nexo-table-wrap">
               <div className="nexo-table-scroll">
                 <table className="nexo-table">
-                  <thead><tr><th>Consultora</th><th>Cliente</th><th>Sobre</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Consultor</th><th>Cliente</th><th>Sobre</th><th>Valor base</th><th>%</th><th>Comissão</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {filtradas.map((c) => (
                       <tr key={c.id}>
@@ -4094,7 +4124,7 @@ function PagamentosConsultoresView({ db, onOpenModal, onDeleteComissao, onMarcar
         <div className="nexo-table-wrap">
           <div className="nexo-table-scroll">
             <table className="nexo-table">
-              <thead><tr><th>Consultora</th><th>Total de contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th></tr></thead>
+              <thead><tr><th>Consultor</th><th>Total de contratos</th><th>Total de comissão</th><th>Pago</th><th>A pagar</th></tr></thead>
               <tbody>
                 {fechamentoPorConsultora.length === 0 ? (
                   <tr><td colSpan={5} className="nexo-cell-muted" style={{ textAlign: "center", padding: 24 }}>Nenhuma comissão lançada ainda.</td></tr>
@@ -5407,97 +5437,6 @@ function matrizComparacao(planos) {
 }
 
 /** PDF da cotação (uma página por plano escolhido), no formato da proposta do Power CRM. */
-function gerarPdfNegociacao(n, plano, consultora, empresa = EMPRESA) {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const W = 210, M = 15;
-  let y = 18;
-  const garantir = (h) => { if (y + h > 280) { doc.addPage(); y = 18; } };
-  const brl = (v) => formatBRL(v).replace(/\u00a0/g, " ");
-
-  // cabeçalho
-  doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(11, 60, 110);
-  doc.text(String(empresa.nome).toUpperCase(), M, y);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 130, 140);
-  doc.text(empresa.detalhe, M, y + 5);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(25, 30, 40);
-  doc.text(`COTAÇÃO: ${n.codigo}`, W - M, y, { align: "right" });
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(110, 118, 128);
-  doc.text(`Data: ${formatDateBR(String(n.createdAt || todayISO()).slice(0, 10))}`, W - M, y + 5.5, { align: "right" });
-  doc.text(`Validade: ${n.validadeDias || 0} dia(s)`, W - M, y + 10, { align: "right" });
-  y += 24;
-
-  // saudação e veículo
-  doc.setFontSize(10.5); doc.setTextColor(30, 35, 45);
-  doc.setFont("helvetica", "normal"); doc.text("Olá ", M, y);
-  doc.setFont("helvetica", "bold"); doc.text(String(n.nomeContato || "").toUpperCase(), M + doc.getTextWidth("Olá "), y);
-  y += 5.5; doc.setFont("helvetica", "normal"); doc.text("Esta é uma cotação para o seu veículo:", M, y);
-  y += 5.5; doc.setFont("helvetica", "bold");
-  doc.text(`${n.placa ? n.placa + " - " : ""}${tituloVeiculo(n)}`, M, y);
-  doc.setFont("helvetica", "normal");
-  if (n.placa) { y += 5; doc.text(`Placa: ${n.placa}`, M, y); }
-  if (n.codigoFipe) { y += 5; doc.text(`Cód. Fipe: ${n.codigoFipe}`, M, y); }
-  if (Number(n.valorFipe) > 0) { y += 8; doc.text("Valor Coberto: ", M, y); doc.setFont("helvetica", "bold"); doc.text(brl(n.valorFipe), M + doc.getTextWidth("Valor Coberto: "), y); }
-  y += 8;
-
-  // plano
-  doc.setFillColor(11, 60, 110); doc.rect(M, y, W - 2 * M, 8, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);
-  doc.text(`PLANO ${String(plano?.nome || "—").toUpperCase()}`, M + 3, y + 5.5);
-  y += 8;
-
-  for (const bloco of coberturasAgrupadas(plano)) {
-    garantir(16);
-    doc.setFillColor(226, 229, 233); doc.rect(M, y, W - 2 * M, 6.5, "F");
-    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(40, 45, 55);
-    doc.text(bloco.grupo, M + 3, y + 4.6);
-    y += 6.5;
-    for (const c of bloco.itens) {
-      const detalhe = c.detalhe ? doc.splitTextToSize(String(c.detalhe), 78) : [];
-      const h = Math.max(6, detalhe.length * 4 + 2);
-      garantir(h);
-      doc.setDrawColor(215, 219, 224); doc.rect(M, y, W - 2 * M, h);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(30, 35, 45);
-      doc.text(String(c.nome), M + 3, y + 4.2);
-      if (detalhe.length) doc.text(detalhe, W - M - 3, y + 4.2, { align: "right" });
-      y += h;
-    }
-  }
-
-  // valores
-  garantir(46);
-  y += 8;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(11, 60, 110);
-  doc.text("COTAÇÃO DO VEÍCULO", M, y);
-  y += 3; doc.setDrawColor(11, 60, 110); doc.line(M, y, W - M, y);
-  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
-  doc.setFont("helvetica", "normal"); doc.text("Mensalidade:", M, y);
-  doc.setFont("helvetica", "bold"); doc.text(brl(n.mensalidade), M + 30, y);
-  y += 6; doc.setFont("helvetica", "normal"); doc.text("Taxa de Ativação:", M, y);
-  const orig = Number(n.taxaAtivacaoOriginal) || 0, atual = Number(n.taxaAtivacao) || 0;
-  let x = M + 38;
-  if (orig > atual && atual > 0) {
-    doc.setTextColor(150, 155, 160); const t = brl(orig); doc.text(t, x, y);
-    doc.setDrawColor(150, 155, 160); doc.line(x, y - 1.2, x + doc.getTextWidth(t), y - 1.2);
-    x += doc.getTextWidth(t) + 4; doc.setTextColor(30, 35, 45);
-  }
-  doc.setFont("helvetica", "bold"); doc.text(brl(atual), x, y);
-  y += 6; doc.setFont("helvetica", "normal"); doc.text("Rastreador:", M, y);
-  doc.setFont("helvetica", "bold"); doc.text(Number(n.rastreador) > 0 ? brl(n.rastreador) : "obrigatório", M + 38, y);
-  if (Number(n.franquia) > 0) { y += 6; doc.setFont("helvetica", "normal"); doc.text("Participação (franquia):", M, y); doc.setFont("helvetica", "bold"); doc.text(brl(n.franquia), M + 50, y); }
-
-  // consultor
-  garantir(30);
-  y += 12;
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(11, 60, 110); doc.text("CONSULTOR", M, y);
-  y += 3; doc.line(M, y, W - M, y);
-  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
-  doc.setFont("helvetica", "normal"); doc.text(`Nome: ${consultora?.nome || "—"}`, M, y);
-  doc.text(`Telefone: ${consultora?.telefone || "—"}`, M + 100, y);
-  if (consultora?.email) { y += 6; doc.text(`Email: ${consultora.email}`, M, y); }
-
-  doc.save(`cotacao-${n.codigo}.pdf`);
-}
-
 function IconeKanban({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -5729,7 +5668,7 @@ function PipelineView({ db, onNova, onAbrir, onMover, onConfigFunis }) {
 function NovaNegociacaoForm({ seguradoras, consultoras, onSave, onCancel }) {
   const ultimaSeg = (() => { try { return localStorage.getItem("nexo-ult-coop") || ""; } catch { return ""; } })();
   const [f, setF] = useState({
-    seguradoraId: seguradoras.find((s) => s.id === ultimaSeg)?.id || seguradoras[0]?.id || "", consultoraId: consultoras.find((c) => c.status !== "Inativa")?.id || "",
+    seguradoraId: seguradoras.find((s) => s.id === ultimaSeg)?.id || seguradoras[0]?.id || "", consultoraId: consultoras.find((c) => c.status !== "Inativo")?.id || "",
     tipoVeiculo: "", placa: "", marca: "", modelo: "", anoModelo: "", codigoFipe: "", valorFipe: "", combustivel: "",
     nomeContato: "", email: "", celular: "", estado: "", cidade: "", origemLead: "", veiculoTrabalho: false, enviarEmail: false,
   });
@@ -5936,7 +5875,7 @@ function LateralNegociacao({ n, db, consultora, onUpdate }) {
       <div className="nexo-neg-lat-card">
         <div className="nexo-neg-lat-titulo">Comissão</div>
         <div className="nexo-cliente-cell"><span className="nexo-neg-cifrao">$</span><strong className="mono" style={{ fontSize: 17, color: "var(--success)" }}>{formatBRL(comissao)}</strong></div>
-        <div className="nexo-cliente-sub">calculada pelas regras da consultora sobre a taxa de ativação</div>
+        <div className="nexo-cliente-sub">calculada pelas regras do consultor sobre a taxa de ativação</div>
       </div>
       <div className="nexo-neg-lat-card">
         <div className="nexo-neg-lat-titulo">Afiliado(a)</div>
@@ -6136,7 +6075,7 @@ function CartaoValor({ rotulo, valor, original, campo, onSalvar }) {
   );
 }
 
-function AbaCotacoes({ n, db, onUpdate, onEnviar, onPdf }) {
+function AbaCotacoes({ n, db, onUpdate, onEnviar, onPdf, onCadastrarPlano, onIrTabelas }) {
   const doSeg = db.planos.filter((p) => p.seguradoraId === n.seguradoraId);
   const tabelas = Array.from(new Set(doSeg.map((p) => p.tabela).filter(Boolean)));
   const planos = doSeg.filter((p) => !n.tabela || !p.tabela || p.tabela === n.tabela);
@@ -6168,7 +6107,12 @@ function AbaCotacoes({ n, db, onUpdate, onEnviar, onPdf }) {
       {!n.seguradoraId ? (
         <div className="nexo-neg-vazio">Selecione a cooperativa/seguradora na lateral para ver os planos.</div>
       ) : planos.length === 0 ? (
-        <div className="nexo-neg-vazio">Nenhum plano cadastrado para essa cooperativa. Cadastre em <strong>Planos e seguradoras</strong>.</div>
+        <div className="nexo-env-aviso aviso">
+          <AlertTriangle size={18} />
+          <div style={{ flex: 1 }}><strong>Nenhum plano cadastrado para essa cooperativa.</strong><div>Cadastre os planos e os valores por faixa do Fipe para poder enviar a cotação.</div></div>
+          <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={onCadastrarPlano}>Cadastrar plano</button>
+          <button className="nexo-btn nexo-btn-sm" onClick={onIrTabelas}>Tabelas de preços</button>
+        </div>
       ) : planos.map((p) => (
         <label key={p.id} className={`nexo-neg-plano ${n.planoId === p.id ? "on" : ""}`}>
           <input type="radio" name={`plano-${n.id}`} checked={n.planoId === p.id} onChange={() => escolher(p)} />
@@ -6288,7 +6232,7 @@ function NegociacaoModal({ n, db, perfilNome, handlers, onClose }) {
             <div className="nexo-tabs" style={{ marginBottom: 14 }}>{abas.map(([k, rot]) => <div key={k} className={`nexo-tab ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>{rot}</div>)}</div>
             {aba === "atividades" && <AbaAtividades n={n} db={db} perfilNome={perfilNome} onAddAtividade={h.addAtividade} onToggleAtividade={h.toggleAtividade} onDelAtividade={h.delAtividade} onAddEvento={h.addEvento} onDelEvento={h.delEvento} />}
             {aba === "contato" && <AbaContato key={n.id + (n.nomeContato || "")} n={n} onUpdate={h.update} />}
-            {aba === "cotacoes" && <AbaCotacoes n={n} db={db} onUpdate={h.update} onEnviar={() => h.enviar(n.id)} onPdf={() => h.pdf(n)} />}
+            {aba === "cotacoes" && <AbaCotacoes n={n} db={db} onUpdate={h.update} onEnviar={() => h.enviar(n.id)} onPdf={() => h.pdf(n)} onCadastrarPlano={() => h.abrirPlano(n.seguradoraId)} onIrTabelas={h.irTabelas} />}
             {aba === "vistoria" && <AbaVistoria n={n} onUpdate={h.update} />}
             {aba === "proposta" && <AbaProposta n={n} onUpdate={h.update} onConverter={() => h.converter(n)} onCopiar={() => h.copiarLink(n)} />}
             <HistoricoNegociacao eventos={eventos} />
@@ -6297,48 +6241,6 @@ function NegociacaoModal({ n, db, perfilNome, handlers, onClose }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function EnviarCotacaoModal({ n, db, onClose, onEvento, onPdf }) {
-  const consultora = db.consultoras.find((c) => c.id === n.consultoraId);
-  const linkPronta = urlPublicaCotacao(n.codigo, "pronta");
-  const linkComparar = urlPublicaCotacao(n.codigo, "comparar");
-  const texto = (url, extra = "") => `Olá ${primeiroNome(n.nomeContato)}! ${extra || `Segue a cotação do seu veículo ${tituloVeiculo(n)}${n.placa ? ` (${n.placa})` : ""}:`} ${url}${consultora ? `\n— ${consultora.nome}` : ""}`;
-  const linhas = [
-    { chave: "pronta", titulo: "Enviar cotação pronta", url: linkPronta, ok: !!n.planoId, dica: "Escolha um plano na aba Cotações para enviar a cotação pronta.", msg: texto(linkPronta), assunto: "Sua cotação" },
-    { chave: "comparar", titulo: "Enviar comparação de planos", url: linkComparar, ok: true, dica: "", msg: texto(linkComparar, "Compare os planos disponíveis para o seu veículo:"), assunto: "Compare os planos" },
-    { chave: "tabelas", titulo: "Enviar comparação de tabelas diferentes", url: "", ok: false, dica: "Em breve.", msg: "", assunto: "" },
-    { chave: "pagamento", titulo: "Enviar link de pagamento", url: n.linkPagamento, ok: !!n.linkPagamento, dica: "Cadastre o link de pagamento na aba Proposta.", msg: texto(n.linkPagamento, "Segue o link para pagamento:"), assunto: "Link de pagamento" },
-    { chave: "boleto", titulo: "Enviar boleto", url: "", ok: false, dica: "Indisponível: o boleto é gerado pelo SGA depois do cadastro.", msg: "", assunto: "" },
-  ];
-  async function agir(linha, canal) {
-    if (!linha.ok) return;
-    if (canal === "abrir") { window.open(linha.url, "_blank", "noopener"); return; }
-    if (canal === "copiar") { await copiarTexto(linha.url); showToast("Link copiado.", "success"); onEvento(n.id, `copiou o link: ${linha.titulo.replace("Enviar ", "").toLowerCase()}`); return; }
-    if (canal === "whatsapp") { window.open(linkWhatsApp(n.celular, linha.msg), "_blank", "noopener"); onEvento(n.id, `enviou ${linha.titulo.replace("Enviar ", "").toLowerCase()} por WhatsApp`); return; }
-    if (canal === "email") { window.open(linkEmail(n.email, linha.assunto, linha.msg), "_blank"); onEvento(n.id, `enviou ${linha.titulo.replace("Enviar ", "").toLowerCase()} por e-mail`); }
-  }
-  return (
-    <>
-      <div className="nexo-cliente-sub" style={{ marginTop: -6 }}>Cotação de <strong>{n.nomeContato}</strong> · {tituloVeiculo(n)}</div>
-      {linhas.map((l) => (
-        <div key={l.chave} className="nexo-env-linha" title={l.ok ? "" : l.dica}>
-          <span>{l.titulo}</span>
-          <div className="nexo-env-acoes">
-            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "abrir")} title="Abrir o link"><Link2 size={15} /></button>
-            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "copiar")} title="Copiar o link"><Copy size={15} /></button>
-            <button className="nexo-env-btn" disabled={!l.ok || !n.celular} onClick={() => agir(l, "whatsapp")} title={n.celular ? "Enviar por WhatsApp" : "Sem celular cadastrado"}><MessageCircle size={15} /></button>
-            <button className="nexo-env-btn" disabled={!l.ok || !n.email} onClick={() => agir(l, "email")} title={n.email ? "Enviar por e-mail" : "Sem e-mail cadastrado"}><Mail size={15} /></button>
-          </div>
-        </div>
-      ))}
-      <div className="nexo-env-linha">
-        <span>Download da cotação em PDF</span>
-        <div className="nexo-env-acoes"><button className="nexo-env-btn" disabled={!n.planoId} onClick={() => onPdf(n)} title={n.planoId ? "Baixar PDF" : "Escolha um plano primeiro"}><Download size={15} /></button></div>
-      </div>
-      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}><button className="nexo-btn" onClick={onClose}>Fechar</button></div>
-    </>
   );
 }
 
@@ -6383,124 +6285,6 @@ function AtividadesView({ db, onAbrir, onToggle, onDelete }) {
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-function CotacaoPublica({ codigo, modo }) {
-  const [estado, setEstado] = useState({ carregando: true, erro: "", dados: null });
-  const [aceitando, setAceitando] = useState("");
-  const [aceitouAgora, setAceitouAgora] = useState("");
-
-  useEffect(() => {
-    document.title = `Cotação ${codigo}`;
-    document.body.style.background = "#EDF1F7";
-    fetch(`/api/cotacao-publica?codigo=${encodeURIComponent(codigo)}`)
-      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => setEstado(ok ? { carregando: false, erro: "", dados: d } : { carregando: false, erro: d.erro || "Cotação não encontrada.", dados: null }))
-      .catch(() => setEstado({ carregando: false, erro: "Não foi possível carregar a cotação agora. Tente novamente em instantes.", dados: null }));
-  }, [codigo]);
-
-  async function aceitar(plano) {
-    setAceitando(plano.id);
-    try {
-      const r = await fetch("/api/cotacao-publica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codigo, planoId: plano.id }) });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.erro || "Não foi possível aceitar a proposta.");
-      setAceitouAgora(plano.id);
-    } catch (e) {
-      showToast(e.message, "error");
-    } finally {
-      setAceitando("");
-    }
-  }
-
-  if (estado.carregando) return <div className="nexo-loading"><div className="nexo-spinner" />Carregando sua cotação…</div>;
-  if (estado.erro) {
-    return (
-      <div className="nexo-pub"><div className="nexo-card" style={{ maxWidth: 520, margin: "60px auto", textAlign: "center" }}>
-        <div className="nexo-dialog-ico" style={{ "--tone": "var(--danger)", margin: "0 auto 14px" }}><AlertTriangle size={22} /></div>
-        <div className="nexo-chart-title" style={{ fontSize: 16 }}>Cotação indisponível</div>
-        <div className="nexo-chart-sub">{estado.erro}</div>
-      </div></div>
-    );
-  }
-
-  const { negociacao: n, planos, consultor } = estado.dados;
-  const aceita = n.propostaAceita || !!aceitouAgora;
-  const planoAceito = aceitouAgora || n.planoId;
-  const mostrar = modo === "pronta" && n.planoId ? planos.filter((p) => p.id === n.planoId) : planos;
-  const matriz = matrizComparacao(mostrar);
-  const expirou = !aceita && n.validadeDias > 0 && Date.now() > new Date(n.createdAt).getTime() + n.validadeDias * 86400000;
-  const orig = Number(n.taxaAtivacaoOriginal) || 0;
-  const atual = Number(n.taxaAtivacao) || 0;
-  const wa = consultor?.telefone ? linkWhatsApp(consultor.telefone, `Olá ${consultor.nome}! Estou vendo a cotação ${n.codigo} do meu veículo.`) : "";
-  const veic = [n.marca, n.modelo, n.anoModelo].filter(Boolean).join(", ");
-
-  return (
-    <div className="nexo-pub">
-      <div className="nexo-pub-topo">
-        <div className="nexo-pub-marca"><span className="nexo-brand-mark">SS</span><div><strong>{EMPRESA.nome}</strong><div className="nexo-cliente-sub">{EMPRESA.detalhe}</div></div></div>
-        {wa && <a className="nexo-btn nexo-btn-primary" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle size={15} /> WhatsApp do consultor<span className="nexo-pub-fone">{consultor.telefone}</span></a>}
-      </div>
-      <div className="nexo-pub-cartao">
-        <div className="nexo-pub-saudacao">
-          <div>
-            <h1>Olá, {n.nomeContato}</h1>
-            <p>Esta é uma cotação para o seu veículo <strong>{n.placa ? `${n.placa} - ` : ""}{veic}</strong>.</p>
-            {Number(n.valorFipe) > 0 && <p className="nexo-cliente-sub">Seu veículo está avaliado em <strong>{formatBRL(n.valorFipe)}</strong> (Tabela Fipe{n.codigoFipe ? `, cód. ${n.codigoFipe}` : ""}).</p>}
-            <p className="nexo-cliente-sub">Cotação {n.codigo} · válida por {n.validadeDias} dia(s) a partir de {formatDateBR(String(n.createdAt).slice(0, 10))}</p>
-          </div>
-          <div className="nexo-pub-boxes">
-            <div className="nexo-pub-box"><small>Taxa de ativação</small><div>{orig > atual && atual > 0 && <s>{formatBRL(orig)}</s>} <strong>{atual > 0 ? formatBRL(atual) : "—"}</strong></div></div>
-            <div className="nexo-pub-box"><small>Rastreador</small><div><strong>{Number(n.rastreador) > 0 ? formatBRL(n.rastreador) : "Obrigatório"}</strong></div></div>
-          </div>
-        </div>
-        {aceita && <div className="nexo-pub-aviso ok"><CheckCircle2 size={18} /> Proposta aceita! Seu consultor entrará em contato para os próximos passos.</div>}
-        {expirou && <div className="nexo-pub-aviso erro"><AlertTriangle size={18} /> Esta cotação expirou. Fale com seu consultor para atualizar os valores.</div>}
-        {mostrar.length === 0 ? (
-          <div className="nexo-neg-vazio">Os planos desta cotação ainda não foram definidos. Fale com seu consultor.</div>
-        ) : (
-          <div className="nexo-table-scroll">
-            <table className="nexo-pub-tabela">
-              <thead>
-                <tr>
-                  <th className="nexo-pub-opcoes">{mostrar.length} opç{mostrar.length > 1 ? "ões" : "ão"} de plano{mostrar.length > 1 ? "s" : ""} disponíve{mostrar.length > 1 ? "is" : "l"}</th>
-                  {mostrar.map((p) => (
-                    <th key={p.id} className={planoAceito === p.id && aceita ? "escolhido" : ""}>
-                      <div className="nexo-pub-plano">{p.nome}</div>
-                      <div className="nexo-pub-preco">{formatBRL(p.mensalidade)}</div>
-                      <small>Mensalidade</small>
-                      {Number(p.franquia) > 0 && <small>Participação {formatBRL(p.franquia)}</small>}
-                      {!expirou && !aceita && <button className="nexo-btn nexo-btn-primary nexo-btn-sm" disabled={!!aceitando} onClick={() => aceitar(p)}>{aceitando === p.id ? "Enviando…" : "Aceitar proposta"}</button>}
-                      {aceita && planoAceito === p.id && <span className="nexo-pub-tag">Plano escolhido</span>}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {GRUPOS_COBERTURA.filter((g) => matriz.some((l) => l.grupo === g)).map((g) => (
-                  <React.Fragment key={g}>
-                    <tr className="grupo"><td colSpan={mostrar.length + 1}>{g}</td></tr>
-                    {matriz.filter((l) => l.grupo === g).map((l) => (
-                      <tr key={l.chave}>
-                        <td>{l.nome}</td>
-                        {l.porPlano.map((c, i) => (
-                          <td key={i} className="cel">
-                            {c.ok ? <span className="sim"><Check size={16} /></span> : <span className="nao"><X size={15} /></span>}
-                            {c.ok && c.detalhe && <div className="nexo-pub-detalhe">{c.detalhe}</div>}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      <div className="nexo-pub-rodape">Cotação gerada por {EMPRESA.nome}. Valores sujeitos à análise e à vistoria do veículo.</div>
     </div>
   );
 }
@@ -6604,6 +6388,768 @@ function PlanoForm({ initial, seguradoras, defaultSeguradoraId, onSave, onCancel
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Modelo da cotação (configurável) e mensagens de envio                */
+/* ------------------------------------------------------------------ */
+
+const CONFIG_COTACAO_PADRAO = {
+  nomeEmpresa: "Seu Seguro",
+  subtitulo: "Corretora de seguros e proteção veicular",
+  logo: "",
+  corPrincipal: "#0B3C6E",
+  telefone: "",
+  email: "",
+  textoAbertura: "",
+  textoRodape: "Valores sujeitos à análise e à vistoria do veículo.",
+  validadePadraoDias: 4,
+  mostrarParticipacao: true,
+  textoBotaoAceitar: "Aceitar proposta",
+  msgWhatsApp: "Olá {nome}! Segue a cotação do seu veículo {veiculo} ({placa}): {link}",
+  msgWhatsAppComparacao: "Olá {nome}! Compare os planos disponíveis para o seu veículo {veiculo}: {link}",
+  msgWhatsAppPagamento: "Olá {nome}! Segue o link para pagamento: {link}",
+  emailAssunto: "Sua cotação — {empresa}",
+  emailCorpo: "Olá {nome}!\n\nSegue a cotação do seu veículo {veiculo} ({placa}):\n{link}\n\n{consultor}\n{empresa}",
+};
+const VARIAVEIS_MENSAGEM = [["{nome}", "primeiro nome do cliente"], ["{veiculo}", "marca, modelo e ano"], ["{placa}", "placa"], ["{link}", "link da cotação"], ["{consultor}", "nome do consultor"], ["{empresa}", "nome da empresa"]];
+
+function configCotacao(db) {
+  const salva = db.configuracoes?.cotacao || {};
+  const limpa = Object.fromEntries(Object.entries(salva).filter(([, v]) => v !== undefined && v !== null));
+  return { ...CONFIG_COTACAO_PADRAO, ...limpa };
+}
+function aplicarVariaveis(modelo, vars) {
+  return String(modelo || "").replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? String(vars[k]) : ""));
+}
+function varsMensagem(n, consultor, cfg, link) {
+  return { nome: primeiroNome(n.nomeContato), veiculo: tituloVeiculo(n), placa: n.placa || "sem placa", link, consultor: consultor?.nome || "", empresa: cfg.nomeEmpresa };
+}
+function hexParaRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return [11, 60, 110];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+/** Reduz a imagem do logo para ficar leve (cabe dentro do banco e do PDF). */
+function redimensionarLogo(arquivo, larguraMax = 360) {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    leitor.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Esse arquivo não parece ser uma imagem (use PNG ou JPG)."));
+      img.onload = () => {
+        const escala = Math.min(1, larguraMax / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * escala);
+        canvas.height = Math.round(img.height * escala);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = leitor.result;
+    };
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+/** PDF da cotação, seguindo o modelo configurado (nome, logo, cor, textos). */
+function gerarPdfNegociacao(n, plano, consultora, cfg = CONFIG_COTACAO_PADRAO) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, M = 15;
+  let y = 18;
+  const [cr, cg, cb] = hexParaRgb(cfg.corPrincipal);
+  const garantir = (h) => { if (y + h > 280) { doc.addPage(); y = 18; } };
+  const brl = (v) => formatBRL(v).replace(/\u00a0/g, " ");
+
+  // cabeçalho: logo (se houver) ou o nome da empresa
+  let comLogo = false;
+  if (cfg.logo) {
+    try {
+      const p = doc.getImageProperties(cfg.logo);
+      const w = 36, h = Math.min(18, (p.height / p.width) * w);
+      doc.addImage(cfg.logo, p.fileType || "PNG", M, y - 8, w, h);
+      comLogo = true;
+    } catch { comLogo = false; }
+  }
+  if (!comLogo) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(cr, cg, cb);
+    doc.text(String(cfg.nomeEmpresa).toUpperCase(), M, y);
+  }
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 130, 140);
+  doc.text(cfg.subtitulo || "", M, comLogo ? y + 12 : y + 5);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(25, 30, 40);
+  doc.text(`COTAÇÃO: ${n.codigo}`, W - M, y, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(110, 118, 128);
+  doc.text(`Data: ${formatDateBR(String(n.createdAt || todayISO()).slice(0, 10))}`, W - M, y + 5.5, { align: "right" });
+  doc.text(`Validade: ${n.validadeDias || 0} dia(s)`, W - M, y + 10, { align: "right" });
+  y += comLogo ? 24 : 24;
+
+  // saudação e veículo
+  doc.setFontSize(10.5); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text("Olá ", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(String(n.nomeContato || "").toUpperCase(), M + doc.getTextWidth("Olá "), y);
+  y += 5.5; doc.setFont("helvetica", "normal"); doc.text("Esta é uma cotação para o seu veículo:", M, y);
+  y += 5.5; doc.setFont("helvetica", "bold");
+  doc.text(`${n.placa ? n.placa + " - " : ""}${tituloVeiculo(n)}`, M, y);
+  doc.setFont("helvetica", "normal");
+  if (n.placa) { y += 5; doc.text(`Placa: ${n.placa}`, M, y); }
+  if (n.codigoFipe) { y += 5; doc.text(`Cód. Fipe: ${n.codigoFipe}`, M, y); }
+  if (Number(n.valorFipe) > 0) { y += 8; doc.text("Valor Coberto: ", M, y); doc.setFont("helvetica", "bold"); doc.text(brl(n.valorFipe), M + doc.getTextWidth("Valor Coberto: "), y); }
+  if (cfg.textoAbertura) {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(80, 88, 98);
+    const linhas = doc.splitTextToSize(String(cfg.textoAbertura), W - 2 * M);
+    y += 8; doc.text(linhas, M, y); y += (linhas.length - 1) * 4.2;
+  }
+  y += 8;
+
+  // plano
+  doc.setFillColor(cr, cg, cb); doc.rect(M, y, W - 2 * M, 8, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);
+  doc.text(`PLANO ${String(plano?.nome || "—").toUpperCase()}`, M + 3, y + 5.5);
+  y += 8;
+
+  for (const bloco of coberturasAgrupadas(plano)) {
+    garantir(16);
+    doc.setFillColor(226, 229, 233); doc.rect(M, y, W - 2 * M, 6.5, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(40, 45, 55);
+    doc.text(bloco.grupo, M + 3, y + 4.6);
+    y += 6.5;
+    for (const c of bloco.itens) {
+      const detalhe = c.detalhe ? doc.splitTextToSize(String(c.detalhe), 78) : [];
+      const h = Math.max(6, detalhe.length * 4 + 2);
+      garantir(h);
+      doc.setDrawColor(215, 219, 224); doc.rect(M, y, W - 2 * M, h);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(30, 35, 45);
+      doc.text(String(c.nome), M + 3, y + 4.2);
+      if (detalhe.length) doc.text(detalhe, W - M - 3, y + 4.2, { align: "right" });
+      y += h;
+    }
+  }
+
+  // valores
+  garantir(46);
+  y += 8;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(cr, cg, cb);
+  doc.text("COTAÇÃO DO VEÍCULO", M, y);
+  y += 3; doc.setDrawColor(cr, cg, cb); doc.line(M, y, W - M, y);
+  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text("Mensalidade:", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(brl(n.mensalidade), M + 30, y);
+  y += 6; doc.setFont("helvetica", "normal"); doc.text("Taxa de Ativação:", M, y);
+  const orig = Number(n.taxaAtivacaoOriginal) || 0, atual = Number(n.taxaAtivacao) || 0;
+  let x = M + 38;
+  if (orig > atual && atual > 0) {
+    doc.setTextColor(150, 155, 160); const t = brl(orig); doc.text(t, x, y);
+    doc.setDrawColor(150, 155, 160); doc.line(x, y - 1.2, x + doc.getTextWidth(t), y - 1.2);
+    x += doc.getTextWidth(t) + 4; doc.setTextColor(30, 35, 45);
+  }
+  doc.setFont("helvetica", "bold"); doc.text(brl(atual), x, y);
+  y += 6; doc.setFont("helvetica", "normal"); doc.text("Rastreador:", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(Number(n.rastreador) > 0 ? brl(n.rastreador) : "obrigatório", M + 38, y);
+  if (cfg.mostrarParticipacao !== false && Number(n.franquia) > 0) {
+    y += 6; doc.setFont("helvetica", "normal"); doc.text("Participação (franquia):", M, y);
+    doc.setFont("helvetica", "bold"); doc.text(brl(n.franquia), M + 50, y);
+  }
+
+  // consultor
+  garantir(30);
+  y += 12;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(cr, cg, cb); doc.text("CONSULTOR", M, y);
+  y += 3; doc.line(M, y, W - M, y);
+  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text(`Nome: ${consultora?.nome || "—"}`, M, y);
+  doc.text(`Telefone: ${consultora?.telefone || cfg.telefone || "—"}`, M + 100, y);
+  const emailContato = consultora?.email || cfg.email;
+  if (emailContato) { y += 6; doc.text(`Email: ${emailContato}`, M, y); }
+  if (cfg.textoRodape) {
+    garantir(16); y += 12;
+    doc.setFontSize(8); doc.setTextColor(120, 128, 138);
+    doc.text(doc.splitTextToSize(String(cfg.textoRodape), W - 2 * M), M, y);
+  }
+
+  doc.save(`cotacao-${n.codigo}.pdf`);
+}
+
+function CotacaoPublica({ codigo, modo }) {
+  const [estado, setEstado] = useState({ carregando: true, erro: "", dados: null });
+  const [aceitando, setAceitando] = useState("");
+  const [aceitouAgora, setAceitouAgora] = useState("");
+
+  useEffect(() => {
+    document.title = `Cotação ${codigo}`;
+    document.body.style.background = "#EDF1F7";
+    fetch(`/api/cotacao-publica?codigo=${encodeURIComponent(codigo)}`)
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => setEstado(ok ? { carregando: false, erro: "", dados: d } : { carregando: false, erro: d.erro || "Cotação não encontrada.", dados: null }))
+      .catch(() => setEstado({ carregando: false, erro: "Não foi possível abrir esta cotação agora. Tente novamente em instantes ou fale com o seu consultor.", dados: null }));
+  }, [codigo]);
+
+  async function aceitar(plano) {
+    setAceitando(plano.id);
+    try {
+      const r = await fetch("/api/cotacao-publica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codigo, planoId: plano.id }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.erro || "Não foi possível aceitar a proposta.");
+      setAceitouAgora(plano.id);
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setAceitando("");
+    }
+  }
+
+  if (estado.carregando) return <div className="nexo-loading"><div className="nexo-spinner" />Carregando sua cotação…</div>;
+  if (estado.erro) {
+    return (
+      <div className="nexo-pub"><div className="nexo-card" style={{ maxWidth: 520, margin: "60px auto", textAlign: "center" }}>
+        <div className="nexo-dialog-ico" style={{ "--tone": "var(--danger)", margin: "0 auto 14px" }}><AlertTriangle size={22} /></div>
+        <div className="nexo-chart-title" style={{ fontSize: 16 }}>Cotação indisponível</div>
+        <div className="nexo-chart-sub">{estado.erro}</div>
+      </div></div>
+    );
+  }
+
+  const { negociacao: n, planos, consultor } = estado.dados;
+  const emp = { ...CONFIG_COTACAO_PADRAO, ...(estado.dados.empresa || {}) };
+  const aceita = n.propostaAceita || !!aceitouAgora;
+  const planoAceito = aceitouAgora || n.planoId;
+  const mostrar = modo === "pronta" && n.planoId ? planos.filter((p) => p.id === n.planoId) : planos;
+  const matriz = matrizComparacao(mostrar);
+  const expirou = !aceita && n.validadeDias > 0 && Date.now() > new Date(n.createdAt).getTime() + n.validadeDias * 86400000;
+  const orig = Number(n.taxaAtivacaoOriginal) || 0;
+  const atual = Number(n.taxaAtivacao) || 0;
+  const telefone = consultor?.telefone || emp.telefone;
+  const wa = telefone ? linkWhatsApp(telefone, `Olá${consultor ? " " + consultor.nome : ""}! Estou vendo a cotação ${n.codigo} do meu veículo.`) : "";
+  const veic = [n.marca, n.modelo, n.anoModelo].filter(Boolean).join(", ");
+  const estiloMarca = { "--accent": emp.corPrincipal, "--accent-strong": emp.corPrincipal, "--accent-dim": emp.corPrincipal };
+
+  return (
+    <div className="nexo-pub" style={estiloMarca}>
+      <div className="nexo-pub-topo">
+        <div className="nexo-pub-marca">
+          {emp.logo ? <img src={emp.logo} alt={emp.nomeEmpresa} style={{ maxHeight: 46, maxWidth: 190, objectFit: "contain" }} /> : <span className="nexo-brand-mark">{String(emp.nomeEmpresa || "SS").split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase()}</span>}
+          <div><strong>{emp.nomeEmpresa}</strong><div className="nexo-cliente-sub">{emp.subtitulo}</div></div>
+        </div>
+        {wa && <a className="nexo-btn nexo-btn-primary" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle size={15} /> WhatsApp do consultor<span className="nexo-pub-fone">{telefone}</span></a>}
+      </div>
+      <div className="nexo-pub-cartao">
+        <div className="nexo-pub-saudacao">
+          <div>
+            <h1>Olá, {n.nomeContato}</h1>
+            <p>Esta é uma cotação para o seu veículo <strong>{n.placa ? `${n.placa} - ` : ""}{veic}</strong>.</p>
+            {Number(n.valorFipe) > 0 && <p className="nexo-cliente-sub">Seu veículo está avaliado em <strong>{formatBRL(n.valorFipe)}</strong> (Tabela Fipe{n.codigoFipe ? `, cód. ${n.codigoFipe}` : ""}).</p>}
+            {emp.textoAbertura && <p style={{ whiteSpace: "pre-line" }}>{emp.textoAbertura}</p>}
+            <p className="nexo-cliente-sub">Cotação {n.codigo} · válida por {n.validadeDias} dia(s) a partir de {formatDateBR(String(n.createdAt).slice(0, 10))}</p>
+          </div>
+          <div className="nexo-pub-boxes">
+            <div className="nexo-pub-box"><small>Taxa de ativação</small><div>{orig > atual && atual > 0 && <s>{formatBRL(orig)}</s>} <strong>{atual > 0 ? formatBRL(atual) : "—"}</strong></div></div>
+            <div className="nexo-pub-box"><small>Rastreador</small><div><strong>{Number(n.rastreador) > 0 ? formatBRL(n.rastreador) : "Obrigatório"}</strong></div></div>
+          </div>
+        </div>
+        {aceita && <div className="nexo-pub-aviso ok"><CheckCircle2 size={18} /> Proposta aceita! Seu consultor entrará em contato para os próximos passos.</div>}
+        {expirou && <div className="nexo-pub-aviso erro"><AlertTriangle size={18} /> Esta cotação expirou. Fale com seu consultor para atualizar os valores.</div>}
+        {mostrar.length === 0 ? (
+          <div className="nexo-neg-vazio">Os planos desta cotação ainda não foram definidos. Fale com seu consultor.</div>
+        ) : (
+          <div className="nexo-table-scroll">
+            <table className="nexo-pub-tabela">
+              <thead>
+                <tr>
+                  <th className="nexo-pub-opcoes">{mostrar.length} opç{mostrar.length > 1 ? "ões" : "ão"} de plano{mostrar.length > 1 ? "s" : ""} disponíve{mostrar.length > 1 ? "is" : "l"}</th>
+                  {mostrar.map((p) => (
+                    <th key={p.id} className={planoAceito === p.id && aceita ? "escolhido" : ""}>
+                      <div className="nexo-pub-plano">{p.nome}</div>
+                      <div className="nexo-pub-preco">{formatBRL(p.mensalidade)}</div>
+                      <small>Mensalidade</small>
+                      {emp.mostrarParticipacao !== false && Number(p.franquia) > 0 && <small>Participação {formatBRL(p.franquia)}</small>}
+                      {!expirou && !aceita && <button className="nexo-btn nexo-btn-primary nexo-btn-sm" disabled={!!aceitando} onClick={() => aceitar(p)}>{aceitando === p.id ? "Enviando…" : emp.textoBotaoAceitar || "Aceitar proposta"}</button>}
+                      {aceita && planoAceito === p.id && <span className="nexo-pub-tag">Plano escolhido</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {GRUPOS_COBERTURA.filter((g) => matriz.some((l) => l.grupo === g)).map((g) => (
+                  <React.Fragment key={g}>
+                    <tr className="grupo"><td colSpan={mostrar.length + 1}>{g}</td></tr>
+                    {matriz.filter((l) => l.grupo === g).map((l) => (
+                      <tr key={l.chave}>
+                        <td>{l.nome}</td>
+                        {l.porPlano.map((c, i) => (
+                          <td key={i} className="cel">
+                            {c.ok ? <span className="sim"><Check size={16} /></span> : <span className="nao"><X size={15} /></span>}
+                            {c.ok && c.detalhe && <div className="nexo-pub-detalhe">{c.detalhe}</div>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <div className="nexo-pub-rodape">{emp.textoRodape || ""}</div>
+    </div>
+  );
+}
+
+/** Pergunta ao servidor se a página do cliente está funcionando e explica, em português, o que falta. */
+async function verificarLinkDoCliente(codigo) {
+  try {
+    const r = await fetch(`/api/cotacao-publica?codigo=${encodeURIComponent(codigo)}&teste=1`);
+    const tipo = r.headers.get("content-type") || "";
+    if (!tipo.includes("json")) return { ok: false, motivo: "arquivo", titulo: "A página do cliente ainda não foi publicada", detalhe: "Falta o arquivo api/cotacao-publica.js no GitHub (ou o deploy ainda não terminou)." };
+    const d = await r.json();
+    if (r.ok) return { ok: true, planos: (d.planos || []).length };
+    if (r.status === 501) return { ok: false, motivo: "chave", titulo: "Falta a chave de administrador na Vercel", detalhe: "Adicione SUPABASE_SERVICE_ROLE_KEY nas variáveis da Vercel e faça um Redeploy." };
+    if (r.status === 404) return { ok: false, motivo: "naoencontrada", titulo: "O servidor não achou esta cotação", detalhe: "Confira se o script pipeline-cotacoes.sql foi rodado no Supabase." };
+    return { ok: false, motivo: "erro", titulo: "O servidor devolveu um erro", detalhe: d.erro || `Código ${r.status}` };
+  } catch {
+    return { ok: false, motivo: "rede", titulo: "Não foi possível falar com o servidor", detalhe: "Verifique a internet e tente de novo." };
+  }
+}
+
+function EnviarCotacaoModal({ n, db, cfg, onClose, onEvento, onPdf, onCadastrarPlano, onIrTabelas, onAbrirConfig }) {
+  const [diag, setDiag] = useState(null);
+  useEffect(() => { verificarLinkDoCliente(n.codigo).then(setDiag); }, [n.codigo]);
+  const consultora = db.consultoras.find((c) => c.id === n.consultoraId);
+  const planosDaCoop = db.planos.filter((p) => p.seguradoraId === n.seguradoraId);
+  const linkPronta = urlPublicaCotacao(n.codigo, "pronta");
+  const linkComparar = urlPublicaCotacao(n.codigo, "comparar");
+  const msg = (modelo, url) => aplicarVariaveis(modelo, varsMensagem(n, consultora, cfg, url));
+  const linhas = [
+    { chave: "pronta", titulo: "Enviar cotação pronta", url: linkPronta, ok: !!n.planoId, dica: "Escolha um plano na aba Cotações para enviar a cotação pronta.", msg: msg(cfg.msgWhatsApp, linkPronta), assunto: msg(cfg.emailAssunto, linkPronta), corpo: msg(cfg.emailCorpo, linkPronta) },
+    { chave: "comparar", titulo: "Enviar comparação de planos", url: linkComparar, ok: true, dica: "", msg: msg(cfg.msgWhatsAppComparacao, linkComparar), assunto: msg(cfg.emailAssunto, linkComparar), corpo: msg(cfg.emailCorpo, linkComparar) },
+    { chave: "tabelas", titulo: "Enviar comparação de tabelas diferentes", url: "", ok: false, dica: "Em breve.", msg: "", assunto: "", corpo: "" },
+    { chave: "pagamento", titulo: "Enviar link de pagamento", url: n.linkPagamento, ok: !!n.linkPagamento, dica: "Cadastre o link de pagamento na aba Proposta.", msg: msg(cfg.msgWhatsAppPagamento, n.linkPagamento), assunto: "Link de pagamento", corpo: msg(cfg.msgWhatsAppPagamento, n.linkPagamento) },
+    { chave: "boleto", titulo: "Enviar boleto", url: "", ok: false, dica: "Indisponível: o boleto é gerado pelo SGA depois do cadastro.", msg: "", assunto: "", corpo: "" },
+  ];
+  async function agir(linha, canal) {
+    if (!linha.ok) return;
+    const nome = linha.titulo.replace("Enviar ", "").toLowerCase();
+    if (canal === "abrir") { window.open(linha.url, "_blank", "noopener"); return; }
+    if (canal === "copiar") { await copiarTexto(linha.url); showToast("Link copiado.", "success"); onEvento(n.id, `copiou o link: ${nome}`); return; }
+    if (canal === "whatsapp") { window.open(linkWhatsApp(n.celular, linha.msg), "_blank", "noopener"); onEvento(n.id, `enviou ${nome} por WhatsApp`); return; }
+    if (canal === "email") { window.open(linkEmail(n.email, linha.assunto, linha.corpo), "_blank"); onEvento(n.id, `enviou ${nome} por e-mail`); }
+  }
+  return (
+    <>
+      <div className="nexo-cliente-sub" style={{ marginTop: -6 }}>Cotação de <strong>{n.nomeContato}</strong> · {tituloVeiculo(n)}</div>
+      {diag === null && <div className="nexo-env-aviso"><span className="nexo-spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Conferindo se o link do cliente está funcionando…</div>}
+      {diag && !diag.ok && (
+        <div className="nexo-env-aviso erro">
+          <AlertTriangle size={18} />
+          <div style={{ flex: 1 }}><strong>{diag.titulo}</strong><div>{diag.detalhe} O cliente não conseguiria abrir o link ainda.</div></div>
+          <button className="nexo-btn nexo-btn-sm" onClick={onAbrirConfig}>Ver como corrigir</button>
+        </div>
+      )}
+      {diag && diag.ok && <div className="nexo-env-aviso ok"><CheckCircle2 size={16} /> Link do cliente funcionando.</div>}
+      {planosDaCoop.length === 0 && (
+        <div className="nexo-env-aviso aviso">
+          <AlertTriangle size={18} />
+          <div style={{ flex: 1 }}><strong>Esta cooperativa ainda não tem planos cadastrados.</strong><div>O cliente abriria a cotação sem nenhum plano para escolher.</div></div>
+          <button className="nexo-btn nexo-btn-sm" onClick={onCadastrarPlano}>Cadastrar plano</button>
+          <button className="nexo-btn nexo-btn-sm" onClick={onIrTabelas}>Tabelas de preços</button>
+        </div>
+      )}
+      {linhas.map((l) => (
+        <div key={l.chave} className="nexo-env-linha" title={l.ok ? "" : l.dica}>
+          <span>{l.titulo}</span>
+          <div className="nexo-env-acoes">
+            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "abrir")} title="Abrir o link"><Link2 size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "copiar")} title="Copiar o link"><Copy size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok || !n.celular} onClick={() => agir(l, "whatsapp")} title={n.celular ? "Enviar por WhatsApp" : "Sem celular cadastrado"}><MessageCircle size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok || !n.email} onClick={() => agir(l, "email")} title={n.email ? "Enviar por e-mail" : "Sem e-mail cadastrado"}><Mail size={15} /></button>
+          </div>
+        </div>
+      ))}
+      <div className="nexo-env-linha">
+        <span>Download da cotação em PDF</span>
+        <div className="nexo-env-acoes"><button className="nexo-env-btn" disabled={!n.planoId} onClick={() => onPdf(n)} title={n.planoId ? "Baixar PDF" : "Escolha um plano primeiro"}><Download size={15} /></button></div>
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}><button className="nexo-btn" onClick={onClose}>Fechar</button></div>
+    </>
+  );
+}
+
+function DiagnosticoLink({ db }) {
+  const [res, setRes] = useState(null);
+  const [rodando, setRodando] = useState(false);
+  const [negId, setNegId] = useState(db.negociacoes[0]?.id || "");
+  const neg = db.negociacoes.find((x) => x.id === negId);
+
+  async function testar() {
+    setRodando(true);
+    try {
+      const r = await fetch("/api/cotacao-publica?diagnostico=1");
+      const tipo = r.headers.get("content-type") || "";
+      if (!tipo.includes("json")) setRes({ arquivo: false });
+      else setRes({ arquivo: true, ...(await r.json()) });
+    } catch {
+      setRes({ arquivo: false, rede: true });
+    }
+    setRodando(false);
+  }
+  useEffect(() => { testar(); }, []);
+
+  const itens = res ? [
+    { ok: res.arquivo, titulo: "Página do cliente publicada", ajuda: "Crie o arquivo cotacao-publica.js dentro da pasta api no GitHub (cole o conteúdo de api-cotacao-publica.js) e aguarde o deploy da Vercel ficar Ready." },
+    { ok: res.arquivo && res.urlConfigurada, titulo: "Endereço do Supabase no servidor (VITE_SUPABASE_URL)", ajuda: "Na Vercel, Settings → Environment Variables, confira se VITE_SUPABASE_URL existe." },
+    { ok: res.arquivo && res.chaveConfigurada, titulo: "Chave de administrador no servidor (SUPABASE_SERVICE_ROLE_KEY)", ajuda: "No Supabase: Project Settings → API Keys → chave secreta (sb_secret…). Na Vercel: Settings → Environment Variables → adicione SUPABASE_SERVICE_ROLE_KEY e faça Redeploy." },
+    { ok: res.arquivo && res.banco, titulo: "Acesso ao banco de dados", ajuda: "Confira se a chave secreta foi copiada inteira, sem espaços." },
+    { ok: !!res.tabelas?.negociacoes && !!res.tabelas?.negociacao_eventos, titulo: "Tabelas do Pipeline criadas", ajuda: "Rode o script pipeline-cotacoes.sql no SQL Editor do Supabase." },
+    { ok: !!res.tabelas?.configuracoes, titulo: "Tabela de configurações criada", ajuda: "Rode o script configuracoes-cotacao.sql no SQL Editor do Supabase." },
+    { ok: res.arquivo && res.planos > 0, titulo: `Planos cadastrados (${res.planos || 0})`, ajuda: "Cadastre em Planos e seguradoras (aba Planos) e preencha os valores em Tabelas de preços." },
+  ] : [];
+  // mostra um problema por vez, na ordem em que precisam ser resolvidos (os próximos só dá para conferir depois)
+  const bloqueio = !res ? 0 : !res.arquivo ? 1 : !(res.urlConfigurada && res.chaveConfigurada) ? 3 : !res.banco ? 4 : itens.length;
+  const visiveis = itens.slice(0, bloqueio);
+  const tudoOk = itens.length > 0 && bloqueio === itens.length && itens.every((i) => i.ok);
+
+  return (
+    <div>
+      <div className="nexo-cliente-sub" style={{ marginBottom: 14 }}>Confere se o link que o cliente recebe vai abrir direitinho e diz o que falta, quando faltar algo.</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <button className="nexo-btn nexo-btn-primary" onClick={testar} disabled={rodando}>{rodando ? "Testando…" : "Testar agora"}</button>
+      </div>
+      {res && (
+        <div className="nexo-card" style={{ padding: 0 }}>
+          {visiveis.map((i) => (
+            <div key={i.titulo} className="nexo-diag-item">
+              <span className={`nexo-diag-ico ${i.ok ? "ok" : "erro"}`}>{i.ok ? <Check size={14} /> : <X size={14} />}</span>
+              <div style={{ flex: 1 }}>
+                <div className="nexo-cliente-nome">{i.titulo}</div>
+                {!i.ok && <div className="nexo-cliente-sub" style={{ marginTop: 4 }}>{i.ajuda}</div>}
+              </div>
+            </div>
+          ))}
+          {bloqueio < itens.length && <div className="nexo-diag-item"><span className="nexo-cliente-sub">Resolva o item em vermelho e clique em <strong>Testar agora</strong> de novo: os próximos passos são conferidos em seguida.</span></div>}
+        </div>
+      )}
+      {tudoOk && <div className="nexo-env-aviso ok" style={{ marginTop: 14 }}><CheckCircle2 size={16} /> Tudo certo! O link do cliente está funcionando.</div>}
+      {db.negociacoes.length > 0 && (
+        <div className="nexo-card" style={{ marginTop: 16 }}>
+          <div className="nexo-chart-title">Ver como o cliente vê</div>
+          <div className="nexo-chart-sub">Escolha uma negociação e abra a página exatamente como o cliente recebe.</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select className="nexo-select" style={{ width: "auto", minWidth: 260 }} value={negId} onChange={(e) => setNegId(e.target.value)}>
+              {db.negociacoes.map((x) => <option key={x.id} value={x.id}>{x.nomeContato} · {tituloVeiculo(x)}</option>)}
+            </select>
+            <button className="nexo-btn" disabled={!neg} onClick={() => window.open(urlPublicaCotacao(neg.codigo, "comparar"), "_blank", "noopener")}><Eye size={14} /> Abrir como cliente</button>
+            <button className="nexo-btn" disabled={!neg} onClick={async () => { await copiarTexto(urlPublicaCotacao(neg.codigo, "comparar")); showToast("Link copiado.", "success"); }}><Copy size={14} /> Copiar link</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConfiguracoesView({ db, onSalvar }) {
+  const [aba, setAba] = useState(() => {
+    try { const a = localStorage.getItem("nexo-aba-config"); localStorage.removeItem("nexo-aba-config"); return a || "modelo"; } catch { return "modelo"; }
+  });
+  const [f, setF] = useState(() => configCotacao(db));
+  const [salvando, setSalvando] = useState(false);
+  const [avisoLogo, setAvisoLogo] = useState("");
+  useEffect(() => { setF(configCotacao(db)); }, [db.configuracoes]);
+  const atual = configCotacao(db);
+  const mudou = JSON.stringify(f) !== JSON.stringify(atual);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  async function trocarLogo(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    try {
+      let data = await redimensionarLogo(arquivo, 360);
+      if (data.length > 350000) data = await redimensionarLogo(arquivo, 220);
+      setF((p) => ({ ...p, logo: data }));
+      setAvisoLogo("");
+    } catch (err) { setAvisoLogo(err.message); }
+  }
+  async function salvar() { setSalvando(true); await onSalvar("cotacao", f); setSalvando(false); }
+
+  const exemplo = { nome: "Maria", veiculo: "Fiat MOBI LIKE 2023", placa: "ABC1D23", link: "https://seusite.com/?cotacao=XXXX", consultor: "Seu consultor", empresa: f.nomeEmpresa };
+  const campoMsg = (k, rotulo, linhas = 3) => (
+    <Field label={rotulo}>
+      <textarea className="nexo-textarea" rows={linhas} value={f[k]} onChange={set(k)} />
+      <div className="nexo-cliente-sub" style={{ whiteSpace: "pre-line" }}>Prévia: {aplicarVariaveis(f[k], exemplo)}</div>
+    </Field>
+  );
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Configurações<span className="nexo-section-count">cotação, mensagens e link do cliente</span></div>
+        {aba !== "link" && (
+          <div className="nexo-topbar-actions">
+            <button className="nexo-btn" disabled={JSON.stringify(f) === JSON.stringify(CONFIG_COTACAO_PADRAO)} onClick={() => { if (window.confirm("Voltar todos os campos para o padrão do sistema? (Só vale depois de salvar.)")) setF({ ...CONFIG_COTACAO_PADRAO }); }}>Restaurar padrão</button>
+            <button className="nexo-btn nexo-btn-primary" disabled={!mudou || salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar configurações"}</button>
+          </div>
+        )}
+      </div>
+      <div className="nexo-tabs">
+        {[["modelo", "Modelo da cotação"], ["mensagens", "Mensagens de envio"], ["link", "Link do cliente"]].map(([k, rot]) => (
+          <div key={k} className={`nexo-tab ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>{rot}</div>
+        ))}
+      </div>
+
+      {aba === "modelo" && (
+        <div className="nexo-cfg-grid">
+          <div className="nexo-card nexo-neg-form">
+            <div className="nexo-field-row">
+              <Field label="Nome da empresa"><input className="nexo-input" value={f.nomeEmpresa} onChange={set("nomeEmpresa")} /></Field>
+              <Field label="Subtítulo"><input className="nexo-input" value={f.subtitulo} onChange={set("subtitulo")} /></Field>
+            </div>
+            <Field label="Logotipo">
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                {f.logo ? <img src={f.logo} alt="logo" className="nexo-cfg-logo" /> : <div className="nexo-cfg-logo vazio">sem logo</div>}
+                <label className="nexo-btn nexo-btn-sm" style={{ cursor: "pointer" }}><Upload size={13} /> Escolher imagem<input type="file" accept="image/png,image/jpeg" style={{ display: "none" }} onChange={trocarLogo} /></label>
+                {f.logo && <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => setF({ ...f, logo: "" })}>Remover</button>}
+              </div>
+              {avisoLogo && <div className="nexo-field-error">{avisoLogo}</div>}
+              <div className="nexo-cliente-sub">PNG ou JPG. O sistema reduz a imagem sozinho. Aparece na página do cliente e no PDF.</div>
+            </Field>
+            <div className="nexo-field-row">
+              <Field label="Cor principal"><div style={{ display: "flex", gap: 8 }}><input type="color" value={f.corPrincipal} onChange={set("corPrincipal")} style={{ width: 44, height: 38, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface-2)", padding: 2 }} /><input className="nexo-input mono" value={f.corPrincipal} onChange={set("corPrincipal")} /></div></Field>
+              <Field label="Validade padrão da cotação (dias)"><input type="number" min="1" className="nexo-input" value={f.validadePadraoDias} onChange={(e) => setF({ ...f, validadePadraoDias: Number(e.target.value) || 1 })} /></Field>
+            </div>
+            <div className="nexo-field-row">
+              <Field label="WhatsApp / telefone da empresa"><input className="nexo-input mono" value={f.telefone} onChange={(e) => setF({ ...f, telefone: maskPhone(e.target.value) })} placeholder="Usado se o consultor não tiver telefone" /></Field>
+              <Field label="E-mail da empresa"><input type="email" className="nexo-input" value={f.email} onChange={set("email")} /></Field>
+            </div>
+            <Field label="Texto de abertura (aparece logo abaixo da saudação)"><textarea className="nexo-textarea" value={f.textoAbertura} onChange={set("textoAbertura")} placeholder="Ex.: Estamos há 10 anos no mercado cuidando do seu patrimônio." /></Field>
+            <Field label="Texto do rodapé"><textarea className="nexo-textarea" value={f.textoRodape} onChange={set("textoRodape")} /></Field>
+            <div className="nexo-field-row">
+              <Field label="Texto do botão do cliente"><input className="nexo-input" value={f.textoBotaoAceitar} onChange={set("textoBotaoAceitar")} /></Field>
+              <label className="nexo-check" style={{ alignSelf: "end", paddingBottom: 10 }}><input type="checkbox" checked={f.mostrarParticipacao !== false} onChange={(e) => setF({ ...f, mostrarParticipacao: e.target.checked })} /> Mostrar a participação (franquia)</label>
+            </div>
+          </div>
+          <div>
+            <div className="nexo-neg-lat-titulo">Prévia da cotação</div>
+            <div className="nexo-cfg-prev" style={{ "--cor": f.corPrincipal }}>
+              <div className="nexo-cfg-prev-topo">
+                {f.logo ? <img src={f.logo} alt="logo" style={{ maxHeight: 38, maxWidth: 150, objectFit: "contain" }} /> : <strong style={{ color: f.corPrincipal, fontSize: 18 }}>{(f.nomeEmpresa || "").toUpperCase()}</strong>}
+                <div style={{ textAlign: "right" }}><strong>COTAÇÃO: ABC123xyz9</strong><div className="nexo-cliente-sub">Validade: {f.validadePadraoDias} dia(s)</div></div>
+              </div>
+              <div className="nexo-cliente-sub" style={{ margin: "6px 0 10px" }}>{f.subtitulo}</div>
+              <div><strong>Olá, MARIA SILVA</strong></div>
+              <div className="nexo-cliente-sub">Esta é uma cotação para o seu veículo: Fiat MOBI 2023</div>
+              {f.textoAbertura && <div style={{ fontSize: 12, margin: "8px 0", whiteSpace: "pre-line" }}>{f.textoAbertura}</div>}
+              <div className="nexo-cfg-prev-faixa">PLANO BLACK</div>
+              <div className="nexo-cfg-prev-linha"><span>Roubo</span><span>✓</span></div>
+              <div className="nexo-cfg-prev-linha"><span>Guincho 24h</span><span>Ilimitado</span></div>
+              <button className="nexo-btn nexo-btn-sm" style={{ background: f.corPrincipal, borderColor: f.corPrincipal, color: "#fff", marginTop: 10 }}>{f.textoBotaoAceitar || "Aceitar proposta"}</button>
+              {f.textoRodape && <div className="nexo-cliente-sub" style={{ marginTop: 12 }}>{f.textoRodape}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aba === "mensagens" && (
+        <div className="nexo-card nexo-neg-form" style={{ maxWidth: 820 }}>
+          <div className="nexo-cliente-sub">Use as variáveis entre chaves; o sistema troca pelos dados de cada cliente na hora de enviar.</div>
+          <div className="nexo-neg-tags">{VARIAVEIS_MENSAGEM.map(([v, d]) => <span key={v} className="nexo-neg-tag" title={d} style={{ background: "var(--surface-3)", color: "var(--text-dim)" }}>{v} · {d}</span>)}</div>
+          {campoMsg("msgWhatsApp", "WhatsApp — cotação pronta")}
+          {campoMsg("msgWhatsAppComparacao", "WhatsApp — comparação de planos")}
+          {campoMsg("msgWhatsAppPagamento", "WhatsApp — link de pagamento")}
+          <Field label="E-mail — assunto"><input className="nexo-input" value={f.emailAssunto} onChange={set("emailAssunto")} /></Field>
+          {campoMsg("emailCorpo", "E-mail — texto", 6)}
+        </div>
+      )}
+
+      {aba === "link" && <DiagnosticoLink db={db} />}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabelas de preços: grade de mensalidades por faixa do valor Fipe     */
+/* ------------------------------------------------------------------ */
+
+const SEM_NOME_TABELA = "__sem__";
+
+function gradeInicial(planos) {
+  const limites = Array.from(new Set(planos.flatMap((p) => (p.faixas || []).map((f) => Number(f.ate)).filter((x) => x > 0)))).sort((a, b) => a - b);
+  const rows = limites.map((ate) => ({
+    ate: String(ate),
+    v: Object.fromEntries(planos.map((p) => { const f = (p.faixas || []).find((x) => Number(x.ate) === ate); return [p.id, f ? String(f.mensalidade) : ""]; })),
+  }));
+  const extras = Object.fromEntries(planos.map((p) => [p.id, {
+    valorMensal: p.valorMensal === "" ? "" : String(p.valorMensal), taxaAtivacao: p.taxaAtivacao === "" ? "" : String(p.taxaAtivacao),
+    rastreador: p.rastreador === "" ? "" : String(p.rastreador), franquiaPercentual: p.franquiaPercentual === "" ? "" : String(p.franquiaPercentual),
+  }]));
+  return { rows, extras };
+}
+
+function TabelasPrecosView({ db, onOpenModal, onSalvarTabela, onDuplicarTabela }) {
+  const [segId, setSegId] = useState(() => db.planos[0]?.seguradoraId || db.seguradoras[0]?.id || "");
+  const [sel, setSel] = useState("");
+  const [pct, setPct] = useState("");
+  const importRef = useRef(null);
+  const planosSeg = db.planos.filter((p) => p.seguradoraId === segId);
+  const nomesTabela = Array.from(new Set(planosSeg.map((p) => p.tabela || SEM_NOME_TABELA)));
+  const tabelaAtual = nomesTabela.includes(sel) ? sel : nomesTabela[0] || "";
+  const planosT = planosSeg
+    .filter((p) => (p.tabela || SEM_NOME_TABELA) === tabelaAtual)
+    .sort((a, b) => (Number(a.valorMensal) || 0) - (Number(b.valorMensal) || 0) || a.nome.localeCompare(b.nome, "pt-BR"));
+  const nomeReal = tabelaAtual === SEM_NOME_TABELA ? "" : tabelaAtual;
+
+  const [grade, setGrade] = useState(() => gradeInicial(planosT));
+  const baseJSON = JSON.stringify(gradeInicial(planosT));
+  useEffect(() => { setGrade(gradeInicial(planosT)); }, [segId, tabelaAtual, db.planos]);
+  const sujo = JSON.stringify(grade) !== baseJSON;
+
+  const setAte = (i, v) => setGrade({ ...grade, rows: grade.rows.map((r, j) => (j === i ? { ...r, ate: v } : r)) });
+  const setCel = (i, pid, v) => setGrade({ ...grade, rows: grade.rows.map((r, j) => (j === i ? { ...r, v: { ...r.v, [pid]: v } } : r)) });
+  const setExtra = (pid, k, v) => setGrade({ ...grade, extras: { ...grade.extras, [pid]: { ...grade.extras[pid], [k]: v } } });
+  const addLinha = () => setGrade({ ...grade, rows: [...grade.rows, { ate: "", v: Object.fromEntries(planosT.map((p) => [p.id, ""])) }] });
+  const delLinha = (i) => setGrade({ ...grade, rows: grade.rows.filter((_, j) => j !== i) });
+
+  function reajustar() {
+    const p = Number(String(pct).replace(",", "."));
+    if (!p) { showToast("Informe o percentual do reajuste (ex.: 5 ou -3).", "warning"); return; }
+    const fator = 1 + p / 100;
+    const ajusta = (v) => (v === "" ? "" : String(round2(Number(v) * fator)));
+    setGrade({
+      rows: grade.rows.map((r) => ({ ...r, v: Object.fromEntries(Object.entries(r.v).map(([k, v]) => [k, ajusta(v)])) })),
+      extras: Object.fromEntries(Object.entries(grade.extras).map(([k, e]) => [k, { ...e, valorMensal: ajusta(e.valorMensal) }])),
+    });
+    setPct("");
+    showToast(`Valores ajustados em ${p > 0 ? "+" : ""}${p}%. Confira e clique em Salvar tabela.`, "info");
+  }
+
+  async function importar(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    try {
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(arquivo);
+      const idxLimite = Math.max(0, cabecalhos.findIndex((c) => /fipe|ate|valor/.test(c)));
+      const mapaPlano = {};
+      planosT.forEach((p) => { const i = cabecalhos.findIndex((c) => c === normalizarCabecalho(p.nome)); if (i >= 0) mapaPlano[p.id] = i; });
+      const naoAchadas = cabecalhos.filter((c, i) => i !== idxLimite && c && !Object.values(mapaPlano).includes(i));
+      if (Object.keys(mapaPlano).length === 0) { notify("Não encontrei, no cabeçalho da planilha, o nome de nenhum plano desta tabela. A primeira coluna deve ser “Fipe até” e as seguintes devem ter o nome dos planos (ex.: Essencial SP, Master SP)."); return; }
+      const novas = linhas.map((l) => ({ ate: paraNumeroBR(l[idxLimite]), v: Object.fromEntries(planosT.map((p) => [p.id, mapaPlano[p.id] !== undefined && l[mapaPlano[p.id]] !== "" ? String(paraNumeroBR(l[mapaPlano[p.id]])) : ""])) }))
+        .filter((r) => r.ate > 0).sort((a, b) => a.ate - b.ate).map((r) => ({ ...r, ate: String(r.ate) }));
+      setGrade({ ...grade, rows: novas });
+      notify(`Planilha lida: ${novas.length} faixa(s) para ${Object.keys(mapaPlano).length} plano(s). Confira a grade e clique em Salvar tabela.${naoAchadas.length ? `\n\nColunas ignoradas (não batem com nenhum plano desta tabela): ${naoAchadas.join(", ")}` : ""}`);
+    } catch (err) { notify("Não foi possível ler a planilha: " + err.message); }
+  }
+
+  async function salvar() {
+    const lista = planosT.map((p) => ({
+      id: p.id,
+      faixas: grade.rows.filter((r) => Number(r.ate) > 0 && grade.rows && r.v[p.id] !== "" && r.v[p.id] != null).map((r) => ({ ate: Number(r.ate), mensalidade: Number(r.v[p.id]) || 0 })).sort((a, b) => a.ate - b.ate),
+      valorMensal: grade.extras[p.id].valorMensal, taxaAtivacao: grade.extras[p.id].taxaAtivacao, rastreador: grade.extras[p.id].rastreador, franquiaPercentual: grade.extras[p.id].franquiaPercentual,
+    }));
+    await onSalvarTabela(lista);
+  }
+  function duplicar() {
+    const novo = window.prompt("Nome da nova tabela (ex.: Moto SP):");
+    if (!novo || !novo.trim()) return;
+    onDuplicarTabela(segId, nomeReal, novo.trim());
+  }
+  function novaTabela() {
+    const novo = window.prompt("Nome da nova tabela (ex.: Caminhão SP). Você vai cadastrar o primeiro plano dela agora:");
+    if (!novo || !novo.trim()) return;
+    onOpenModal("plano", { seguradoraId: segId, tabela: novo.trim() });
+  }
+
+  return (
+    <div>
+      <div className="nexo-section-head">
+        <div className="nexo-section-title">Tabelas de preços<span className="nexo-section-count">mensalidade por faixa do valor Fipe</span></div>
+        <div className="nexo-topbar-actions">
+          <button className="nexo-btn" disabled={!segId} onClick={novaTabela}><Plus size={14} /> Nova tabela</button>
+          <button className="nexo-btn" disabled={planosT.length === 0} onClick={duplicar}><Copy size={14} /> Duplicar tabela</button>
+        </div>
+      </div>
+      <div className="nexo-toolbar">
+        <select className="nexo-select" style={{ width: "auto", minWidth: 200 }} value={segId} onChange={(e) => { setSegId(e.target.value); setSel(""); }}>
+          {db.seguradoras.length === 0 && <option value="">Cadastre uma seguradora primeiro</option>}
+          {db.seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+        </select>
+        <select className="nexo-select" style={{ width: "auto", minWidth: 200 }} value={tabelaAtual} onChange={(e) => setSel(e.target.value)} disabled={nomesTabela.length === 0}>
+          {nomesTabela.length === 0 && <option value="">Nenhuma tabela ainda</option>}
+          {nomesTabela.map((t) => <option key={t} value={t}>{t === SEM_NOME_TABELA ? "(sem nome)" : t}</option>)}
+        </select>
+      </div>
+
+      {planosT.length === 0 ? (
+        <div className="nexo-table-wrap">
+          <EmptyState icon={Wallet} title="Nenhum plano nesta tabela ainda" sub="Cadastre os planos (Essencial, Master, Black…) e depois preencha os valores por faixa do Fipe aqui." />
+          <div style={{ textAlign: "center", paddingBottom: 28 }}><button className="nexo-btn nexo-btn-primary" disabled={!segId} onClick={() => onOpenModal("plano", { seguradoraId: segId, tabela: nomeReal })}><Plus size={15} /> Cadastrar plano</button></div>
+        </div>
+      ) : (
+        <>
+          <div className="nexo-toolbar" style={{ justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <input className="nexo-input" style={{ width: 110 }} value={pct} onChange={(e) => setPct(e.target.value)} placeholder="Reajuste %" />
+              <button className="nexo-btn" onClick={reajustar}>Aplicar reajuste</button>
+              <input ref={importRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={importar} />
+              <button className="nexo-btn" onClick={() => importRef.current?.click()}><Upload size={14} /> Importar planilha</button>
+              <button className="nexo-btn" onClick={() => onOpenModal("plano", { seguradoraId: segId, tabela: nomeReal })}><Plus size={14} /> Novo plano</button>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="nexo-btn" disabled={!sujo} onClick={() => setGrade(gradeInicial(planosT))}>Descartar</button>
+              <button className="nexo-btn nexo-btn-primary" disabled={!sujo} onClick={salvar}>Salvar tabela</button>
+            </div>
+          </div>
+          <div className="nexo-table-wrap">
+            <div className="nexo-table-scroll">
+              <table className="nexo-grade">
+                <thead>
+                  <tr>
+                    <th>Fipe até (R$)</th>
+                    {planosT.map((p) => (
+                      <th key={p.id}>
+                        <div className="nexo-grade-plano">{p.nome} <button className="nexo-icon-btn" style={{ width: 24, height: 24 }} title="Editar plano e coberturas" onClick={() => onOpenModal("plano", p)}><Pencil size={11} /></button></div>
+                        <div className="nexo-grade-extra"><label>Ativação<input type="number" value={grade.extras[p.id]?.taxaAtivacao ?? ""} onChange={(e) => setExtra(p.id, "taxaAtivacao", e.target.value)} /></label></div>
+                        <div className="nexo-grade-extra"><label>Rastreador<input type="number" value={grade.extras[p.id]?.rastreador ?? ""} onChange={(e) => setExtra(p.id, "rastreador", e.target.value)} /></label></div>
+                        <div className="nexo-grade-extra"><label>Particip. %<input type="number" value={grade.extras[p.id]?.franquiaPercentual ?? ""} onChange={(e) => setExtra(p.id, "franquiaPercentual", e.target.value)} /></label></div>
+                        <div className="nexo-grade-extra"><label>Base (sem faixa)<input type="number" value={grade.extras[p.id]?.valorMensal ?? ""} onChange={(e) => setExtra(p.id, "valorMensal", e.target.value)} /></label></div>
+                      </th>
+                    ))}
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grade.rows.length === 0 && <tr><td colSpan={planosT.length + 2} className="nexo-cell-muted" style={{ padding: 22, textAlign: "center" }}>Sem faixas ainda. Clique em “Adicionar faixa” (ou importe uma planilha). Sem faixas, vale a mensalidade base de cada plano.</td></tr>}
+                  {grade.rows.map((r, i) => (
+                    <tr key={i}>
+                      <td><input type="number" className="nexo-grade-input" value={r.ate} onChange={(e) => setAte(i, e.target.value)} placeholder="Ex.: 40000" /></td>
+                      {planosT.map((p) => <td key={p.id}><input type="number" step="0.01" className="nexo-grade-input" value={r.v[p.id] ?? ""} onChange={(e) => setCel(i, p.id, e.target.value)} placeholder="—" /></td>)}
+                      <td><button className="nexo-icon-btn" style={{ width: 28, height: 28 }} onClick={() => delLinha(i)} title="Remover faixa"><Trash2 size={12} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="nexo-table-foot"><button className="nexo-btn nexo-btn-sm" onClick={addLinha}><Plus size={12} /> Adicionar faixa</button><span className="nexo-cliente-sub">Cada linha vale até o valor Fipe informado. O sistema usa a primeira faixa que cobre o veículo.</span></div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PlanosView(props) {
+  const [aba, setAba] = useState(() => {
+    try { const a = localStorage.getItem("nexo-aba-planos"); localStorage.removeItem("nexo-aba-planos"); return a || "planos"; } catch { return "planos"; }
+  });
+  return (
+    <div>
+      <div className="nexo-tabs">
+        <div className={`nexo-tab ${aba === "planos" ? "active" : ""}`} onClick={() => setAba("planos")}>Planos e seguradoras</div>
+        <div className={`nexo-tab ${aba === "tabelas" ? "active" : ""}`} onClick={() => setAba("tabelas")}>Tabelas de preços</div>
+      </div>
+      {aba === "planos" ? <CotacoesView {...props} /> : <TabelasPrecosView db={props.db} onOpenModal={props.onOpenModal} onSalvarTabela={props.onSalvarTabela} onDuplicarTabela={props.onDuplicarTabela} />}
+    </div>
+  );
+}
+
 /** Se uma tela ou janela der erro, mostra um aviso no lugar dela em vez de derrubar o sistema inteiro. */
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { erro: null }; }
@@ -6631,15 +7177,15 @@ const NAV_GRUPOS = [
   { titulo: "", chaves: ["dashboard"] },
   { titulo: "Cadastros", chaves: ["clientes", "veiculos"] },
   { titulo: "Financeiro", chaves: ["financeiro", "comissoes", "adesoes"] },
-  { titulo: "Seguros", chaves: ["cotacoes", "atividades", "planos", "consultoras"] },
-  { titulo: "Gestão", chaves: ["relatorios", "usuarios"] },
+  { titulo: "Cotações", chaves: ["cotacoes", "atividades", "planos", "consultoras"] },
+  { titulo: "Gestão", chaves: ["relatorios", "configuracoes", "usuarios"] },
 ];
 
 const SUBTITULOS = {
   dashboard: "Visão geral do negócio", clientes: "Cadastro e histórico", veiculos: "Frota cadastrada",
   financeiro: "Boletos e recebimentos", relatorios: "Exportações", cotacoes: "Negociações e cotações em andamento", atividades: "Ligações, visitas e retornos", planos: "Seguradoras, planos e coberturas",
   consultoras: "Equipe de vendas", adesoes: "Adesões e recebimentos", comissoes: "O que a corretora recebe das seguradoras",
-  usuarios: "Acessos e permissões", clienteDetail: "Dados, veículos e boletos",
+  usuarios: "Acessos e permissões", configuracoes: "Modelo da cotação, mensagens e link do cliente", clienteDetail: "Dados, veículos e boletos",
 };
 
 const NAV_ITEMS = [
@@ -6651,22 +7197,23 @@ const NAV_ITEMS = [
   { key: "cotacoes", label: "Pipeline", Icon: IconeKanban },
   { key: "atividades", label: "Atividades", Icon: ClipboardList },
   { key: "planos", label: "Planos e seguradoras", Icon: Wallet },
-  { key: "consultoras", label: "Consultoras", Icon: Users },
+  { key: "consultoras", label: "Consultores", Icon: Users },
   { key: "adesoes", label: "Adesões", Icon: FileDown },
   { key: "comissoes", label: "Comissões", Icon: CreditCard },
   { key: "usuarios", label: "Usuários", Icon: Shield },
+  { key: "configuracoes", label: "Configurações", Icon: Settings },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], comissoesCorretora: [], funis: [], fases: [], negociacoes: [], atividades: [], eventos: [], usuarios: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], comissoesCorretora: [], funis: [], fases: [], negociacoes: [], atividades: [], eventos: [], configuracoes: {}, usuarios: [] };
 const rowToUsuario = (r) => ({ userId: r.user_id, nome: r.nome || "", email: r.email || "", role: r.role || "operador" });
 
 const rowToConsultora = (r) => ({
-  id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: r.status || "Ativa",
+  id: r.id, nome: r.nome || "", telefone: r.telefone || "", email: r.email || "", status: /^inativ/i.test(r.status || "") ? "Inativo" : "Ativo",
   percentualAdesao: r.percentual_adesao ?? "", valorFixoContrato: r.valor_fixo_contrato ?? "",
   percentualRecorrente: r.percentual_recorrente ?? "", metaMensal: r.meta_mensal ?? "",
 });
 const consultoraToRow = (c) => ({
-  nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativa",
+  nome: c.nome, telefone: c.telefone || null, email: c.email || null, status: c.status || "Ativo",
   percentual_adesao: numOuNull(c.percentualAdesao), valor_fixo_contrato: numOuNull(c.valorFixoContrato),
   percentual_recorrente: numOuNull(c.percentualRecorrente), meta_mensal: numOuNull(c.metaMensal),
 });
@@ -6851,7 +7398,7 @@ function AppInterno() {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes, funisRes, fasesRes, negociacoesRes, atividadesRes, eventosRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes, funisRes, fasesRes, negociacoesRes, atividadesRes, eventosRes, configRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -6868,6 +7415,7 @@ function AppInterno() {
         supabase.from("negociacoes").select("*"),
         supabase.from("negociacao_atividades").select("*"),
         supabase.from("negociacao_eventos").select("*").order("created_at", { ascending: false }).limit(3000),
+        supabase.from("configuracoes").select("*"),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -6895,6 +7443,7 @@ function AppInterno() {
         negociacoes: negociacoesRes.error ? [] : (negociacoesRes.data || []).map(rowToNegociacao),
         atividades: atividadesRes.error ? [] : (atividadesRes.data || []).map(rowToAtividade),
         eventos: eventosRes.error ? [] : (eventosRes.data || []).map(rowToEvento),
+        configuracoes: configRes.error ? {} : Object.fromEntries((configRes.data || []).map((r) => [r.chave, r.valor])),
       });
     } catch (e) {
       console.error(e);
@@ -7153,7 +7702,7 @@ function AppInterno() {
     }
   };
 
-  // --- Consultoras ---
+  // --- Consultores ---
   const saveConsultora = async (consultora) => {
     try {
       if (consultora.id) {
@@ -7167,11 +7716,11 @@ function AppInterno() {
       }
       closeModal();
     } catch (e) {
-      notify("Não foi possível salvar a consultora: " + e.message);
+      notify("Não foi possível salvar o consultor: " + e.message);
     }
   };
   const deleteConsultora = async (id) => {
-    if (!await confirmDialog("Excluir esta consultora? Adesões e comissões vinculadas a ela também serão removidas.")) return;
+    if (!await confirmDialog("Excluir este consultor? Adesões e comissões vinculadas a ele também serão removidas.")) return;
     try {
       const { error } = await supabase.from("consultoras").delete().eq("id", id);
       if (error) throw error;
@@ -7182,7 +7731,7 @@ function AppInterno() {
         comissoes: prev.comissoes.filter((c) => c.consultoraId !== id),
       }));
     } catch (e) {
-      notify("Não foi possível excluir a consultora: " + e.message);
+      notify("Não foi possível excluir o consultor: " + e.message);
     }
   };
 
@@ -7266,6 +7815,51 @@ function AppInterno() {
     }
   };
 
+  // --- Configurações, planos e tabelas de preços ---
+  const salvarConfiguracao = async (chave, valor) => {
+    try {
+      const { data, error } = await supabase.from("configuracoes").upsert({ chave, valor, updated_at: new Date().toISOString() }, { onConflict: "chave" }).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, configuracoes: { ...prev.configuracoes, [chave]: data.valor } }));
+      showToast("Configurações salvas.", "success");
+      return true;
+    } catch (e) {
+      notify("Não foi possível salvar as configurações: " + e.message + (/relation|does not exist|schema cache|configuracoes/i.test(e.message) ? "\n\nRode o script configuracoes-cotacao.sql no Supabase e tente de novo." : ""));
+      return false;
+    }
+  };
+  const salvarTabelaPrecos = async (lista) => {
+    try {
+      for (const x of lista) {
+        const { data, error } = await supabase.from("planos").update({
+          faixas: x.faixas, valor_mensal: numOuNull(x.valorMensal), taxa_ativacao: numOuNull(x.taxaAtivacao), rastreador: numOuNull(x.rastreador), franquia_percentual: numOuNull(x.franquiaPercentual),
+        }).eq("id", x.id).select().single();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, planos: prev.planos.map((p) => (p.id === data.id ? rowToPlano(data) : p)) }));
+      }
+      showToast("Tabela de preços salva.", "success");
+    } catch (e) { notify("Não foi possível salvar a tabela de preços: " + e.message); }
+  };
+  const duplicarPlano = async (plano) => {
+    try {
+      const { data, error } = await supabase.from("planos").insert(planoToRow({ ...plano, id: undefined, nome: `${plano.nome} (cópia)` })).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, planos: [...prev.planos, rowToPlano(data)] }));
+      showToast(`Plano duplicado: “${plano.nome} (cópia)”. Edite o nome e as coberturas.`, "success");
+    } catch (e) { notify("Não foi possível duplicar o plano: " + e.message); }
+  };
+  const duplicarTabela = async (seguradoraId, de, para) => {
+    if (db.planos.some((p) => p.seguradoraId === seguradoraId && String(p.tabela || "").toLowerCase() === para.toLowerCase())) { notify("Já existe uma tabela com esse nome."); return; }
+    const origem = db.planos.filter((p) => p.seguradoraId === seguradoraId && (p.tabela || "") === de);
+    if (origem.length === 0) return;
+    try {
+      const { data, error } = await supabase.from("planos").insert(origem.map((p) => planoToRow({ ...p, id: undefined, tabela: para }))).select();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, planos: [...prev.planos, ...(data || []).map(rowToPlano)] }));
+      showToast(`Tabela “${para}” criada com ${origem.length} plano(s). Ajuste os valores e salve.`, "success");
+    } catch (e) { notify("Não foi possível duplicar a tabela: " + e.message); }
+  };
+
   // --- Pipeline de cotações (negociações) ---
   const nomeUsuario = perfil?.nome || (sessao?.user?.email || "Usuário").split("@")[0];
   const negAberta = negAbertaId ? db.negociacoes.find((n) => n.id === negAbertaId) : null;
@@ -7316,7 +7910,7 @@ function AppInterno() {
         nomeContato: f.nomeContato.trim(), email: f.email.trim(), celular: f.celular, tipoVeiculo: f.tipoVeiculo, placa: f.placa, marca: f.marca,
         modelo: f.modelo, anoModelo: f.anoModelo, combustivel: f.combustivel, codigoFipe: f.codigoFipe, valorFipe: f.valorFipe, estado: f.estado,
         cidade: f.cidade, veiculoTrabalho: f.veiculoTrabalho, origemLead: f.origemLead, seguradoraId: f.seguradoraId, consultoraId: f.consultoraId,
-        validadeDias: 4, tags: [],
+        validadeDias: configCotacao(db).validadePadraoDias || 4, tags: [],
       };
       const { data, error } = await supabase.from("negociacoes").insert(negociacaoToRow(nova)).select().single();
       if (error) throw error;
@@ -7399,7 +7993,7 @@ function AppInterno() {
     const plano = db.planos.find((p) => p.id === n.planoId);
     if (!plano) { notify("Escolha um plano na aba Cotações antes de gerar o PDF."); return; }
     try {
-      gerarPdfNegociacao(n, plano, db.consultoras.find((c) => c.id === n.consultoraId));
+      gerarPdfNegociacao(n, plano, db.consultoras.find((c) => c.id === n.consultoraId), configCotacao(db));
       registrarEvento(n.id, "baixou o PDF da cotação", "cotacao");
     } catch (e) { notify("Não foi possível gerar o PDF: " + e.message); }
   };
@@ -7492,6 +8086,9 @@ function AppInterno() {
     mover: moverNegociacao, update: atualizarNegociacao, addAtividade, toggleAtividade, delAtividade, addEvento: registrarEvento, delEvento,
     enviar: (id) => openModal("enviarCotacao", { id }), pdf: baixarPdf, converter: converterNegociacao, perdida: alternarPerdida, excluir: excluirNegociacao,
     copiarLink: copiarLinkNegociacao,
+    abrirPlano: (segId) => openModal("plano", segId ? { seguradoraId: segId } : null, null, null, segId || null),
+    irTabelas: () => { try { localStorage.setItem("nexo-aba-planos", "tabelas"); } catch {} setNegAbertaId(null); closeModal(); goTo("planos"); },
+    irConfig: (aba) => { try { localStorage.setItem("nexo-aba-config", aba); } catch {} setNegAbertaId(null); closeModal(); goTo("configuracoes"); },
   };
 
   // --- Comissões da corretora (regras por fonte e lançamentos) ---
@@ -7552,7 +8149,7 @@ function AppInterno() {
   const gerarPagamentoAdesao = async (adesao) => {
     const consultora = db.consultoras.find((c) => c.id === adesao.consultoraId);
     const valor = comissaoDaAdesao(adesao, consultora);
-    if (!(valor > 0)) { notify("Defina o ganho da consultora nessa adesão (ou nas regras dela) antes de gerar o pagamento."); return; }
+    if (!(valor > 0)) { notify("Defina o ganho do consultor nessa adesão (ou nas regras dele) antes de gerar o pagamento."); return; }
     const referencia = `adesao:${adesao.id}`;
     if (db.comissoes.some((c) => c.referencia === referencia)) { notify("Já existe um pagamento gerado para essa adesão."); return; }
     try {
@@ -7564,7 +8161,7 @@ function AppInterno() {
       })).select().single();
       if (error) throw error;
       setDb((prev) => ({ ...prev, comissoes: [...prev.comissoes, rowToComissao(data)] }));
-      notify("Pagamento gerado. Ele aparece em Consultoras › Pagamentos.");
+      notify("Pagamento gerado. Ele aparece em Consultores › Pagamentos.");
     } catch (e) {
       notify("Não foi possível gerar o pagamento: " + e.message);
     }
@@ -7929,7 +8526,7 @@ function AppInterno() {
 
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
-    cotacoes: "Pipeline", atividades: "Atividades", planos: "Planos e seguradoras", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões", usuarios: "Usuários",
+    cotacoes: "Pipeline", atividades: "Atividades", planos: "Planos e seguradoras", consultoras: "Consultores", adesoes: "Adesões", comissoes: "Comissões", usuarios: "Usuários", configuracoes: "Configurações",
     clienteDetail: "Detalhes do cliente",
   };
 
@@ -8059,7 +8656,10 @@ function AppInterno() {
               {view === "cotacoes" && <PipelineView db={db} onNova={() => openModal("novaNegociacao")} onAbrir={setNegAbertaId} onMover={moverNegociacao} onConfigFunis={() => openModal("funis")} />}
               {view === "atividades" && <AtividadesView db={db} onAbrir={setNegAbertaId} onToggle={toggleAtividade} onDelete={delAtividade} />}
               {view === "planos" && (
-                <CotacoesView
+                <PlanosView
+                  onSalvarTabela={salvarTabelaPrecos}
+                  onDuplicarTabela={duplicarTabela}
+                  onDuplicarPlano={duplicarPlano}
                   db={db}
                   onOpenModal={openModal}
                   onSaveSeguradora={saveSeguradora}
@@ -8075,6 +8675,7 @@ function AppInterno() {
               {view === "comissoes" && (
                 <ComissoesCorretoraView db={db} onOpenModal={openModal} onDeleteLancamento={deleteLancamento} />
               )}
+              {view === "configuracoes" && ehAdmin && <ConfiguracoesView db={db} onSalvar={salvarConfiguracao} />}
               {view === "usuarios" && ehAdmin && (
                 <UsuariosView db={db} sessao={sessao} meuUserId={sessao?.user?.id} onRecarregarUsuarios={recarregarUsuarios} />
               )}
@@ -8124,7 +8725,7 @@ function AppInterno() {
         </Modal>
       )}
       {modal && modal.type === "plano" && (
-        <Modal title={modal.data ? "Editar plano" : "Novo plano"} onClose={closeModal} wide>
+        <Modal title={modal.data?.id ? "Editar plano" : "Novo plano"} onClose={closeModal} wide>
           <PlanoForm
             initial={modal.data}
             seguradoras={db.seguradoras}
@@ -8149,7 +8750,7 @@ function AppInterno() {
         </Modal>
       )}
       {modal && modal.type === "consultora" && (
-        <Modal title={modal.data?.id ? "Editar consultora" : "Nova consultora"} onClose={closeModal} wide>
+        <Modal title={modal.data?.id ? "Editar consultor" : "Novo consultor"} onClose={closeModal} wide>
           <ConsultoraForm initial={modal.data} onSave={saveConsultora} onCancel={closeModal} />
         </Modal>
       )}
@@ -8170,7 +8771,7 @@ function AppInterno() {
       )}
       {modal && modal.type === "enviarCotacao" && db.negociacoes.some((x) => x.id === modal.data?.id) && (
         <Modal title="Enviar cotação" onClose={closeModal}>
-          <EnviarCotacaoModal n={db.negociacoes.find((x) => x.id === modal.data.id)} db={db} onClose={closeModal} onEvento={(id, t) => registrarEvento(id, t, "cotacao")} onPdf={baixarPdf} />
+          <EnviarCotacaoModal n={db.negociacoes.find((x) => x.id === modal.data.id)} db={db} cfg={configCotacao(db)} onClose={closeModal} onEvento={(id, t) => registrarEvento(id, t, "cotacao")} onPdf={baixarPdf} onCadastrarPlano={() => handlersNeg.abrirPlano(db.negociacoes.find((x) => x.id === modal.data.id)?.seguradoraId)} onIrTabelas={handlersNeg.irTabelas} onAbrirConfig={() => handlersNeg.irConfig("link")} />
         </Modal>
       )}
       {modal && modal.type === "funis" && (
