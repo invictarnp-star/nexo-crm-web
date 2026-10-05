@@ -10,7 +10,8 @@ import {
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
-  Bell, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen, Info
+  Bell, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen, Info,
+  Link2, Copy, Camera, Inbox, Paperclip, Send, StickyNote, MoreVertical, ChevronDown, Settings, Check, List, ClipboardList, Download
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -445,6 +446,175 @@ const STYLE = `
   .nexo-rank > .nexo-cliente-cell { flex: 1 1 220px; }
   .nexo-rank > .nexo-rank-metric { flex: 1 1 28%; }
   .nexo-rank > .nexo-rank-metric.meta { flex: 1 1 100%; }
+}
+/* ---------- Pipeline (quadro de negociações) ---------- */
+.nexo-pipe-barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.nexo-pipe-esq, .nexo-pipe-dir { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nexo-pipe-busca { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; height: 38px; }
+.nexo-pipe-busca select { border: none; border-right: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text-dim); font-family: inherit; font-size: 12.5px; padding: 0 8px; height: 100%; outline: none; }
+.nexo-pipe-busca input { border: none; background: transparent; color: var(--text); font-family: inherit; font-size: 13px; padding: 0 12px; outline: none; width: 190px; height: 100%; }
+.nexo-pipe-filtros { width: 300px; padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
+.nexo-kanban { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 14px; align-items: flex-start; min-height: 58vh; }
+.nexo-kcol { flex: 0 0 292px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 210px); transition: border-color .15s, background .15s; }
+.nexo-kcol.sobre { border-color: var(--accent); background: var(--accent-soft); }
+.nexo-kcol-head { padding: 14px 16px 10px; }
+.nexo-kcol-titulo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
+.nexo-kcol-titulo i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.nexo-kcol-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 3px; }
+.nexo-kcol-corpo { padding: 0 10px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.nexo-kcol-vazio { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 54px 10px; color: var(--text-faint); font-size: 13px; text-align: center; font-weight: 600; }
+.nexo-neg-card { position: relative; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .12s, box-shadow .15s, border-color .15s; }
+.nexo-neg-card:hover { border-color: var(--border); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.nexo-neg-card.perdida { opacity: .62; }
+.nexo-neg-strip { display: flex; height: 3px; border-radius: 12px 12px 0 0; overflow: hidden; gap: 2px; }
+.nexo-neg-strip span { flex: 1; }
+.nexo-neg-body { padding: 10px 12px 8px; }
+.nexo-neg-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; min-height: 0; }
+.nexo-neg-badges:empty { display: none; }
+.nexo-neg-ico { width: 20px; height: 20px; border-radius: 50%; background: var(--surface-3); color: var(--text-faint); display: inline-flex; align-items: center; justify-content: center; }
+.nexo-neg-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff; }
+.nexo-neg-badge.azul { background: #2F80ED; }
+.nexo-neg-badge.verde { background: #1FA971; }
+.nexo-neg-badge.vermelho { background: #E5584B; }
+.nexo-neg-badge.cinza { background: var(--text-faint); }
+.nexo-neg-linha1 { font-size: 11.5px; color: var(--text-faint); line-height: 1.35; }
+.nexo-neg-linha1 strong { color: var(--text-dim); font-weight: 600; font-size: 12px; }
+.nexo-neg-veic { font-weight: 700; font-size: 13px; line-height: 1.3; margin: 3px 0 5px; }
+.nexo-neg-valor { color: var(--success); font-weight: 700; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.nexo-neg-valor span { color: var(--text-dim); }
+.nexo-neg-rodape { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--surface-2); border-top: 1px solid var(--border-soft); border-radius: 0 0 12px 12px; }
+.nexo-neg-docs { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-dim); font-weight: 600; }
+.nexo-neg-dots { margin-left: auto; display: inline-flex; gap: 3px; }
+.nexo-neg-dots i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.nexo-neg-mais { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 2px; border-radius: 6px; display: inline-flex; }
+.nexo-neg-mais:hover { background: var(--surface-3); color: var(--text); }
+.nexo-neg-menu { position: absolute; right: 8px; bottom: 36px; z-index: 20; min-width: 190px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; }
+.nexo-neg-menu-titulo { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-faint); padding: 4px 8px; }
+.nexo-neg-menu-item { padding: 8px 10px; border-radius: 8px; font-size: 12.5px; cursor: pointer; }
+.nexo-neg-menu-item:hover { background: var(--surface-2); }
+.nexo-neg-menu-sep { height: 1px; background: var(--border-soft); margin: 6px 0; }
+.nexo-check { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+
+/* ---------- Janela da negociação ---------- */
+.nexo-modal.xwide { max-width: 1120px; }
+.nexo-neg-modal { overflow: visible; }
+.nexo-neg-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--border-soft); }
+.nexo-neg-titulo { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+.nexo-neg-topo-dir { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nexo-neg-fases { display: flex; gap: 4px; padding: 12px 22px 4px; }
+.nexo-neg-fases .seg { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px; background: var(--surface-3); cursor: pointer; transition: filter .15s; border-bottom: 3px solid transparent; }
+.nexo-neg-fases .seg:hover { filter: brightness(1.12); }
+.nexo-neg-fases .seg b { display: block; font-size: 11px; color: var(--text-dim); font-weight: 700; }
+.nexo-neg-fases .seg span { display: block; font-size: 10.5px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nexo-neg-fases .seg.feito { background: var(--accent-soft); border-bottom-color: var(--accent-dim); }
+.nexo-neg-fases .seg.atual { background: var(--accent); border-bottom-color: var(--accent-strong); }
+.nexo-neg-fases .seg.atual b, .nexo-neg-fases .seg.atual span { color: #fff; }
+.nexo-neg-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; padding: 18px 22px 24px; }
+.nexo-neg-lateral { display: flex; flex-direction: column; gap: 12px; }
+.nexo-neg-lat-card { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px; }
+.nexo-neg-lat-titulo { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+.nexo-neg-cifrao { width: 28px; height: 28px; border-radius: 8px; background: var(--success-soft); color: var(--success); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+.nexo-neg-passos { display: flex; gap: 5px; margin-bottom: 8px; }
+.nexo-neg-passos i { width: 24px; height: 12px; border-radius: 4px; background: var(--surface-3); display: inline-block; }
+.nexo-neg-passos i.ok { background: var(--warning); }
+.nexo-neg-passo-tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 6px; background: var(--warning-soft); color: var(--warning); }
+.nexo-neg-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.nexo-neg-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: var(--accent); color: #fff; }
+.nexo-neg-tag button { background: none; border: none; color: inherit; cursor: pointer; padding: 0; font-size: 14px; line-height: 1; opacity: .8; }
+.nexo-neg-div { display: flex; align-items: center; gap: 12px; margin: 18px 0 10px; color: var(--text-faint); font-size: 11.5px; font-weight: 700; }
+.nexo-neg-div::before, .nexo-neg-div::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
+.nexo-neg-div span { background: var(--surface-3); padding: 3px 12px; border-radius: 999px; color: var(--text-dim); }
+.nexo-neg-sub { display: flex; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+.nexo-neg-sub button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: none; background: transparent; color: var(--text-dim); font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
+.nexo-neg-sub button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.nexo-neg-form { display: flex; flex-direction: column; gap: 12px; }
+.nexo-neg-selico { display: flex; align-items: center; gap: 8px; }
+.nexo-neg-selico svg { color: var(--text-faint); flex-shrink: 0; }
+.nexo-neg-vazio { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 18px; border-radius: 12px; background: var(--surface-2); color: var(--text-faint); font-size: 13px; text-align: center; }
+.nexo-neg-ativ { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 12px; margin-bottom: 8px; background: var(--surface); }
+.nexo-neg-ativ.feita { opacity: .55; }
+.nexo-neg-ativ.feita .nexo-cliente-nome { text-decoration: line-through; }
+.nexo-neg-ativ-ico { width: 30px; height: 30px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nexo-neg-hist { margin-top: 18px; }
+.nexo-neg-evento { display: flex; gap: 10px; padding: 9px 0; font-size: 12.5px; color: var(--text-dim); border-bottom: 1px solid var(--border-soft); }
+.nexo-neg-evento strong { color: var(--text); }
+.nexo-neg-fipe { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; padding: 10px 14px; background: var(--surface-2); border-radius: 12px; }
+.nexo-neg-plano { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; background: var(--surface); transition: border-color .15s, background .15s; }
+.nexo-neg-plano:hover { border-color: var(--accent-dim); }
+.nexo-neg-plano.on { border-color: var(--accent); background: var(--accent-soft); }
+.nexo-neg-plano span { flex: 1; font-weight: 600; font-size: 13px; }
+.nexo-neg-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.nexo-neg-valorcard { position: relative; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); min-height: 86px; }
+.nexo-neg-valorcard .nexo-icon-btn { position: absolute; left: 12px; bottom: 10px; }
+.nexo-neg-valorcard-t { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.nexo-neg-valorcard-v { font-size: 20px; font-weight: 800; color: var(--success); font-variant-numeric: tabular-nums; margin: 2px 0 28px; }
+.nexo-neg-riscado { font-size: 12px; color: var(--danger); text-decoration: line-through; margin-top: 4px; }
+.nexo-neg-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.nexo-neg-resumo > div { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.nexo-neg-linkbox { display: flex; gap: 10px; align-items: center; background: var(--surface-2); border-radius: 12px; padding: 10px 14px; }
+.nexo-neg-linkbox code { flex: 1; font-size: 12px; color: var(--text-dim); word-break: break-all; }
+.nexo-env-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface-2); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; font-weight: 500; }
+.nexo-env-acoes { display: flex; gap: 8px; }
+.nexo-env-btn { width: 36px; height: 34px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: filter .15s; }
+.nexo-env-btn:hover:not(:disabled) { filter: brightness(1.12); }
+.nexo-env-btn:disabled { background: var(--surface-3); color: var(--text-faint); cursor: not-allowed; }
+.nexo-ativ-linha { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-soft); }
+.nexo-ativ-linha:last-child { border-bottom: none; }
+.nexo-ativ-linha.feita { opacity: .55; }
+.nexo-cfg-fase { display: grid; grid-template-columns: 38px 1fr 140px auto auto auto; gap: 8px; align-items: center; }
+.nexo-cfg-fase input[type=color] { width: 38px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); padding: 2px; cursor: pointer; }
+.nexo-cfg-novo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--border-soft); }
+.nexo-cob-grupo { margin-bottom: 14px; }
+.nexo-cob-titulo { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .6px; }
+.nexo-cob-linha { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.nexo-cob-colar { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; align-items: flex-start; }
+.nexo-cob-colar .nexo-textarea { min-height: 96px; }
+
+/* ---------- Página pública da cotação ---------- */
+.nexo-pub { max-width: 1040px; margin: 0 auto; padding: 18px 16px 48px; }
+.nexo-pub-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.nexo-pub-marca { display: flex; align-items: center; gap: 12px; }
+.nexo-pub-marca .nexo-brand-mark { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+.nexo-pub-fone { margin-left: 8px; opacity: .85; font-weight: 500; }
+.nexo-pub-cartao { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 18px; padding: 24px; box-shadow: var(--shadow-md); }
+.nexo-pub-saudacao { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+.nexo-pub-saudacao h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: -0.4px; }
+.nexo-pub-saudacao p { margin: 0 0 6px; font-size: 14px; }
+.nexo-pub-boxes { display: flex; gap: 12px; flex-wrap: wrap; }
+.nexo-pub-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; min-width: 170px; background: var(--surface-2); }
+.nexo-pub-box small { color: var(--text-faint); font-weight: 600; display: block; margin-bottom: 4px; }
+.nexo-pub-box s { color: var(--danger); margin-right: 6px; font-size: 13px; }
+.nexo-pub-box strong { font-size: 17px; }
+.nexo-pub-aviso { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600; font-size: 13.5px; }
+.nexo-pub-aviso.ok { background: var(--success-soft); color: var(--success); }
+.nexo-pub-aviso.erro { background: var(--danger-soft); color: var(--danger); }
+.nexo-pub-tabela { width: 100%; border-collapse: collapse; min-width: 560px; }
+.nexo-pub-tabela th { padding: 16px 12px; text-align: center; vertical-align: top; border-bottom: 2px solid var(--border); background: var(--surface-2); }
+.nexo-pub-tabela th.escolhido { background: var(--success-soft); }
+.nexo-pub-opcoes { text-align: left !important; font-size: 13px; color: var(--text-dim); width: 34%; }
+.nexo-pub-plano { font-weight: 800; font-size: 15px; }
+.nexo-pub-preco { font-size: 22px; font-weight: 800; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.nexo-pub-tabela th small { display: block; color: var(--text-faint); font-weight: 600; margin-bottom: 4px; }
+.nexo-pub-tag { display: inline-block; margin-top: 8px; font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: var(--success); color: #fff; }
+.nexo-pub-tabela td { padding: 11px 12px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
+.nexo-pub-tabela td.cel { text-align: center; }
+.nexo-pub-tabela tr.grupo td { background: var(--surface-3); font-weight: 800; font-size: 11.5px; letter-spacing: .8px; text-transform: uppercase; color: var(--text-dim); }
+.nexo-pub-tabela .sim { color: var(--success); }
+.nexo-pub-tabela .nao { color: var(--danger); opacity: .8; }
+.nexo-pub-detalhe { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+.nexo-pub-rodape { text-align: center; color: var(--text-faint); font-size: 12px; margin-top: 18px; }
+@media (max-width: 1100px) {
+  .nexo-neg-corpo { grid-template-columns: 1fr; }
+  .nexo-kcol { flex-basis: 268px; }
+  .nexo-neg-resumo { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .nexo-pipe-busca input { width: 120px; }
+  .nexo-neg-topo { flex-wrap: wrap; }
+  .nexo-neg-valores { grid-template-columns: 1fr; }
+  .nexo-cfg-fase { grid-template-columns: 38px 1fr 110px; }
+  .nexo-cob-linha { grid-template-columns: auto 1fr auto; }
+  .nexo-cob-linha input:nth-child(3) { grid-column: 2 / 3; }
 }
 .nexo-tab-n { font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-dim); }
 .nexo-tab.active .nexo-tab-n { background: var(--accent); color: #fff; }
@@ -2839,51 +3009,6 @@ function RelatoriosView({ db }) {
 /* Cotação de seguros (seguradoras, planos e cotações)                  */
 /* ------------------------------------------------------------------ */
 
-function PlanoForm({ initial, seguradoras, defaultSeguradoraId, onSave, onCancel }) {
-  const [f, setF] = useState(
-    initial || { seguradoraId: defaultSeguradoraId || "", nome: "", valorMensal: "", valorFranquia: "", beneficios: "" }
-  );
-  const [errors, setErrors] = useState({});
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-
-  function submit() {
-    const errs = {};
-    if (!f.seguradoraId) errs.seguradoraId = "Selecione a seguradora.";
-    if (!f.nome.trim()) errs.nome = "Informe o nome do plano.";
-    if (Object.keys(errs).length) return setErrors(errs);
-    onSave({ ...f, id: initial?.id });
-  }
-
-  return (
-    <>
-      <Field label="Seguradora *" error={errors.seguradoraId}>
-        <select className="nexo-select" value={f.seguradoraId} onChange={set("seguradoraId")}>
-          <option value="">Selecione</option>
-          {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
-        </select>
-      </Field>
-      <Field label="Nome do plano *" error={errors.nome}>
-        <input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: Completo, Básico, Terceiros" />
-      </Field>
-      <div className="nexo-field-row">
-        <Field label="Valor mensal">
-          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorMensal} onChange={set("valorMensal")} placeholder="0,00" />
-        </Field>
-        <Field label="Valor da franquia">
-          <input type="number" step="0.01" min="0" className="nexo-input" value={f.valorFranquia} onChange={set("valorFranquia")} placeholder="0,00" />
-        </Field>
-      </div>
-      <Field label="Benefícios">
-        <textarea className="nexo-textarea" value={f.beneficios} onChange={set("beneficios")} placeholder="Ex.: Assistência 24h, carro reserva, guincho ilimitado…" />
-      </Field>
-      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
-        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
-        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar plano</button>
-      </div>
-    </>
-  );
-}
-
 function CotacaoForm({ initial, clientes, veiculos, seguradoras, planos, defaultClienteId, onSave, onCancel }) {
   const [f, setF] = useState(
     initial || {
@@ -3100,7 +3225,7 @@ function CotacoesView({ db, onOpenModal, onSaveSeguradora, onDeleteSeguradora, o
   return (
     <div>
       <div className="nexo-section-head">
-        <div className="nexo-section-title">Cotação de seguros</div>
+        <div className="nexo-section-title">Planos e seguradoras</div>
       </div>
 
       <div className="nexo-card" style={{ marginBottom: 16 }}>
@@ -4414,13 +4539,16 @@ function calcularAvisos(db) {
   if (aVencer.length) avisos.push({ chave: "avencer", tom: "warning", Icone: Clock, titulo: `${aVencer.length} boleto(s) a vencer`, sub: `${formatBRL(sum(aVencer.map((b) => b.valor)))} nos próximos 7 dias`, destino: "financeiro" });
   if (cnh.length) avisos.push({ chave: "cnh", tom: "warning", Icone: CreditCard, titulo: `${cnh.length} CNH vencida(s) ou vencendo`, sub: "Vencem em até 30 dias", destino: "clientes" });
   if (aniversariantes.length) avisos.push({ chave: "aniv", tom: "accent", Icone: Calendar, titulo: `${aniversariantes.length} aniversariante(s) hoje`, sub: aniversariantes.slice(0, 3).map((c) => c.nome.split(" ")[0]).join(", "), destino: "clientes" });
+  const agoraAv = new Date();
+  const atrasadasAv = (db.atividades || []).filter((a) => !a.concluida && a.quando && new Date(a.quando) < agoraAv);
+  if (atrasadasAv.length) avisos.push({ chave: "ativ", tom: "danger", Icone: ClipboardList, titulo: `${atrasadasAv.length} atividade(s) atrasada(s)`, sub: "Ligações e retornos pendentes", destino: "atividades" });
   return avisos;
 }
 
 function SinoAvisos({ db, onIr }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
-  const avisos = useMemo(() => calcularAvisos(db), [db.boletos, db.clientes]);
+  const avisos = useMemo(() => calcularAvisos(db), [db.boletos, db.clientes, db.atividades]);
   useEffect(() => {
     const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) setAberto(false); };
     document.addEventListener("mousedown", fn);
@@ -5089,6 +5217,1393 @@ function LancamentoForm({ initial, seguradoras, clientes, onSave, onCancel }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Pipeline de cotações (negociações), no estilo do Power CRM           */
+/* ------------------------------------------------------------------ */
+
+const EMPRESA = { nome: "Seu Seguro", detalhe: "Corretora de seguros e proteção veicular" };
+const TIPOS_ATIVIDADE = ["Ligar", "WhatsApp", "E-mail", "Visita", "Reunião", "Vistoria", "Outro"];
+const ORIGENS_LEAD = ["Indicação", "Site", "Instagram", "Facebook", "WhatsApp", "Google", "Parceiro", "Cliente antigo", "Outro"];
+const STATUS_VISTORIA = ["Aguardando", "Em aprovação", "Aprovada", "Reprovada"];
+const TIPOS_VEICULO = ["Carro ou utilitário", "Moto", "Caminhão"];
+const ESTADOS_BR = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
+const GRUPOS_COBERTURA = ["Coberturas", "Assistências", "Benefícios"];
+
+// [nome no sistema, coluna no banco, tipo]
+const NEG_CAMPOS = [
+  ["codigo", "codigo", "txt"], ["funilId", "funil_id", "id"], ["faseId", "fase_id", "id"], ["faseDesde", "fase_desde", "ts"], ["fasesLog", "fases_log", "json"],
+  ["nomeContato", "nome_contato", "txt"], ["email", "email", "txt"], ["celular", "celular", "txt"],
+  ["tipoVeiculo", "tipo_veiculo", "txt"], ["placa", "placa", "txt"], ["marca", "marca", "txt"], ["modelo", "modelo", "txt"], ["anoModelo", "ano_modelo", "txt"],
+  ["combustivel", "combustivel", "txt"], ["codigoFipe", "codigo_fipe", "txt"], ["valorFipe", "valor_fipe", "num"],
+  ["estado", "estado", "txt"], ["cidade", "cidade", "txt"], ["veiculoTrabalho", "veiculo_trabalho", "bool"], ["origemLead", "origem_lead", "txt"],
+  ["seguradoraId", "seguradora_id", "id"], ["planoId", "plano_id", "id"], ["consultoraId", "consultora_id", "id"], ["clienteId", "cliente_id", "id"], ["tabela", "tabela", "txt"],
+  ["taxaAtivacao", "taxa_ativacao", "num"], ["taxaAtivacaoOriginal", "taxa_ativacao_original", "num"], ["rastreador", "rastreador", "num"],
+  ["mensalidade", "mensalidade", "num"], ["franquia", "franquia", "num"], ["validadeDias", "validade_dias", "num"],
+  ["vistoriaStatus", "vistoria_status", "txt"], ["vistoriaObs", "vistoria_obs", "txt"], ["docsEnviados", "docs_enviados", "num"], ["docsTotal", "docs_total", "num"],
+  ["propostaAceita", "proposta_aceita", "bool"], ["propostaAceitaEm", "proposta_aceita_em", "ts"], ["sga", "sga", "bool"],
+  ["afiliado", "afiliado", "txt"], ["linkPagamento", "link_pagamento", "txt"], ["perdida", "perdida", "bool"], ["motivoPerda", "motivo_perda", "txt"],
+  ["tags", "tags", "json"], ["createdAt", "created_at", "ts"],
+];
+const ROTULOS_CAMPOS = {
+  nomeContato: "Nome", email: "E-mail", celular: "Celular", tipoVeiculo: "Tipo de veículo", placa: "Placa", marca: "Marca", modelo: "Modelo",
+  anoModelo: "Ano modelo", combustivel: "Combustível", codigoFipe: "Código Fipe", valorFipe: "Valor Fipe", estado: "Estado", cidade: "Cidade",
+  origemLead: "Origem do lead", veiculoTrabalho: "Veículo de trabalho", vistoriaStatus: "Status da vistoria", vistoriaObs: "Observações da vistoria",
+  docsEnviados: "Documentos enviados", docsTotal: "Documentos necessários", validadeDias: "Validade (dias)", afiliado: "Afiliado(a)",
+  linkPagamento: "Link de pagamento", taxaAtivacao: "Taxa de ativação", rastreador: "Rastreador", mensalidade: "Mensalidade", franquia: "Franquia",
+};
+
+function rowToNegociacao(r) {
+  const n = { id: r.id };
+  for (const [c, s, t] of NEG_CAMPOS) {
+    const v = r[s];
+    n[c] = t === "bool" ? !!v : t === "json" ? (Array.isArray(v) ? v : []) : t === "ts" ? (v || "") : (v ?? "");
+  }
+  return n;
+}
+function negociacaoToRow(patch) {
+  const o = {};
+  for (const [c, s, t] of NEG_CAMPOS) {
+    if (!(c in patch)) continue;
+    const v = patch[c];
+    o[s] = t === "bool" ? !!v : t === "json" ? (v || []) : t === "num" ? numOuNull(v) : v === "" || v == null ? null : v;
+  }
+  return o;
+}
+const rowToFunil = (r) => ({ id: r.id, nome: r.nome || "", ordem: r.ordem ?? 0 });
+const rowToFase = (r) => ({ id: r.id, funilId: r.funil_id, nome: r.nome || "", ordem: r.ordem ?? 0, cor: r.cor || "", tipo: r.tipo || "andamento" });
+const rowToAtividade = (r) => ({
+  id: r.id, negociacaoId: r.negociacao_id, tipo: r.tipo || "Ligar", descricao: r.descricao || "", quando: r.quando || "",
+  responsavel: r.responsavel || "", concluida: !!r.concluida, concluidaEm: r.concluida_em || "", createdAt: r.created_at || "",
+});
+const rowToEvento = (r) => ({ id: r.id, negociacaoId: r.negociacao_id, tipo: r.tipo || "geral", texto: r.texto || "", url: r.url || "", autor: r.autor || "", createdAt: r.created_at || "" });
+
+function gerarCodigoNegociacao(tamanho = 10) {
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = new Uint8Array(tamanho);
+  (globalThis.crypto || window.crypto).getRandomValues(bytes);
+  return Array.from(bytes, (b) => letras[b % letras.length]).join("");
+}
+
+const dataHoraBR = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const p = (x) => String(x).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} - ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+const paraInputDateTime = (iso) => {
+  const d = iso ? new Date(iso) : new Date();
+  const p = (x) => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+function diasNaFase(n) {
+  return n.faseDesde ? Math.max(0, Math.floor((Date.now() - new Date(n.faseDesde).getTime()) / 86400000)) : 0;
+}
+function negExpirada(n, fase) {
+  if (n.propostaAceita || n.perdida || (fase && fase.tipo === "ganho")) return false;
+  const validade = Number(n.validadeDias) || 0;
+  if (!validade || !n.createdAt) return false;
+  return Date.now() > new Date(n.createdAt).getTime() + validade * 86400000;
+}
+/** Dias que a negociação ficou em cada fase (a partir do histórico de movimentações). */
+function diasPorFase(n) {
+  const mapa = {};
+  for (const e of n.fasesLog || []) {
+    const ini = new Date(e.entrouEm).getTime();
+    const fim = e.saiuEm ? new Date(e.saiuEm).getTime() : Date.now();
+    mapa[e.faseId] = (mapa[e.faseId] || 0) + Math.max(0, Math.floor((fim - ini) / 86400000));
+  }
+  return mapa;
+}
+
+/** Mensalidade do plano: pela faixa do valor Fipe (se houver tabela), senão o valor base do plano. */
+function mensalidadePorFaixa(plano, valorFipe) {
+  const faixas = (plano.faixas || [])
+    .map((f) => ({ ate: Number(f.ate) || 0, mensalidade: Number(f.mensalidade) || 0 }))
+    .filter((f) => f.ate > 0)
+    .sort((a, b) => a.ate - b.ate);
+  if (faixas.length && Number(valorFipe) > 0) {
+    return round2((faixas.find((f) => Number(valorFipe) <= f.ate) || faixas[faixas.length - 1]).mensalidade);
+  }
+  return round2(plano.valorMensal);
+}
+function franquiaDoPlano(plano, valorFipe) {
+  if (Number(plano.franquiaPercentual) > 0 && Number(valorFipe) > 0) return round2((Number(valorFipe) * Number(plano.franquiaPercentual)) / 100);
+  return round2(plano.valorFranquia);
+}
+/** Campos da negociação que mudam quando se escolhe um plano. */
+function camposDoPlano(plano, valorFipe) {
+  return {
+    planoId: plano.id,
+    mensalidade: mensalidadePorFaixa(plano, valorFipe),
+    franquia: franquiaDoPlano(plano, valorFipe),
+    taxaAtivacao: plano.taxaAtivacao !== "" ? Number(plano.taxaAtivacao) : "",
+    taxaAtivacaoOriginal: plano.taxaAtivacao !== "" ? Number(plano.taxaAtivacao) : "",
+    rastreador: plano.rastreador !== "" ? Number(plano.rastreador) : "",
+  };
+}
+/** Comissão do consultor numa negociação: regras dele aplicadas sobre a taxa de ativação (a "adesão"). */
+function comissaoDaNegociacao(n, consultora) {
+  return calcComissaoAdesao(consultora, n.taxaAtivacao);
+}
+function primeiroNome(nome) {
+  const p = String(nome || "").trim().split(/\s+/)[0] || "";
+  return p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : "";
+}
+const tituloVeiculo = (n) => [n.marca, n.modelo, n.anoModelo].filter(Boolean).join(" ").trim() || "Veículo não informado";
+
+/** Descreve o que mudou entre dois estados da negociação, no formato do histórico do Power CRM. */
+function descreverAlteracoes(antes, depois, campos) {
+  const fmt = (c, v) => (typeof v === "boolean" ? (v ? "Sim" : "Não") : v === "" || v == null ? "Não informado" : String(v));
+  return campos
+    .filter((c) => String(antes[c] ?? "") !== String(depois[c] ?? ""))
+    .map((c) => `atualizou o campo ${ROTULOS_CAMPOS[c] || c} de ${fmt(c, antes[c])} para: ${fmt(c, depois[c])}`);
+}
+
+/* ---------- links de envio ---------- */
+const urlPublicaCotacao = (codigo, modo) => `${window.location.origin}/?cotacao=${codigo}${modo ? `&modo=${modo}` : ""}`;
+function linkWhatsApp(celular, texto) {
+  const d = String(celular || "").replace(/\D/g, "");
+  const numero = d.length >= 12 && d.startsWith("55") ? d : d.length >= 10 ? "55" + d : "";
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+}
+const linkEmail = (email, assunto, texto) => `mailto:${email || ""}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
+async function copiarTexto(texto) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+/** Agrupa as coberturas do plano (só as incluídas) em Coberturas / Assistências / Benefícios. */
+function coberturasAgrupadas(plano) {
+  const todas = (plano?.coberturas || []).filter((c) => c.incluso !== false);
+  return GRUPOS_COBERTURA.map((g) => ({ grupo: g, itens: todas.filter((c) => (c.grupo || "Coberturas") === g) })).filter((x) => x.itens.length > 0);
+}
+/** Linhas da comparação entre planos: cada cobertura aparece uma vez, com a situação em cada plano. */
+function matrizComparacao(planos) {
+  const ordem = [];
+  const vistos = new Set();
+  for (const p of planos) for (const c of p.coberturas || []) {
+    const chave = `${c.grupo || "Coberturas"}|${c.nome}`;
+    if (!vistos.has(chave)) { vistos.add(chave); ordem.push({ chave, grupo: c.grupo || "Coberturas", nome: c.nome }); }
+  }
+  return ordem.map((linha) => ({
+    ...linha,
+    porPlano: planos.map((p) => {
+      const c = (p.coberturas || []).find((x) => `${x.grupo || "Coberturas"}|${x.nome}` === linha.chave);
+      return c && c.incluso !== false ? { ok: true, detalhe: c.detalhe || "" } : { ok: false, detalhe: "" };
+    }),
+  }));
+}
+
+/** PDF da cotação (uma página por plano escolhido), no formato da proposta do Power CRM. */
+function gerarPdfNegociacao(n, plano, consultora, empresa = EMPRESA) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, M = 15;
+  let y = 18;
+  const garantir = (h) => { if (y + h > 280) { doc.addPage(); y = 18; } };
+  const brl = (v) => formatBRL(v).replace(/\u00a0/g, " ");
+
+  // cabeçalho
+  doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(11, 60, 110);
+  doc.text(String(empresa.nome).toUpperCase(), M, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 130, 140);
+  doc.text(empresa.detalhe, M, y + 5);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(25, 30, 40);
+  doc.text(`COTAÇÃO: ${n.codigo}`, W - M, y, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(110, 118, 128);
+  doc.text(`Data: ${formatDateBR(String(n.createdAt || todayISO()).slice(0, 10))}`, W - M, y + 5.5, { align: "right" });
+  doc.text(`Validade: ${n.validadeDias || 0} dia(s)`, W - M, y + 10, { align: "right" });
+  y += 24;
+
+  // saudação e veículo
+  doc.setFontSize(10.5); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text("Olá ", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(String(n.nomeContato || "").toUpperCase(), M + doc.getTextWidth("Olá "), y);
+  y += 5.5; doc.setFont("helvetica", "normal"); doc.text("Esta é uma cotação para o seu veículo:", M, y);
+  y += 5.5; doc.setFont("helvetica", "bold");
+  doc.text(`${n.placa ? n.placa + " - " : ""}${tituloVeiculo(n)}`, M, y);
+  doc.setFont("helvetica", "normal");
+  if (n.placa) { y += 5; doc.text(`Placa: ${n.placa}`, M, y); }
+  if (n.codigoFipe) { y += 5; doc.text(`Cód. Fipe: ${n.codigoFipe}`, M, y); }
+  if (Number(n.valorFipe) > 0) { y += 8; doc.text("Valor Coberto: ", M, y); doc.setFont("helvetica", "bold"); doc.text(brl(n.valorFipe), M + doc.getTextWidth("Valor Coberto: "), y); }
+  y += 8;
+
+  // plano
+  doc.setFillColor(11, 60, 110); doc.rect(M, y, W - 2 * M, 8, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);
+  doc.text(`PLANO ${String(plano?.nome || "—").toUpperCase()}`, M + 3, y + 5.5);
+  y += 8;
+
+  for (const bloco of coberturasAgrupadas(plano)) {
+    garantir(16);
+    doc.setFillColor(226, 229, 233); doc.rect(M, y, W - 2 * M, 6.5, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(40, 45, 55);
+    doc.text(bloco.grupo, M + 3, y + 4.6);
+    y += 6.5;
+    for (const c of bloco.itens) {
+      const detalhe = c.detalhe ? doc.splitTextToSize(String(c.detalhe), 78) : [];
+      const h = Math.max(6, detalhe.length * 4 + 2);
+      garantir(h);
+      doc.setDrawColor(215, 219, 224); doc.rect(M, y, W - 2 * M, h);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(30, 35, 45);
+      doc.text(String(c.nome), M + 3, y + 4.2);
+      if (detalhe.length) doc.text(detalhe, W - M - 3, y + 4.2, { align: "right" });
+      y += h;
+    }
+  }
+
+  // valores
+  garantir(46);
+  y += 8;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(11, 60, 110);
+  doc.text("COTAÇÃO DO VEÍCULO", M, y);
+  y += 3; doc.setDrawColor(11, 60, 110); doc.line(M, y, W - M, y);
+  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text("Mensalidade:", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(brl(n.mensalidade), M + 30, y);
+  y += 6; doc.setFont("helvetica", "normal"); doc.text("Taxa de Ativação:", M, y);
+  const orig = Number(n.taxaAtivacaoOriginal) || 0, atual = Number(n.taxaAtivacao) || 0;
+  let x = M + 38;
+  if (orig > atual && atual > 0) {
+    doc.setTextColor(150, 155, 160); const t = brl(orig); doc.text(t, x, y);
+    doc.setDrawColor(150, 155, 160); doc.line(x, y - 1.2, x + doc.getTextWidth(t), y - 1.2);
+    x += doc.getTextWidth(t) + 4; doc.setTextColor(30, 35, 45);
+  }
+  doc.setFont("helvetica", "bold"); doc.text(brl(atual), x, y);
+  y += 6; doc.setFont("helvetica", "normal"); doc.text("Rastreador:", M, y);
+  doc.setFont("helvetica", "bold"); doc.text(Number(n.rastreador) > 0 ? brl(n.rastreador) : "obrigatório", M + 38, y);
+  if (Number(n.franquia) > 0) { y += 6; doc.setFont("helvetica", "normal"); doc.text("Participação (franquia):", M, y); doc.setFont("helvetica", "bold"); doc.text(brl(n.franquia), M + 50, y); }
+
+  // consultor
+  garantir(30);
+  y += 12;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(11, 60, 110); doc.text("CONSULTOR", M, y);
+  y += 3; doc.line(M, y, W - M, y);
+  y += 7; doc.setFontSize(10); doc.setTextColor(30, 35, 45);
+  doc.setFont("helvetica", "normal"); doc.text(`Nome: ${consultora?.nome || "—"}`, M, y);
+  doc.text(`Telefone: ${consultora?.telefone || "—"}`, M + 100, y);
+  if (consultora?.email) { y += 6; doc.text(`Email: ${consultora.email}`, M, y); }
+
+  doc.save(`cotacao-${n.codigo}.pdf`);
+}
+
+function IconeKanban({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="5" height="16" rx="1.5" /><rect x="10" y="4" width="5" height="10" rx="1.5" /><rect x="17" y="4" width="4" height="13" rx="1.5" />
+    </svg>
+  );
+}
+
+const FILTROS_PADRAO = { responsavel: "", origem: "", cooperativa: "", vistoria: "", aceita: "", perdidas: "ocultar", tag: "" };
+const CORES_URGENCIA = ["#F5B544", "#F08A3C", "#E5584B"];
+
+function BadgesNegociacao({ n, fase, visualizou }) {
+  const expirada = negExpirada(n, fase);
+  return (
+    <div className="nexo-neg-badges">
+      {visualizou && <span className="nexo-neg-ico" title="O cliente já abriu a cotação"><Eye size={12} /></span>}
+      {n.vistoriaStatus === "Em aprovação" && <span className="nexo-neg-badge azul"><Camera size={11} /> Em aprovação</span>}
+      {n.vistoriaStatus === "Aprovada" && <span className="nexo-neg-badge verde"><Camera size={11} /> Aprovada</span>}
+      {n.vistoriaStatus === "Reprovada" && <span className="nexo-neg-badge vermelho"><Camera size={11} /> Reprovada</span>}
+      {expirada && <span className="nexo-neg-badge vermelho"><Clock size={11} /> Expirada</span>}
+      {n.propostaAceita && <span className="nexo-neg-badge verde"><Check size={11} /> Aceita</span>}
+      {n.sga && <span className="nexo-neg-badge verde">SGA</span>}
+      {n.perdida && <span className="nexo-neg-badge cinza">Perdida</span>}
+    </div>
+  );
+}
+
+function CardNegociacao({ n, fase, fases, consultora, pendentes, visualizou, onAbrir, onMover, onDragStart }) {
+  const [menu, setMenu] = useState(false);
+  const dias = diasNaFase(n);
+  const tom = dias >= 5 ? 3 : dias >= 2 ? 2 : 1;
+  const principal = Number(n.taxaAtivacao) || 0;
+  const extra = Number(n.rastreador) || 0;
+  return (
+    <div className={`nexo-neg-card ${n.perdida ? "perdida" : ""}`} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", n.id); onDragStart && onDragStart(n.id); }} onClick={() => onAbrir(n.id)}>
+      <div className="nexo-neg-strip">{[0, 1, 2].map((i) => <span key={i} style={{ background: i < tom ? CORES_URGENCIA[i] : "var(--border)" }} />)}</div>
+      <div className="nexo-neg-body">
+        <BadgesNegociacao n={n} fase={fase} visualizou={visualizou} />
+        <div className="nexo-neg-linha1"><strong>{n.nomeContato}</strong><span> • {dataHoraBR(n.createdAt).replace(" - ", " - ")}</span></div>
+        <div className="nexo-neg-veic">{n.placa ? `${String(n.placa).toUpperCase()} - ` : ""}{tituloVeiculo(n)}</div>
+        <div className="nexo-neg-valor">{principal > 0 ? formatBRL(principal) : "—"}{extra > 0 && <span> + {formatBRL(extra)}</span>}</div>
+      </div>
+      <div className="nexo-neg-rodape" onClick={(e) => e.stopPropagation()}>
+        {pendentes === 0 && <span title="Sem atividade agendada" style={{ color: "#F5B544", display: "inline-flex" }}><AlertTriangle size={15} /></span>}
+        {n.docsTotal > 0 && <span className="nexo-neg-docs" title="Documentos enviados"><FileText size={13} /> {n.docsEnviados}/{n.docsTotal}</span>}
+        <span className="nexo-neg-dots" title={`${dias} dia(s) nesta fase`}>{[0, 1, 2].map((i) => <i key={i} style={{ background: i < tom ? CORES_URGENCIA[i] : "var(--border)" }} />)}</span>
+        <span title={consultora?.nome || "Sem responsável"}><AvatarNome nome={consultora?.nome || "?"} tamanho={24} /></span>
+        <button className="nexo-neg-mais" title="Mover para…" onClick={() => setMenu((v) => !v)}><MoreVertical size={14} /></button>
+      </div>
+      {menu && (
+        <div className="nexo-neg-menu" onClick={(e) => e.stopPropagation()}>
+          <div className="nexo-neg-menu-titulo">Mover para</div>
+          {fases.filter((f) => f.id !== n.faseId).map((f) => (
+            <div key={f.id} className="nexo-neg-menu-item" onClick={() => { setMenu(false); onMover(n.id, f.id); }}>{f.nome}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PipelineView({ db, onNova, onAbrir, onMover, onConfigFunis }) {
+  const [funilId, setFunilId] = useState(() => { try { return localStorage.getItem("nexo-funil") || ""; } catch { return ""; } });
+  const [vista, setVista] = useState("kanban");
+  const [campo, setCampo] = useState("codigo");
+  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState(FILTROS_PADRAO);
+  const [abrirFiltros, setAbrirFiltros] = useState(false);
+  const [dragSobre, setDragSobre] = useState("");
+  const filtrosRef = useRef(null);
+
+  useEffect(() => { try { if (funilId) localStorage.setItem("nexo-funil", funilId); } catch {} }, [funilId]);
+  useEffect(() => {
+    const fn = (e) => { if (filtrosRef.current && !filtrosRef.current.contains(e.target)) setAbrirFiltros(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  const funil = db.funis.find((f) => f.id === funilId) || db.funis[0];
+  const fases = funil ? db.fases.filter((f) => f.funilId === funil.id).sort((a, b) => a.ordem - b.ordem) : [];
+  const consultoraPorId = useMemo(() => new Map(db.consultoras.map((c) => [c.id, c])), [db.consultoras]);
+  const pendentesPorNeg = useMemo(() => {
+    const m = new Map();
+    db.atividades.filter((a) => !a.concluida).forEach((a) => m.set(a.negociacaoId, (m.get(a.negociacaoId) || 0) + 1));
+    return m;
+  }, [db.atividades]);
+  const visualizaramNeg = useMemo(() => new Set(db.eventos.filter((e) => e.tipo === "cotacao" && /visualizou/.test(e.texto)).map((e) => e.negociacaoId)), [db.eventos]);
+
+  if (!funil) {
+    return (
+      <div className="nexo-table-wrap">
+        <EmptyState icon={Inbox} title="Nenhum funil encontrado" sub="Rode o script pipeline-cotacoes.sql no Supabase para criar o funil “Vendas” com as colunas." />
+      </div>
+    );
+  }
+
+  const tagsExistentes = Array.from(new Set(db.negociacoes.flatMap((n) => n.tags || []))).sort();
+  const nFiltros = Object.entries(filtros).filter(([k, v]) => v !== FILTROS_PADRAO[k]).length;
+  const termo = normalizarTexto(busca);
+  const digitosBusca = busca.replace(/\D/g, "");
+
+  const passa = (n) => {
+    if (termo) {
+      const alvo = { codigo: n.codigo, nome: n.nomeContato, placa: n.placa, modelo: `${n.marca} ${n.modelo}`, telefone: n.celular }[campo] || "";
+      if (campo === "telefone" ? !(digitosBusca && String(alvo).replace(/\D/g, "").includes(digitosBusca)) : !normalizarTexto(alvo).includes(termo)) return false;
+    }
+    if (filtros.responsavel && n.consultoraId !== filtros.responsavel) return false;
+    if (filtros.origem && n.origemLead !== filtros.origem) return false;
+    if (filtros.cooperativa && n.seguradoraId !== filtros.cooperativa) return false;
+    if (filtros.vistoria && n.vistoriaStatus !== filtros.vistoria) return false;
+    if (filtros.aceita === "sim" && !n.propostaAceita) return false;
+    if (filtros.aceita === "nao" && n.propostaAceita) return false;
+    if (filtros.perdidas === "ocultar" && n.perdida) return false;
+    if (filtros.perdidas === "somente" && !n.perdida) return false;
+    if (filtros.tag && !(n.tags || []).includes(filtros.tag)) return false;
+    return true;
+  };
+  const negs = db.negociacoes.filter((n) => n.funilId === funil.id && passa(n)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const faseDe = (n) => fases.find((f) => f.id === n.faseId) || fases[0];
+  const setF = (k) => (e) => setFiltros({ ...filtros, [k]: e.target.value });
+
+  function soltar(e, faseId) {
+    e.preventDefault();
+    setDragSobre("");
+    const id = e.dataTransfer.getData("text/plain");
+    if (id) onMover(id, faseId);
+  }
+
+  return (
+    <div>
+      <div className="nexo-pipe-barra">
+        <div className="nexo-pipe-esq">
+          <select className="nexo-select" style={{ width: "auto", minWidth: 170 }} value={funil.id} onChange={(e) => setFunilId(e.target.value)} title="Funil">
+            {db.funis.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+          </select>
+          <div className="nexo-seg" style={{ marginLeft: 0 }}>
+            <button className={vista === "kanban" ? "on" : ""} onClick={() => setVista("kanban")} title="Quadro"><IconeKanban size={15} /></button>
+            <button className={vista === "lista" ? "on" : ""} onClick={() => setVista("lista")} title="Lista"><List size={15} /></button>
+          </div>
+          <button className="nexo-icon-btn" title="Configurar funis e colunas" onClick={onConfigFunis}><Settings size={15} /></button>
+        </div>
+        <div className="nexo-pipe-dir">
+          <div className="nexo-pipe-busca">
+            <select value={campo} onChange={(e) => setCampo(e.target.value)}>
+              <option value="codigo">Código</option><option value="nome">Nome</option><option value="placa">Placa</option><option value="telefone">Telefone</option><option value="modelo">Veículo</option>
+            </select>
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar…" />
+          </div>
+          <div ref={filtrosRef} style={{ position: "relative" }}>
+            <button className="nexo-btn" onClick={() => setAbrirFiltros((v) => !v)}>
+              <ListFilter size={14} /> Filtrar {nFiltros > 0 && <span className="nexo-chip-n" style={{ background: "var(--accent)", color: "#fff" }}>{nFiltros}</span>}
+            </button>
+            {abrirFiltros && (
+              <div className="nexo-pop nexo-pop-right nexo-pipe-filtros">
+                <Field label="Responsável"><select className="nexo-select" value={filtros.responsavel} onChange={setF("responsavel")}><option value="">Todos</option>{db.consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></Field>
+                <Field label="Cooperativa / seguradora"><select className="nexo-select" value={filtros.cooperativa} onChange={setF("cooperativa")}><option value="">Todas</option>{db.seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}</select></Field>
+                <Field label="Origem do lead"><select className="nexo-select" value={filtros.origem} onChange={setF("origem")}><option value="">Todas</option>{ORIGENS_LEAD.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                <Field label="Vistoria"><select className="nexo-select" value={filtros.vistoria} onChange={setF("vistoria")}><option value="">Todas</option>{STATUS_VISTORIA.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                <Field label="Proposta aceita"><select className="nexo-select" value={filtros.aceita} onChange={setF("aceita")}><option value="">Todas</option><option value="sim">Aceitas</option><option value="nao">Não aceitas</option></select></Field>
+                <Field label="Perdidas"><select className="nexo-select" value={filtros.perdidas} onChange={setF("perdidas")}><option value="ocultar">Ocultar</option><option value="mostrar">Mostrar junto</option><option value="somente">Somente perdidas</option></select></Field>
+                {tagsExistentes.length > 0 && <Field label="Tag"><select className="nexo-select" value={filtros.tag} onChange={setF("tag")}><option value="">Todas</option>{tagsExistentes.map((t) => <option key={t}>{t}</option>)}</select></Field>}
+                <button className="nexo-btn nexo-btn-ghost nexo-btn-sm" onClick={() => setFiltros(FILTROS_PADRAO)}><RotateCcw size={13} /> Limpar filtros</button>
+              </div>
+            )}
+          </div>
+          <button className="nexo-btn nexo-btn-primary" onClick={onNova}><Plus size={15} /> Nova negociação</button>
+        </div>
+      </div>
+
+      {vista === "kanban" ? (
+        <div className="nexo-kanban">
+          {fases.map((fase) => {
+            const daFase = negs.filter((n) => faseDe(n)?.id === fase.id);
+            return (
+              <div
+                key={fase.id}
+                className={`nexo-kcol ${dragSobre === fase.id ? "sobre" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setDragSobre(fase.id); }}
+                onDragLeave={() => setDragSobre((s) => (s === fase.id ? "" : s))}
+                onDrop={(e) => soltar(e, fase.id)}
+              >
+                <div className="nexo-kcol-head">
+                  <div className="nexo-kcol-titulo"><i style={{ background: fase.cor || "var(--accent)" }} />{fase.nome}</div>
+                  <div className="nexo-kcol-sub">{daFase.length === 0 ? "nenhuma encontrada" : `${daFase.length} encontrada${daFase.length > 1 ? "s" : ""}`}</div>
+                </div>
+                <div className="nexo-kcol-corpo">
+                  {daFase.length === 0 ? (
+                    <div className="nexo-kcol-vazio"><Inbox size={46} /><div>Sem cotações<br />no momento</div></div>
+                  ) : daFase.map((n) => (
+                    <CardNegociacao
+                      key={n.id} n={n} fase={fase} fases={fases} consultora={consultoraPorId.get(n.consultoraId)}
+                      pendentes={pendentesPorNeg.get(n.id) || 0} visualizou={visualizaramNeg.has(n.id)} onAbrir={onAbrir} onMover={onMover}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : negs.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={Inbox} title="Nenhuma negociação encontrada" sub="Ajuste a busca ou os filtros, ou clique em “Nova negociação”." /></div>
+      ) : (
+        <div className="nexo-table-wrap">
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Contato</th><th>Veículo</th><th>Fase</th><th>Taxa de ativação</th><th>Mensalidade</th><th>Responsável</th><th>Criada em</th><th>Situação</th></tr></thead>
+              <tbody>
+                {negs.map((n) => (
+                  <tr key={n.id} className="nexo-row-link" onClick={() => onAbrir(n.id)}>
+                    <td><div className="nexo-cliente-cell"><AvatarNome nome={n.nomeContato} tamanho={32} /><div><div className="nexo-cliente-nome">{n.nomeContato}</div><div className="nexo-cliente-sub mono">{n.codigo}</div></div></div></td>
+                    <td>{n.placa && <PlacaChip placa={n.placa} />}<div className="nexo-cliente-sub">{tituloVeiculo(n)}</div></td>
+                    <td><PillTom tom="info">{faseDe(n)?.nome || "—"}</PillTom></td>
+                    <td className="mono">{Number(n.taxaAtivacao) > 0 ? formatBRL(n.taxaAtivacao) : "—"}</td>
+                    <td className="mono">{Number(n.mensalidade) > 0 ? formatBRL(n.mensalidade) : "—"}</td>
+                    <td className="nexo-cell-muted">{consultoraPorId.get(n.consultoraId)?.nome || "—"}</td>
+                    <td className="nexo-cell-muted">{dataHoraBR(n.createdAt)}</td>
+                    <td><BadgesNegociacao n={n} fase={faseDe(n)} visualizou={false} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NovaNegociacaoForm({ seguradoras, consultoras, onSave, onCancel }) {
+  const ultimaSeg = (() => { try { return localStorage.getItem("nexo-ult-coop") || ""; } catch { return ""; } })();
+  const [f, setF] = useState({
+    seguradoraId: seguradoras.find((s) => s.id === ultimaSeg)?.id || seguradoras[0]?.id || "", consultoraId: consultoras.find((c) => c.status !== "Inativa")?.id || "",
+    tipoVeiculo: "", placa: "", marca: "", modelo: "", anoModelo: "", codigoFipe: "", valorFipe: "", combustivel: "",
+    nomeContato: "", email: "", celular: "", estado: "", cidade: "", origemLead: "", veiculoTrabalho: false, enviarEmail: false,
+  });
+  const [erros, setErros] = useState({});
+  const [marcas, setMarcas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [anos, setAnos] = useState([]);
+  const [marcaSel, setMarcaSel] = useState("");
+  const [modeloSel, setModeloSel] = useState("");
+  const [anoSel, setAnoSel] = useState("");
+  const [fipeMsg, setFipeMsg] = useState("");
+  const usaFipe = !f.tipoVeiculo || f.tipoVeiculo === "Carro ou utilitário";
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  useEffect(() => {
+    fetch("/api/fipe?action=marcas").then((r) => r.json()).then((l) => Array.isArray(l) && setMarcas(l)).catch(() => {});
+  }, []);
+  useEffect(() => {
+    setModeloSel(""); setModelos([]); setAnos([]); setAnoSel("");
+    if (!marcaSel) return;
+    fetch(`/api/fipe?action=modelos&marca=${marcaSel}`).then((r) => r.json()).then((l) => Array.isArray(l) && setModelos(l)).catch(() => {});
+  }, [marcaSel]);
+  useEffect(() => {
+    setAnos([]); setAnoSel("");
+    if (!marcaSel || !modeloSel) return;
+    fetch(`/api/fipe?action=anos&marca=${marcaSel}&modelo=${modeloSel}`).then((r) => r.json()).then((l) => Array.isArray(l) && setAnos(l)).catch(() => {});
+  }, [modeloSel]);
+  useEffect(() => {
+    if (!marcaSel || !modeloSel || !anoSel) return;
+    setFipeMsg("Consultando a Tabela Fipe…");
+    fetch(`/api/fipe?action=valor&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`)
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) throw new Error();
+        setF((p) => ({ ...p, marca: d.marca || p.marca, modelo: d.modelo || p.modelo, anoModelo: String(d.ano || p.anoModelo).slice(0, 4), codigoFipe: d.codigoFipe || "", valorFipe: d.valor != null ? d.valor : "", combustivel: d.combustivel || "" }));
+        setFipeMsg(`Valor Fipe encontrado: ${d.valor != null ? formatBRL(d.valor) : "—"}`);
+      })
+      .catch(() => setFipeMsg("Não foi possível consultar a Fipe agora. Você pode preencher o valor na aba Cotações."));
+  }, [anoSel]);
+
+  function submit() {
+    const e = {};
+    if (!f.nomeContato.trim()) e.nomeContato = "Informe o nome do contato.";
+    if (!f.email.trim() && !f.celular.trim()) e.contato = "Preencha o e-mail ou o celular.";
+    if (!f.origemLead) e.origemLead = "Selecione a origem do lead.";
+    if (Object.keys(e).length) return setErros(e);
+    try { localStorage.setItem("nexo-ult-coop", f.seguradoraId); } catch {}
+    onSave(f);
+  }
+
+  return (
+    <>
+      <div className="nexo-field-row">
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field label="Cooperativa / seguradora">
+            <select className="nexo-select" value={f.seguradoraId} onChange={set("seguradoraId")}>
+              {seguradoras.length === 0 && <option value="">Cadastre em Planos e seguradoras</option>}
+              {seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+            </select>
+          </Field>
+          <Field label="Tipo de veículo">
+            <select className="nexo-select" value={f.tipoVeiculo} onChange={set("tipoVeiculo")}>
+              <option value="">Selecione o tipo</option>{TIPOS_VEICULO.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </Field>
+          <Field label="Placa"><input className="nexo-input mono" value={f.placa} onChange={(e) => setF({ ...f, placa: e.target.value.toUpperCase().slice(0, 8) })} placeholder="ABC1D23" /></Field>
+          {usaFipe ? (
+            <>
+              <Field label="Marca"><select className="nexo-select" value={marcaSel} onChange={(e) => setMarcaSel(e.target.value)}><option value="">Selecione</option>{marcas.map((m) => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}</select></Field>
+              <Field label="Modelo"><select className="nexo-select" value={modeloSel} onChange={(e) => setModeloSel(e.target.value)} disabled={!marcaSel}><option value="">Selecione</option>{modelos.map((m) => <option key={m.codigo} value={m.codigo}>{m.nome}</option>)}</select></Field>
+              <Field label="Ano modelo"><select className="nexo-select" value={anoSel} onChange={(e) => setAnoSel(e.target.value)} disabled={!modeloSel}><option value="">Selecione</option>{anos.map((a) => <option key={a.codigo} value={a.codigo}>{a.nome}</option>)}</select></Field>
+              {fipeMsg && <div className="nexo-cliente-sub">{fipeMsg}</div>}
+            </>
+          ) : (
+            <>
+              <Field label="Marca"><input className="nexo-input" value={f.marca} onChange={set("marca")} /></Field>
+              <Field label="Modelo"><input className="nexo-input" value={f.modelo} onChange={set("modelo")} /></Field>
+              <Field label="Ano modelo"><input className="nexo-input" value={f.anoModelo} onChange={set("anoModelo")} /></Field>
+            </>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field label="Nome para contato *" error={erros.nomeContato}><input className="nexo-input" value={f.nomeContato} onChange={set("nomeContato")} /></Field>
+          <div className="nexo-card" style={{ padding: 14, background: "var(--surface-2)", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="nexo-cliente-sub" style={{ marginTop: 0 }}>Preencha um dos campos abaixo: *</div>
+            <Field label="E-mail"><input type="email" className="nexo-input" value={f.email} onChange={set("email")} /></Field>
+            <Field label="Celular" error={erros.contato}><input className="nexo-input mono" value={f.celular} onChange={(e) => setF({ ...f, celular: maskPhone(e.target.value) })} placeholder="(00) 00000-0000" /></Field>
+          </div>
+          <div className="nexo-field-row">
+            <Field label="Estado"><select className="nexo-select" value={f.estado} onChange={set("estado")}><option value="">—</option>{ESTADOS_BR.map((u) => <option key={u}>{u}</option>)}</select></Field>
+            <Field label="Cidade"><input className="nexo-input" value={f.cidade} onChange={set("cidade")} /></Field>
+          </div>
+          <Field label="Origem do lead *" error={erros.origemLead}><select className="nexo-select" value={f.origemLead} onChange={set("origemLead")}><option value="">Selecione</option>{ORIGENS_LEAD.map((o) => <option key={o}>{o}</option>)}</select></Field>
+          <Field label="Responsável"><select className="nexo-select" value={f.consultoraId} onChange={set("consultoraId")}><option value="">—</option>{consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></Field>
+          <label className="nexo-check"><input type="checkbox" checked={f.veiculoTrabalho} onChange={(e) => setF({ ...f, veiculoTrabalho: e.target.checked })} /> Veículo de trabalho (Táxi/Uber)</label>
+          <label className="nexo-check"><input type="checkbox" checked={f.enviarEmail} onChange={(e) => setF({ ...f, enviarEmail: e.target.checked })} /> Enviar cotação para o associado por e-mail</label>
+        </div>
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Adicionar negociação</button>
+      </div>
+    </>
+  );
+}
+
+function ConfigFunilForm({ db, funilInicial, onSalvar, onNovoFunil, onExcluirFunil, onCancel }) {
+  const [funilId, setFunilId] = useState(funilInicial || db.funis[0]?.id || "");
+  const [nomeFunil, setNomeFunil] = useState(db.funis.find((f) => f.id === (funilInicial || db.funis[0]?.id))?.nome || "");
+  const [fases, setFases] = useState(() => db.fases.filter((f) => f.funilId === (funilInicial || db.funis[0]?.id)).sort((a, b) => a.ordem - b.ordem).map((f) => ({ ...f })));
+  const [novoFunil, setNovoFunil] = useState("");
+
+  function trocarFunil(id) {
+    setFunilId(id);
+    setNomeFunil(db.funis.find((f) => f.id === id)?.nome || "");
+    setFases(db.fases.filter((f) => f.funilId === id).sort((a, b) => a.ordem - b.ordem).map((f) => ({ ...f })));
+  }
+  const mudar = (i, k, v) => setFases(fases.map((f, j) => (j === i ? { ...f, [k]: v } : f)));
+  const mover = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= fases.length) return;
+    const copia = [...fases];
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+    setFases(copia);
+  };
+
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Funil">
+          <select className="nexo-select" value={funilId} onChange={(e) => trocarFunil(e.target.value)}>{db.funis.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}</select>
+        </Field>
+        <Field label="Nome do funil"><input className="nexo-input" value={nomeFunil} onChange={(e) => setNomeFunil(e.target.value)} /></Field>
+      </div>
+      <div style={{ fontSize: 12.5, fontWeight: 700 }}>Colunas (fases) do quadro</div>
+      <div className="nexo-cliente-sub" style={{ marginTop: -8 }}>A coluna marcada como “Venda” é onde a negociação conta como fechada.</div>
+      {fases.map((f, i) => (
+        <div key={f.id || `n${i}`} className="nexo-cfg-fase">
+          <input type="color" value={f.cor || "#4C97E6"} onChange={(e) => mudar(i, "cor", e.target.value)} title="Cor" />
+          <input className="nexo-input" value={f.nome} onChange={(e) => mudar(i, "nome", e.target.value)} placeholder="Nome da coluna" />
+          <select className="nexo-select" style={{ width: 140 }} value={f.tipo} onChange={(e) => mudar(i, "tipo", e.target.value)}>
+            <option value="entrada">Entrada</option><option value="andamento">Em andamento</option><option value="ganho">Venda</option>
+          </select>
+          <button className="nexo-icon-btn" title="Subir" onClick={() => mover(i, -1)}>↑</button>
+          <button className="nexo-icon-btn" title="Descer" onClick={() => mover(i, 1)}>↓</button>
+          <button className="nexo-icon-btn" title="Remover" onClick={() => setFases(fases.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
+        </div>
+      ))}
+      <div><button className="nexo-btn nexo-btn-sm" onClick={() => setFases([...fases, { id: "", funilId, nome: "", ordem: fases.length + 1, cor: "#4C97E6", tipo: "andamento" }])}><Plus size={13} /> Adicionar coluna</button></div>
+      <div className="nexo-cfg-novo">
+        <input className="nexo-input" placeholder="Nome de um novo funil" value={novoFunil} onChange={(e) => setNovoFunil(e.target.value)} />
+        <button className="nexo-btn nexo-btn-sm" disabled={!novoFunil.trim()} onClick={() => { onNovoFunil(novoFunil.trim()); setNovoFunil(""); }}>Criar funil</button>
+        {db.funis.length > 1 && <button className="nexo-btn nexo-btn-sm nexo-btn-danger" onClick={() => onExcluirFunil(funilId)}>Excluir este funil</button>}
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Fechar</button>
+        <button className="nexo-btn nexo-btn-primary" disabled={!funilId} onClick={() => onSalvar({ funilId, nome: nomeFunil, fases })}>Salvar colunas</button>
+      </div>
+    </>
+  );
+}
+
+const ICONE_ATIVIDADE = { Ligar: Phone, WhatsApp: MessageCircle, "E-mail": Mail, Visita: MapPin, Reunião: Users, Vistoria: Camera, Outro: ClipboardList };
+
+function BarraFases({ n, fases, onMover }) {
+  const dias = diasPorFase(n);
+  const idxAtual = Math.max(0, fases.findIndex((f) => f.id === n.faseId));
+  return (
+    <div className="nexo-neg-fases">
+      {fases.map((f, i) => (
+        <div key={f.id} className={`seg ${i < idxAtual ? "feito" : i === idxAtual ? "atual" : ""}`} onClick={() => i !== idxAtual && onMover(n.id, f.id)} title={i === idxAtual ? "Fase atual" : `Mover para “${f.nome}”`}>
+          <b>{i === idxAtual ? `${diasNaFase(n)} dia(s)` : dias[f.id] ? `${dias[f.id]}d` : "0 dias"}</b>
+          <span>{f.nome}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LateralNegociacao({ n, db, consultora, onUpdate }) {
+  const [tagNova, setTagNova] = useState("");
+  const [editandoAfiliado, setEditandoAfiliado] = useState(false);
+  const [afiliado, setAfiliado] = useState(n.afiliado || "");
+  const comissao = comissaoDaNegociacao(n, consultora);
+  const enviou = db.eventos.some((e) => e.negociacaoId === n.id && e.tipo === "cotacao" && /enviou/.test(e.texto));
+  const passos = [["Cotação enviada", enviou], ["Plano selecionado", !!n.planoId], ["Proposta aceita", n.propostaAceita], ["Vistoria aprovada", n.vistoriaStatus === "Aprovada"], ["Cadastro no SGA", n.sga]];
+  const feitos = passos.filter((p) => p[1]);
+  const rotuloPasso = feitos.length ? feitos[feitos.length - 1][0] : "Aguardando envio";
+  const adicionarTag = () => {
+    const t = tagNova.trim();
+    if (!t || (n.tags || []).includes(t)) { setTagNova(""); return; }
+    onUpdate(n.id, { tags: [...(n.tags || []), t] }, `adicionou a tag “${t}”`);
+    setTagNova("");
+  };
+  return (
+    <aside className="nexo-neg-lateral">
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Responsável</div>
+        <div className="nexo-cliente-cell"><AvatarNome nome={consultora?.nome || "?"} tamanho={34} /><strong>{consultora?.nome || "Sem responsável"}</strong></div>
+        <select className="nexo-select" style={{ marginTop: 10 }} value={n.consultoraId} onChange={(e) => onUpdate(n.id, { consultoraId: e.target.value }, `alterou o responsável para ${db.consultoras.find((c) => c.id === e.target.value)?.nome || "ninguém"}`)}>
+          <option value="">Sem responsável</option>{db.consultoras.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Comissão</div>
+        <div className="nexo-cliente-cell"><span className="nexo-neg-cifrao">$</span><strong className="mono" style={{ fontSize: 17, color: "var(--success)" }}>{formatBRL(comissao)}</strong></div>
+        <div className="nexo-cliente-sub">calculada pelas regras da consultora sobre a taxa de ativação</div>
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Afiliado(a)</div>
+        {editandoAfiliado ? (
+          <div style={{ display: "flex", gap: 6 }}>
+            <input className="nexo-input" value={afiliado} onChange={(e) => setAfiliado(e.target.value)} placeholder="Quem indicou" />
+            <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => { onUpdate(n.id, { afiliado }, afiliado ? `definiu o afiliado como ${afiliado}` : "removeu o afiliado"); setEditandoAfiliado(false); }}>OK</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="nexo-cliente-nome">{n.afiliado || <span className="nexo-cell-muted">Ninguém indicado</span>}</span>
+            <button className="nexo-btn nexo-btn-sm" onClick={() => setEditandoAfiliado(true)}>{n.afiliado ? "Editar" : "Adicionar"}</button>
+          </div>
+        )}
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Contratação online</div>
+        <div className="nexo-neg-passos">{passos.map(([rot, ok]) => <i key={rot} className={ok ? "ok" : ""} title={rot} />)}</div>
+        <span className="nexo-neg-passo-tag">{rotuloPasso}</span>
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Cooperativa / seguradora</div>
+        <select className="nexo-select" value={n.seguradoraId} onChange={(e) => onUpdate(n.id, { seguradoraId: e.target.value, planoId: "", tabela: "" }, `alterou a cooperativa para ${db.seguradoras.find((s) => s.id === e.target.value)?.nome || "nenhuma"}`)}>
+          <option value="">—</option>{db.seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+        </select>
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo">Origem do lead</div>
+        <select className="nexo-select" value={n.origemLead} onChange={(e) => onUpdate(n.id, { origemLead: e.target.value }, `alterou a origem do lead para ${e.target.value}`)}>
+          <option value="">—</option>{ORIGENS_LEAD.map((o) => <option key={o}>{o}</option>)}
+        </select>
+      </div>
+      <div className="nexo-neg-lat-card">
+        <div className="nexo-neg-lat-titulo" style={{ display: "flex", justifyContent: "space-between" }}>Tags</div>
+        <div className="nexo-neg-tags">
+          {(n.tags || []).map((t) => <span key={t} className="nexo-neg-tag">{t}<button onClick={() => onUpdate(n.id, { tags: n.tags.filter((x) => x !== t) }, `removeu a tag “${t}”`)}>×</button></span>)}
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          <input className="nexo-input" value={tagNova} onChange={(e) => setTagNova(e.target.value)} onKeyDown={(e) => e.key === "Enter" && adicionarTag()} placeholder="Nova tag" />
+          <button className="nexo-btn nexo-btn-sm" onClick={adicionarTag}>Adicionar</button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function HistoricoNegociacao({ eventos }) {
+  const [aba, setAba] = useState("geral");
+  const lista = eventos.filter((e) => (aba === "geral" ? e.tipo === "geral" || e.tipo === "nota" || e.tipo === "anexo" : e.tipo === "cotacao"));
+  return (
+    <div className="nexo-neg-hist">
+      <div className="nexo-neg-div"><span>Histórico</span></div>
+      <div className="nexo-tabs"><div className={`nexo-tab ${aba === "geral" ? "active" : ""}`} onClick={() => setAba("geral")}>Geral</div><div className={`nexo-tab ${aba === "cotacao" ? "active" : ""}`} onClick={() => setAba("cotacao")}>Cotação</div></div>
+      {lista.length === 0 ? <div className="nexo-empty-sub">Nada por aqui ainda.</div> : lista.map((e) => (
+        <div key={e.id} className="nexo-neg-evento">
+          <AvatarNome nome={e.autor || "?"} tamanho={30} />
+          <div><div><strong>{e.autor}</strong> {e.texto}</div><div className="nexo-cliente-sub">{dataHoraBR(e.createdAt)}</div></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AbaAtividades({ n, db, perfilNome, onAddAtividade, onToggleAtividade, onDelAtividade, onAddEvento, onDelEvento }) {
+  const [sub, setSub] = useState("atividades");
+  const [tipo, setTipo] = useState("Ligar");
+  const [desc, setDesc] = useState("");
+  const [quando, setQuando] = useState(paraInputDateTime());
+  const [resp, setResp] = useState(`${perfilNome} (Você)`);
+  const [nota, setNota] = useState("");
+  const [anexoNome, setAnexoNome] = useState("");
+  const [anexoUrl, setAnexoUrl] = useState("");
+  const atividades = db.atividades.filter((a) => a.negociacaoId === n.id).sort((a, b) => String(a.quando).localeCompare(String(b.quando)));
+  const notas = db.eventos.filter((e) => e.negociacaoId === n.id && e.tipo === "nota");
+  const anexos = db.eventos.filter((e) => e.negociacaoId === n.id && e.tipo === "anexo");
+  const IconeTipo = ICONE_ATIVIDADE[tipo] || ClipboardList;
+
+  return (
+    <div>
+      <div className="nexo-neg-sub">
+        {[["atividades", "Atividades", ClipboardList], ["notas", "Anotações", StickyNote], ["anexos", "Anexos", Paperclip]].map(([k, rot, I]) => (
+          <button key={k} className={sub === k ? "on" : ""} onClick={() => setSub(k)}><I size={15} /> {rot}</button>
+        ))}
+      </div>
+
+      {sub === "atividades" && (
+        <>
+          <div className="nexo-neg-form">
+            <Field label="Atividade *">
+              <div className="nexo-neg-selico"><IconeTipo size={15} /><select className="nexo-select" value={tipo} onChange={(e) => setTipo(e.target.value)}>{TIPOS_ATIVIDADE.map((t) => <option key={t}>{t}</option>)}</select></div>
+            </Field>
+            <textarea className="nexo-textarea" maxLength={250} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Detalhes da atividade (opcional)" style={{ minHeight: 48 }} />
+            <div className="nexo-cliente-sub" style={{ textAlign: "right", marginTop: -6 }}>{desc.length}/250 caracteres</div>
+            <div className="nexo-field-row">
+              <Field label="Quando *"><input type="datetime-local" className="nexo-input" value={quando} onChange={(e) => setQuando(e.target.value)} /></Field>
+              <Field label="Responsável *"><select className="nexo-select" value={resp} onChange={(e) => setResp(e.target.value)}><option>{`${perfilNome} (Você)`}</option>{db.consultoras.map((c) => <option key={c.id}>{c.nome}</option>)}</select></Field>
+            </div>
+            <div><button className="nexo-btn nexo-btn-primary" disabled={!quando} onClick={() => { onAddAtividade(n.id, { tipo, descricao: desc, quando: new Date(quando).toISOString(), responsavel: resp.replace(" (Você)", "") }); setDesc(""); }}>Salvar</button></div>
+          </div>
+          <div className="nexo-neg-div"><span>Atividades</span></div>
+          {atividades.length === 0 ? (
+            <div className="nexo-neg-vazio"><Calendar size={26} /> Sem atividades nesta negociação.</div>
+          ) : atividades.map((a) => {
+            const I = ICONE_ATIVIDADE[a.tipo] || ClipboardList;
+            const atrasada = !a.concluida && new Date(a.quando) < new Date();
+            return (
+              <div key={a.id} className={`nexo-neg-ativ ${a.concluida ? "feita" : ""}`}>
+                <input type="checkbox" checked={a.concluida} onChange={() => onToggleAtividade(a)} title="Concluir" />
+                <span className="nexo-neg-ativ-ico"><I size={15} /></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="nexo-cliente-nome">{a.tipo}{a.descricao ? ` — ${a.descricao}` : ""}</div>
+                  <div className="nexo-cliente-sub" style={{ color: atrasada ? "var(--danger)" : undefined }}>{dataHoraBR(a.quando)} · {a.responsavel}{atrasada && " · atrasada"}</div>
+                </div>
+                <button className="nexo-icon-btn" onClick={() => onDelAtividade(a.id)} title="Excluir"><Trash2 size={13} /></button>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {sub === "notas" && (
+        <>
+          <div className="nexo-neg-form">
+            <textarea className="nexo-textarea" value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Escreva uma anotação sobre esta negociação…" />
+            <div><button className="nexo-btn nexo-btn-primary" disabled={!nota.trim()} onClick={() => { onAddEvento(n.id, nota.trim(), "nota"); setNota(""); }}>Salvar anotação</button></div>
+          </div>
+          {notas.length === 0 ? <div className="nexo-neg-vazio"><StickyNote size={26} /> Nenhuma anotação ainda.</div> : notas.map((e) => (
+            <div key={e.id} className="nexo-neg-ativ">
+              <span className="nexo-neg-ativ-ico"><StickyNote size={15} /></span>
+              <div style={{ flex: 1 }}><div style={{ whiteSpace: "pre-wrap" }}>{e.texto}</div><div className="nexo-cliente-sub">{e.autor} · {dataHoraBR(e.createdAt)}</div></div>
+              <button className="nexo-icon-btn" onClick={() => onDelEvento(e.id)}><Trash2 size={13} /></button>
+            </div>
+          ))}
+        </>
+      )}
+
+      {sub === "anexos" && (
+        <>
+          <div className="nexo-neg-form">
+            <div className="nexo-field-row">
+              <Field label="Nome do arquivo"><input className="nexo-input" value={anexoNome} onChange={(e) => setAnexoNome(e.target.value)} placeholder="Ex.: CNH, documento do veículo" /></Field>
+              <Field label="Link (Google Drive, WhatsApp, etc.)"><input className="nexo-input" value={anexoUrl} onChange={(e) => setAnexoUrl(e.target.value)} placeholder="https://…" /></Field>
+            </div>
+            <div><button className="nexo-btn nexo-btn-primary" disabled={!anexoNome.trim() || !anexoUrl.trim()} onClick={() => { onAddEvento(n.id, anexoNome.trim(), "anexo", anexoUrl.trim()); setAnexoNome(""); setAnexoUrl(""); }}>Adicionar anexo</button></div>
+          </div>
+          {anexos.length === 0 ? <div className="nexo-neg-vazio"><Paperclip size={26} /> Nenhum anexo ainda.</div> : anexos.map((e) => (
+            <div key={e.id} className="nexo-neg-ativ">
+              <span className="nexo-neg-ativ-ico"><Paperclip size={15} /></span>
+              <div style={{ flex: 1 }}><a href={e.url} target="_blank" rel="noopener noreferrer" className="nexo-cliente-nome" style={{ color: "var(--accent)" }}>{e.texto}</a><div className="nexo-cliente-sub">{e.autor} · {dataHoraBR(e.createdAt)}</div></div>
+              <button className="nexo-icon-btn" onClick={() => onDelEvento(e.id)}><Trash2 size={13} /></button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function AbaContato({ n, onUpdate }) {
+  const campos = ["nomeContato", "email", "celular", "estado", "cidade", "tipoVeiculo", "placa", "marca", "modelo", "anoModelo", "combustivel", "codigoFipe", "valorFipe", "origemLead", "veiculoTrabalho"];
+  const [f, setF] = useState(() => Object.fromEntries(campos.map((c) => [c, n[c]])));
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const mudou = descreverAlteracoes(n, f, campos);
+  return (
+    <div className="nexo-neg-form">
+      <div className="nexo-field-row"><Field label="Nome do contato"><input className="nexo-input" value={f.nomeContato} onChange={set("nomeContato")} /></Field><Field label="Celular"><input className="nexo-input mono" value={f.celular} onChange={(e) => setF({ ...f, celular: maskPhone(e.target.value) })} /></Field></div>
+      <div className="nexo-field-row"><Field label="E-mail"><input type="email" className="nexo-input" value={f.email} onChange={set("email")} /></Field>
+        <div className="nexo-field-row"><Field label="Estado"><select className="nexo-select" value={f.estado} onChange={set("estado")}><option value="">—</option>{ESTADOS_BR.map((u) => <option key={u}>{u}</option>)}</select></Field><Field label="Cidade"><input className="nexo-input" value={f.cidade} onChange={set("cidade")} /></Field></div></div>
+      <div className="nexo-neg-div"><span>Veículo</span></div>
+      <div className="nexo-field-row"><Field label="Tipo"><select className="nexo-select" value={f.tipoVeiculo} onChange={set("tipoVeiculo")}><option value="">—</option>{TIPOS_VEICULO.map((t) => <option key={t}>{t}</option>)}</select></Field><Field label="Placa"><input className="nexo-input mono" value={f.placa} onChange={(e) => setF({ ...f, placa: e.target.value.toUpperCase() })} /></Field></div>
+      <div className="nexo-field-row"><Field label="Marca"><input className="nexo-input" value={f.marca} onChange={set("marca")} /></Field><Field label="Modelo"><input className="nexo-input" value={f.modelo} onChange={set("modelo")} /></Field></div>
+      <div className="nexo-field-row3"><Field label="Ano modelo"><input className="nexo-input" value={f.anoModelo} onChange={set("anoModelo")} /></Field><Field label="Combustível"><input className="nexo-input" value={f.combustivel} onChange={set("combustivel")} /></Field><Field label="Código Fipe"><input className="nexo-input mono" value={f.codigoFipe} onChange={set("codigoFipe")} /></Field></div>
+      <label className="nexo-check"><input type="checkbox" checked={!!f.veiculoTrabalho} onChange={(e) => setF({ ...f, veiculoTrabalho: e.target.checked })} /> Veículo de trabalho (Táxi/Uber)</label>
+      <div><button className="nexo-btn nexo-btn-primary" disabled={mudou.length === 0 || !f.nomeContato.trim()} onClick={() => onUpdate(n.id, f, mudou)}>Salvar alterações</button></div>
+    </div>
+  );
+}
+
+function CartaoValor({ rotulo, valor, original, campo, onSalvar }) {
+  const [editando, setEditando] = useState(false);
+  const [v, setV] = useState("");
+  const temDesconto = Number(original) > 0 && Number(valor) < Number(original);
+  return (
+    <div className="nexo-neg-valorcard">
+      <div className="nexo-neg-valorcard-t">{rotulo}</div>
+      {temDesconto && <div className="nexo-neg-riscado">{formatBRL(original)}</div>}
+      {editando ? (
+        <div style={{ display: "flex", gap: 6 }}>
+          <input type="number" step="0.01" className="nexo-input" value={v} onChange={(e) => setV(e.target.value)} autoFocus />
+          <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={() => { onSalvar(campo, v); setEditando(false); }}>OK</button>
+        </div>
+      ) : (
+        <div className="nexo-neg-valorcard-v">{valor !== "" && valor != null ? formatBRL(valor) : "—"}</div>
+      )}
+      {!editando && <button className="nexo-icon-btn" style={{ width: 26, height: 26 }} title="Editar" onClick={() => { setV(valor === "" ? "" : String(valor)); setEditando(true); }}><Pencil size={12} /></button>}
+    </div>
+  );
+}
+
+function AbaCotacoes({ n, db, onUpdate, onEnviar, onPdf }) {
+  const doSeg = db.planos.filter((p) => p.seguradoraId === n.seguradoraId);
+  const tabelas = Array.from(new Set(doSeg.map((p) => p.tabela).filter(Boolean)));
+  const planos = doSeg.filter((p) => !n.tabela || !p.tabela || p.tabela === n.tabela);
+  const [fipeEdit, setFipeEdit] = useState(false);
+  const [fipeV, setFipeV] = useState("");
+  const escolher = (p) => onUpdate(n.id, camposDoPlano(p, n.valorFipe), `selecionou o plano ${p.nome}`);
+  const salvarCampo = (campo, v) => {
+    const novo = v === "" ? "" : Number(v);
+    onUpdate(n.id, { [campo]: novo }, [`atualizou o campo ${ROTULOS_CAMPOS[campo]} de ${n[campo] === "" ? "Não informado" : n[campo]} para: ${novo === "" ? "Não informado" : novo}`]);
+  };
+  const salvarFipe = () => {
+    const novo = fipeV === "" ? "" : Number(fipeV);
+    const plano = db.planos.find((p) => p.id === n.planoId);
+    const extra = plano ? { mensalidade: mensalidadePorFaixa(plano, novo), franquia: franquiaDoPlano(plano, novo) } : {};
+    onUpdate(n.id, { valorFipe: novo, ...extra }, [`atualizou o campo Valor Fipe de ${n.valorFipe === "" ? "Não informado" : n.valorFipe} para: ${novo === "" ? "Não informado" : novo}`]);
+    setFipeEdit(false);
+  };
+  return (
+    <div>
+      <div className="nexo-neg-fipe">
+        <span>Valor Fipe: {fipeEdit ? (
+          <><input type="number" step="0.01" className="nexo-input" style={{ width: 140, display: "inline-block" }} value={fipeV} onChange={(e) => setFipeV(e.target.value)} /> <button className="nexo-btn nexo-btn-sm nexo-btn-primary" onClick={salvarFipe}>OK</button></>
+        ) : (
+          <><strong className="mono">{Number(n.valorFipe) > 0 ? formatBRL(n.valorFipe) : "não informado"}</strong> <button className="nexo-icon-btn" style={{ width: 24, height: 24 }} onClick={() => { setFipeV(String(n.valorFipe ?? "")); setFipeEdit(true); }}><Pencil size={11} /></button></>
+        )}</span>
+        {n.codigoFipe && <span className="nexo-cliente-sub">Cód. Fipe {n.codigoFipe}</span>}
+      </div>
+      <div className="nexo-neg-lat-titulo" style={{ margin: "14px 0 8px" }}>Planos</div>
+      {!n.seguradoraId ? (
+        <div className="nexo-neg-vazio">Selecione a cooperativa/seguradora na lateral para ver os planos.</div>
+      ) : planos.length === 0 ? (
+        <div className="nexo-neg-vazio">Nenhum plano cadastrado para essa cooperativa. Cadastre em <strong>Planos e seguradoras</strong>.</div>
+      ) : planos.map((p) => (
+        <label key={p.id} className={`nexo-neg-plano ${n.planoId === p.id ? "on" : ""}`}>
+          <input type="radio" name={`plano-${n.id}`} checked={n.planoId === p.id} onChange={() => escolher(p)} />
+          <span>{p.nome}</span>
+          <strong className="mono">{formatBRL(mensalidadePorFaixa(p, n.valorFipe))}</strong>
+        </label>
+      ))}
+      <div className="nexo-neg-valores">
+        <CartaoValor rotulo="Taxa de Ativação" valor={n.taxaAtivacao} original={n.taxaAtivacaoOriginal} campo="taxaAtivacao" onSalvar={salvarCampo} />
+        <CartaoValor rotulo="Rastreador" valor={n.rastreador} campo="rastreador" onSalvar={salvarCampo} />
+        <CartaoValor rotulo="Mensalidade" valor={n.mensalidade} campo="mensalidade" onSalvar={salvarCampo} />
+        <CartaoValor rotulo="Franquia" valor={n.franquia} campo="franquia" onSalvar={salvarCampo} />
+      </div>
+      {tabelas.length > 0 && (
+        <Field label="Tabela de preços">
+          <select className="nexo-select" value={n.tabela} onChange={(e) => onUpdate(n.id, { tabela: e.target.value }, `alterou a tabela para ${e.target.value || "todas"}`)}>
+            <option value="">Todas</option>{tabelas.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </Field>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+        <button className="nexo-btn nexo-btn-primary" onClick={onEnviar}><Send size={14} /> Enviar cotação</button>
+        <button className="nexo-btn" disabled={!n.planoId} onClick={onPdf}><Download size={14} /> Baixar PDF</button>
+      </div>
+    </div>
+  );
+}
+
+function AbaVistoria({ n, onUpdate }) {
+  const campos = ["vistoriaStatus", "vistoriaObs", "docsEnviados", "docsTotal"];
+  const [f, setF] = useState(() => Object.fromEntries(campos.map((c) => [c, n[c]])));
+  const mudou = descreverAlteracoes(n, f, campos);
+  return (
+    <div className="nexo-neg-form">
+      <Field label="Status da vistoria"><select className="nexo-select" value={f.vistoriaStatus} onChange={(e) => setF({ ...f, vistoriaStatus: e.target.value })}><option value="">Ainda não enviada</option>{STATUS_VISTORIA.map((s) => <option key={s}>{s}</option>)}</select></Field>
+      <div className="nexo-field-row">
+        <Field label="Documentos enviados"><input type="number" min="0" className="nexo-input" value={f.docsEnviados} onChange={(e) => setF({ ...f, docsEnviados: e.target.value })} /></Field>
+        <Field label="Documentos necessários"><input type="number" min="0" className="nexo-input" value={f.docsTotal} onChange={(e) => setF({ ...f, docsTotal: e.target.value })} /></Field>
+      </div>
+      <Field label="Observações da vistoria"><textarea className="nexo-textarea" value={f.vistoriaObs} onChange={(e) => setF({ ...f, vistoriaObs: e.target.value })} placeholder="Ex.: faltou foto do painel, vistoria agendada para sexta…" /></Field>
+      <div><button className="nexo-btn nexo-btn-primary" disabled={mudou.length === 0} onClick={() => onUpdate(n.id, { ...f, docsEnviados: Number(f.docsEnviados) || 0, docsTotal: Number(f.docsTotal) || 0 }, mudou)}>Salvar vistoria</button></div>
+    </div>
+  );
+}
+
+function AbaProposta({ n, onUpdate, onConverter, onCopiar }) {
+  const [validade, setValidade] = useState(n.validadeDias);
+  const [link, setLink] = useState(n.linkPagamento);
+  return (
+    <div className="nexo-neg-form">
+      <div className="nexo-neg-resumo">
+        <div><span className="nexo-cliente-sub">Criada em</span><strong>{dataHoraBR(n.createdAt)}</strong></div>
+        <div><span className="nexo-cliente-sub">Validade</span><strong>{n.validadeDias} dia(s){negExpirada(n, null) ? " · expirada" : ""}</strong></div>
+        <div><span className="nexo-cliente-sub">Proposta</span><strong style={{ color: n.propostaAceita ? "var(--success)" : "var(--warning)" }}>{n.propostaAceita ? `Aceita em ${dataHoraBR(n.propostaAceitaEm)}` : "Aguardando o cliente"}</strong></div>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Validade da cotação (dias)"><div style={{ display: "flex", gap: 6 }}><input type="number" min="1" className="nexo-input" value={validade} onChange={(e) => setValidade(e.target.value)} /><button className="nexo-btn nexo-btn-sm" disabled={String(validade) === String(n.validadeDias)} onClick={() => onUpdate(n.id, { validadeDias: Number(validade) || 1 }, [`atualizou o campo Validade (dias) de ${n.validadeDias} para: ${validade}`])}>Salvar</button></div></Field>
+        <Field label="Link de pagamento"><div style={{ display: "flex", gap: 6 }}><input className="nexo-input" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" /><button className="nexo-btn nexo-btn-sm" disabled={link === n.linkPagamento} onClick={() => onUpdate(n.id, { linkPagamento: link }, ["atualizou o link de pagamento"])}>Salvar</button></div></Field>
+      </div>
+      <label className="nexo-check"><input type="checkbox" checked={n.propostaAceita} onChange={(e) => onUpdate(n.id, { propostaAceita: e.target.checked, propostaAceitaEm: e.target.checked ? new Date().toISOString() : "" }, [e.target.checked ? "marcou a proposta como aceita" : "desmarcou a proposta aceita"])} /> Proposta aceita pelo cliente</label>
+      <label className="nexo-check"><input type="checkbox" checked={n.sga} onChange={(e) => onUpdate(n.id, { sga: e.target.checked }, [e.target.checked ? "marcou como cadastrado no SGA" : "removeu a marca de cadastrado no SGA"])} /> Já cadastrado no SGA</label>
+      <div className="nexo-neg-div"><span>Link da cotação para o cliente</span></div>
+      <div className="nexo-neg-linkbox"><code>{urlPublicaCotacao(n.codigo, "comparar")}</code><button className="nexo-btn nexo-btn-sm" onClick={onCopiar}><Copy size={13} /> Copiar</button></div>
+      <div className="nexo-neg-div"><span>Fechamento</span></div>
+      <div className="nexo-cliente-sub" style={{ marginTop: -4 }}>Ao fechar a venda, cadastre o cliente, o veículo e a adesão de uma vez.</div>
+      <div><button className="nexo-btn nexo-btn-primary" onClick={onConverter}>{n.clienteId ? "Atualizar cliente, veículo e adesão" : "Converter em cliente, veículo e adesão"}</button></div>
+    </div>
+  );
+}
+
+function NegociacaoModal({ n, db, perfilNome, handlers, onClose }) {
+  const [aba, setAba] = useState("atividades");
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    const fn = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+  const fases = db.fases.filter((f) => f.funilId === n.funilId).sort((a, b) => a.ordem - b.ordem);
+  const consultora = db.consultoras.find((c) => c.id === n.consultoraId);
+  const eventos = db.eventos.filter((e) => e.negociacaoId === n.id).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const h = handlers;
+  const abas = [["atividades", "Atividades"], ["contato", "Contato"], ["cotacoes", "Cotações"], ["vistoria", "Vistoria"], ["proposta", "Proposta"]];
+  return (
+    <div className="nexo-modal-overlay" onClick={onClose}>
+      <div className="nexo-modal xwide nexo-neg-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="nexo-neg-topo">
+          <div style={{ minWidth: 0 }}>
+            <div className="nexo-cliente-sub">{n.nomeContato}{n.perdida ? " · PERDIDA" : ""}</div>
+            <div className="nexo-neg-titulo">{n.placa ? `${String(n.placa).toUpperCase()} · ` : ""}{tituloVeiculo(n)}</div>
+          </div>
+          <div className="nexo-neg-topo-dir">
+            <span className="nexo-cliente-sub mono">ID: {n.codigo}</span>
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button className="nexo-btn nexo-btn-sm" onClick={() => setMenu((v) => !v)}>Ações <ChevronDown size={13} /></button>
+              {menu && (
+                <div className="nexo-pop nexo-pop-right" style={{ minWidth: 250 }} onClick={() => setMenu(false)}>
+                  <div className="nexo-neg-menu-titulo" style={{ padding: "6px 10px" }}>Mover para</div>
+                  {fases.filter((f) => f.id !== n.faseId).map((f) => <div key={f.id} className="nexo-gsearch-item" onClick={() => h.mover(n.id, f.id)}><div className="nexo-gsearch-main">{f.nome}</div></div>)}
+                  <div className="nexo-neg-menu-sep" />
+                  <div className="nexo-gsearch-item" onClick={() => h.enviar(n.id)}><div className="nexo-gsearch-main">Enviar cotação</div></div>
+                  <div className="nexo-gsearch-item" onClick={() => h.pdf(n)}><div className="nexo-gsearch-main">Baixar PDF</div></div>
+                  <div className="nexo-gsearch-item" onClick={() => h.converter(n)}><div className="nexo-gsearch-main">Converter em cliente e adesão</div></div>
+                  <div className="nexo-gsearch-item" onClick={() => h.perdida(n)}><div className="nexo-gsearch-main">{n.perdida ? "Reabrir negociação" : "Marcar como perdida"}</div></div>
+                  <div className="nexo-neg-menu-sep" />
+                  <div className="nexo-gsearch-item" onClick={() => h.excluir(n)}><div className="nexo-gsearch-main" style={{ color: "var(--danger)" }}>Excluir negociação</div></div>
+                </div>
+              )}
+            </div>
+            <button className="nexo-icon-btn" onClick={onClose} title="Fechar"><X size={16} /></button>
+          </div>
+        </div>
+        <BarraFases n={n} fases={fases} onMover={h.mover} />
+        <div className="nexo-neg-corpo">
+          <div className="nexo-neg-principal">
+            <div className="nexo-tabs" style={{ marginBottom: 14 }}>{abas.map(([k, rot]) => <div key={k} className={`nexo-tab ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>{rot}</div>)}</div>
+            {aba === "atividades" && <AbaAtividades n={n} db={db} perfilNome={perfilNome} onAddAtividade={h.addAtividade} onToggleAtividade={h.toggleAtividade} onDelAtividade={h.delAtividade} onAddEvento={h.addEvento} onDelEvento={h.delEvento} />}
+            {aba === "contato" && <AbaContato key={n.id + (n.nomeContato || "")} n={n} onUpdate={h.update} />}
+            {aba === "cotacoes" && <AbaCotacoes n={n} db={db} onUpdate={h.update} onEnviar={() => h.enviar(n.id)} onPdf={() => h.pdf(n)} />}
+            {aba === "vistoria" && <AbaVistoria n={n} onUpdate={h.update} />}
+            {aba === "proposta" && <AbaProposta n={n} onUpdate={h.update} onConverter={() => h.converter(n)} onCopiar={() => h.copiarLink(n)} />}
+            <HistoricoNegociacao eventos={eventos} />
+          </div>
+          <LateralNegociacao n={n} db={db} consultora={consultora} onUpdate={h.update} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EnviarCotacaoModal({ n, db, onClose, onEvento, onPdf }) {
+  const consultora = db.consultoras.find((c) => c.id === n.consultoraId);
+  const linkPronta = urlPublicaCotacao(n.codigo, "pronta");
+  const linkComparar = urlPublicaCotacao(n.codigo, "comparar");
+  const texto = (url, extra = "") => `Olá ${primeiroNome(n.nomeContato)}! ${extra || `Segue a cotação do seu veículo ${tituloVeiculo(n)}${n.placa ? ` (${n.placa})` : ""}:`} ${url}${consultora ? `\n— ${consultora.nome}` : ""}`;
+  const linhas = [
+    { chave: "pronta", titulo: "Enviar cotação pronta", url: linkPronta, ok: !!n.planoId, dica: "Escolha um plano na aba Cotações para enviar a cotação pronta.", msg: texto(linkPronta), assunto: "Sua cotação" },
+    { chave: "comparar", titulo: "Enviar comparação de planos", url: linkComparar, ok: true, dica: "", msg: texto(linkComparar, "Compare os planos disponíveis para o seu veículo:"), assunto: "Compare os planos" },
+    { chave: "tabelas", titulo: "Enviar comparação de tabelas diferentes", url: "", ok: false, dica: "Em breve.", msg: "", assunto: "" },
+    { chave: "pagamento", titulo: "Enviar link de pagamento", url: n.linkPagamento, ok: !!n.linkPagamento, dica: "Cadastre o link de pagamento na aba Proposta.", msg: texto(n.linkPagamento, "Segue o link para pagamento:"), assunto: "Link de pagamento" },
+    { chave: "boleto", titulo: "Enviar boleto", url: "", ok: false, dica: "Indisponível: o boleto é gerado pelo SGA depois do cadastro.", msg: "", assunto: "" },
+  ];
+  async function agir(linha, canal) {
+    if (!linha.ok) return;
+    if (canal === "abrir") { window.open(linha.url, "_blank", "noopener"); return; }
+    if (canal === "copiar") { await copiarTexto(linha.url); showToast("Link copiado.", "success"); onEvento(n.id, `copiou o link: ${linha.titulo.replace("Enviar ", "").toLowerCase()}`); return; }
+    if (canal === "whatsapp") { window.open(linkWhatsApp(n.celular, linha.msg), "_blank", "noopener"); onEvento(n.id, `enviou ${linha.titulo.replace("Enviar ", "").toLowerCase()} por WhatsApp`); return; }
+    if (canal === "email") { window.open(linkEmail(n.email, linha.assunto, linha.msg), "_blank"); onEvento(n.id, `enviou ${linha.titulo.replace("Enviar ", "").toLowerCase()} por e-mail`); }
+  }
+  return (
+    <>
+      <div className="nexo-cliente-sub" style={{ marginTop: -6 }}>Cotação de <strong>{n.nomeContato}</strong> · {tituloVeiculo(n)}</div>
+      {linhas.map((l) => (
+        <div key={l.chave} className="nexo-env-linha" title={l.ok ? "" : l.dica}>
+          <span>{l.titulo}</span>
+          <div className="nexo-env-acoes">
+            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "abrir")} title="Abrir o link"><Link2 size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok} onClick={() => agir(l, "copiar")} title="Copiar o link"><Copy size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok || !n.celular} onClick={() => agir(l, "whatsapp")} title={n.celular ? "Enviar por WhatsApp" : "Sem celular cadastrado"}><MessageCircle size={15} /></button>
+            <button className="nexo-env-btn" disabled={!l.ok || !n.email} onClick={() => agir(l, "email")} title={n.email ? "Enviar por e-mail" : "Sem e-mail cadastrado"}><Mail size={15} /></button>
+          </div>
+        </div>
+      ))}
+      <div className="nexo-env-linha">
+        <span>Download da cotação em PDF</span>
+        <div className="nexo-env-acoes"><button className="nexo-env-btn" disabled={!n.planoId} onClick={() => onPdf(n)} title={n.planoId ? "Baixar PDF" : "Escolha um plano primeiro"}><Download size={15} /></button></div>
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}><button className="nexo-btn" onClick={onClose}>Fechar</button></div>
+    </>
+  );
+}
+
+function AtividadesView({ db, onAbrir, onToggle, onDelete }) {
+  const [filtro, setFiltro] = useState("pendentes");
+  const agora = new Date();
+  const hojeInicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const hojeFim = new Date(hojeInicio.getTime() + 86400000);
+  const negPorId = useMemo(() => new Map(db.negociacoes.map((x) => [x.id, x])), [db.negociacoes]);
+  const lista = db.atividades.filter((a) => negPorId.has(a.negociacaoId));
+  const cat = (a) => (a.concluida ? "concluidas" : new Date(a.quando) < agora ? "atrasadas" : new Date(a.quando) < hojeFim ? "hoje" : "proximas");
+  const contagem = { atrasadas: 0, hoje: 0, proximas: 0, concluidas: 0 };
+  lista.forEach((a) => { contagem[cat(a)]++; });
+  const filtrada = lista.filter((a) => (filtro === "todas" ? true : filtro === "pendentes" ? !a.concluida : cat(a) === filtro))
+    .sort((a, b) => (filtro === "concluidas" ? String(b.quando).localeCompare(String(a.quando)) : String(a.quando).localeCompare(String(b.quando))));
+  const chips = [["pendentes", "Pendentes", contagem.atrasadas + contagem.hoje + contagem.proximas], ["atrasadas", "Atrasadas", contagem.atrasadas], ["hoje", "Hoje", contagem.hoje], ["proximas", "Próximas", contagem.proximas], ["concluidas", "Concluídas", contagem.concluidas], ["todas", "Todas", lista.length]];
+  return (
+    <div>
+      <div className="nexo-section-head"><div className="nexo-section-title">Atividades<span className="nexo-section-count">ligações, visitas e retornos</span></div></div>
+      <div className="nexo-chips">{chips.map(([k, rot, n]) => <button key={k} className={`nexo-chip ${filtro === k ? "on" : ""}`} onClick={() => setFiltro(k)}>{rot}<span className="nexo-chip-n" style={k === "atrasadas" && n > 0 ? { background: "var(--danger)", color: "#fff" } : undefined}>{n}</span></button>)}</div>
+      {filtrada.length === 0 ? (
+        <div className="nexo-table-wrap"><EmptyState icon={Calendar} title="Nenhuma atividade aqui" sub="Agende ligações, visitas e retornos dentro de cada negociação do Pipeline." /></div>
+      ) : (
+        <div className="nexo-table-wrap">
+          {filtrada.map((a) => {
+            const neg = negPorId.get(a.negociacaoId);
+            const I = ICONE_ATIVIDADE[a.tipo] || ClipboardList;
+            const c = cat(a);
+            return (
+              <div key={a.id} className={`nexo-ativ-linha ${a.concluida ? "feita" : ""}`}>
+                <input type="checkbox" checked={a.concluida} onChange={() => onToggle(a)} title="Concluir" />
+                <span className="nexo-neg-ativ-ico"><I size={16} /></span>
+                <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => onAbrir(neg.id)}>
+                  <div className="nexo-cliente-nome">{a.tipo}{a.descricao ? ` — ${a.descricao}` : ""}</div>
+                  <div className="nexo-cliente-sub">{neg.nomeContato} · {tituloVeiculo(neg)}{neg.placa ? ` · ${neg.placa}` : ""}</div>
+                </div>
+                <div className="nexo-cliente-sub" style={{ textAlign: "right", whiteSpace: "nowrap" }}>{dataHoraBR(a.quando)}<br />{a.responsavel}</div>
+                <PillTom tom={c === "atrasadas" ? "danger" : c === "hoje" ? "warning" : c === "concluidas" ? "success" : "info"}>{{ atrasadas: "Atrasada", hoje: "Hoje", proximas: "Agendada", concluidas: "Concluída" }[c]}</PillTom>
+                <button className="nexo-icon-btn" onClick={() => onDelete(a.id)} title="Excluir"><Trash2 size={13} /></button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CotacaoPublica({ codigo, modo }) {
+  const [estado, setEstado] = useState({ carregando: true, erro: "", dados: null });
+  const [aceitando, setAceitando] = useState("");
+  const [aceitouAgora, setAceitouAgora] = useState("");
+
+  useEffect(() => {
+    document.title = `Cotação ${codigo}`;
+    document.body.style.background = "#EDF1F7";
+    fetch(`/api/cotacao-publica?codigo=${encodeURIComponent(codigo)}`)
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => setEstado(ok ? { carregando: false, erro: "", dados: d } : { carregando: false, erro: d.erro || "Cotação não encontrada.", dados: null }))
+      .catch(() => setEstado({ carregando: false, erro: "Não foi possível carregar a cotação agora. Tente novamente em instantes.", dados: null }));
+  }, [codigo]);
+
+  async function aceitar(plano) {
+    setAceitando(plano.id);
+    try {
+      const r = await fetch("/api/cotacao-publica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codigo, planoId: plano.id }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.erro || "Não foi possível aceitar a proposta.");
+      setAceitouAgora(plano.id);
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setAceitando("");
+    }
+  }
+
+  if (estado.carregando) return <div className="nexo-loading"><div className="nexo-spinner" />Carregando sua cotação…</div>;
+  if (estado.erro) {
+    return (
+      <div className="nexo-pub"><div className="nexo-card" style={{ maxWidth: 520, margin: "60px auto", textAlign: "center" }}>
+        <div className="nexo-dialog-ico" style={{ "--tone": "var(--danger)", margin: "0 auto 14px" }}><AlertTriangle size={22} /></div>
+        <div className="nexo-chart-title" style={{ fontSize: 16 }}>Cotação indisponível</div>
+        <div className="nexo-chart-sub">{estado.erro}</div>
+      </div></div>
+    );
+  }
+
+  const { negociacao: n, planos, consultor } = estado.dados;
+  const aceita = n.propostaAceita || !!aceitouAgora;
+  const planoAceito = aceitouAgora || n.planoId;
+  const mostrar = modo === "pronta" && n.planoId ? planos.filter((p) => p.id === n.planoId) : planos;
+  const matriz = matrizComparacao(mostrar);
+  const expirou = !aceita && n.validadeDias > 0 && Date.now() > new Date(n.createdAt).getTime() + n.validadeDias * 86400000;
+  const orig = Number(n.taxaAtivacaoOriginal) || 0;
+  const atual = Number(n.taxaAtivacao) || 0;
+  const wa = consultor?.telefone ? linkWhatsApp(consultor.telefone, `Olá ${consultor.nome}! Estou vendo a cotação ${n.codigo} do meu veículo.`) : "";
+  const veic = [n.marca, n.modelo, n.anoModelo].filter(Boolean).join(", ");
+
+  return (
+    <div className="nexo-pub">
+      <div className="nexo-pub-topo">
+        <div className="nexo-pub-marca"><span className="nexo-brand-mark">SS</span><div><strong>{EMPRESA.nome}</strong><div className="nexo-cliente-sub">{EMPRESA.detalhe}</div></div></div>
+        {wa && <a className="nexo-btn nexo-btn-primary" href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle size={15} /> WhatsApp do consultor<span className="nexo-pub-fone">{consultor.telefone}</span></a>}
+      </div>
+      <div className="nexo-pub-cartao">
+        <div className="nexo-pub-saudacao">
+          <div>
+            <h1>Olá, {n.nomeContato}</h1>
+            <p>Esta é uma cotação para o seu veículo <strong>{n.placa ? `${n.placa} - ` : ""}{veic}</strong>.</p>
+            {Number(n.valorFipe) > 0 && <p className="nexo-cliente-sub">Seu veículo está avaliado em <strong>{formatBRL(n.valorFipe)}</strong> (Tabela Fipe{n.codigoFipe ? `, cód. ${n.codigoFipe}` : ""}).</p>}
+            <p className="nexo-cliente-sub">Cotação {n.codigo} · válida por {n.validadeDias} dia(s) a partir de {formatDateBR(String(n.createdAt).slice(0, 10))}</p>
+          </div>
+          <div className="nexo-pub-boxes">
+            <div className="nexo-pub-box"><small>Taxa de ativação</small><div>{orig > atual && atual > 0 && <s>{formatBRL(orig)}</s>} <strong>{atual > 0 ? formatBRL(atual) : "—"}</strong></div></div>
+            <div className="nexo-pub-box"><small>Rastreador</small><div><strong>{Number(n.rastreador) > 0 ? formatBRL(n.rastreador) : "Obrigatório"}</strong></div></div>
+          </div>
+        </div>
+        {aceita && <div className="nexo-pub-aviso ok"><CheckCircle2 size={18} /> Proposta aceita! Seu consultor entrará em contato para os próximos passos.</div>}
+        {expirou && <div className="nexo-pub-aviso erro"><AlertTriangle size={18} /> Esta cotação expirou. Fale com seu consultor para atualizar os valores.</div>}
+        {mostrar.length === 0 ? (
+          <div className="nexo-neg-vazio">Os planos desta cotação ainda não foram definidos. Fale com seu consultor.</div>
+        ) : (
+          <div className="nexo-table-scroll">
+            <table className="nexo-pub-tabela">
+              <thead>
+                <tr>
+                  <th className="nexo-pub-opcoes">{mostrar.length} opç{mostrar.length > 1 ? "ões" : "ão"} de plano{mostrar.length > 1 ? "s" : ""} disponíve{mostrar.length > 1 ? "is" : "l"}</th>
+                  {mostrar.map((p) => (
+                    <th key={p.id} className={planoAceito === p.id && aceita ? "escolhido" : ""}>
+                      <div className="nexo-pub-plano">{p.nome}</div>
+                      <div className="nexo-pub-preco">{formatBRL(p.mensalidade)}</div>
+                      <small>Mensalidade</small>
+                      {Number(p.franquia) > 0 && <small>Participação {formatBRL(p.franquia)}</small>}
+                      {!expirou && !aceita && <button className="nexo-btn nexo-btn-primary nexo-btn-sm" disabled={!!aceitando} onClick={() => aceitar(p)}>{aceitando === p.id ? "Enviando…" : "Aceitar proposta"}</button>}
+                      {aceita && planoAceito === p.id && <span className="nexo-pub-tag">Plano escolhido</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {GRUPOS_COBERTURA.filter((g) => matriz.some((l) => l.grupo === g)).map((g) => (
+                  <React.Fragment key={g}>
+                    <tr className="grupo"><td colSpan={mostrar.length + 1}>{g}</td></tr>
+                    {matriz.filter((l) => l.grupo === g).map((l) => (
+                      <tr key={l.chave}>
+                        <td>{l.nome}</td>
+                        {l.porPlano.map((c, i) => (
+                          <td key={i} className="cel">
+                            {c.ok ? <span className="sim"><Check size={16} /></span> : <span className="nao"><X size={15} /></span>}
+                            {c.ok && c.detalhe && <div className="nexo-pub-detalhe">{c.detalhe}</div>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <div className="nexo-pub-rodape">Cotação gerada por {EMPRESA.nome}. Valores sujeitos à análise e à vistoria do veículo.</div>
+    </div>
+  );
+}
+
+function EditorCoberturas({ valor, onChange }) {
+  const [colar, setColar] = useState({ grupo: "", texto: "" });
+  const mudar = (idx, k, v) => onChange(valor.map((c, i) => (i === idx ? { ...c, [k]: v } : c)));
+  const adicionar = (grupo) => onChange([...valor, { grupo, nome: "", detalhe: "", incluso: true }]);
+  function aplicarColagem() {
+    const novas = colar.texto.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+      const [nome, ...resto] = l.split("|");
+      return { grupo: colar.grupo, nome: nome.trim(), detalhe: resto.join("|").trim(), incluso: true };
+    });
+    onChange([...valor, ...novas]);
+    setColar({ grupo: "", texto: "" });
+  }
+  return (
+    <div>
+      {GRUPOS_COBERTURA.map((g) => (
+        <div key={g} className="nexo-cob-grupo">
+          <div className="nexo-cob-titulo">{g}</div>
+          {valor.map((c, idx) => (c.grupo || "Coberturas") === g && (
+            <div key={idx} className="nexo-cob-linha">
+              <input type="checkbox" checked={c.incluso !== false} onChange={(e) => mudar(idx, "incluso", e.target.checked)} title="Incluso neste plano" />
+              <input className="nexo-input" value={c.nome} onChange={(e) => mudar(idx, "nome", e.target.value)} placeholder="Ex.: Roubo, Guincho 24h…" />
+              <input className="nexo-input" value={c.detalhe || ""} onChange={(e) => mudar(idx, "detalhe", e.target.value)} placeholder="Detalhe (opcional)" />
+              <button className="nexo-icon-btn" onClick={() => onChange(valor.filter((_, i) => i !== idx))} title="Remover"><Trash2 size={13} /></button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="nexo-btn nexo-btn-sm" onClick={() => adicionar(g)}><Plus size={12} /> Adicionar</button>
+            <button className="nexo-btn nexo-btn-sm nexo-btn-ghost" onClick={() => setColar({ grupo: g, texto: "" })}>Colar lista</button>
+          </div>
+          {colar.grupo === g && (
+            <div className="nexo-cob-colar">
+              <textarea className="nexo-textarea" value={colar.texto} onChange={(e) => setColar({ ...colar, texto: e.target.value })} placeholder={"Uma por linha. Use | para o detalhe:\nRoubo\nDanos a terceiros | R$ 50.000,00\nGuincho | Ilimitado"} />
+              <button className="nexo-btn nexo-btn-sm nexo-btn-primary" disabled={!colar.texto.trim()} onClick={aplicarColagem}>Adicionar linhas</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlanoForm({ initial, seguradoras, defaultSeguradoraId, onSave, onCancel }) {
+  const [f, setF] = useState({
+    seguradoraId: defaultSeguradoraId || "", nome: "", tabela: "", valorMensal: "", taxaAtivacao: "", rastreador: "", valorFranquia: "", franquiaPercentual: "",
+    beneficios: "", faixas: [], coberturas: [], ...(initial || {}),
+  });
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const faixas = f.faixas || [];
+  function submit() {
+    const errs = {};
+    if (!f.seguradoraId) errs.seguradoraId = "Selecione a seguradora.";
+    if (!f.nome.trim()) errs.nome = "Informe o nome do plano.";
+    if (Object.keys(errs).length) return setErrors(errs);
+    onSave({
+      ...f, id: initial?.id,
+      faixas: faixas.filter((x) => Number(x.ate) > 0).map((x) => ({ ate: Number(x.ate), mensalidade: Number(x.mensalidade) || 0 })),
+      coberturas: (f.coberturas || []).filter((c) => c.nome && c.nome.trim()),
+    });
+  }
+  return (
+    <>
+      <div className="nexo-field-row">
+        <Field label="Seguradora / cooperativa *" error={errors.seguradoraId}>
+          <select className="nexo-select" value={f.seguradoraId} onChange={set("seguradoraId")}><option value="">Selecione</option>{seguradoras.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}</select>
+        </Field>
+        <Field label="Tabela de preços"><input className="nexo-input" value={f.tabela} onChange={set("tabela")} placeholder="Ex.: Passeio SP, Moto SP" /></Field>
+      </div>
+      <Field label="Nome do plano *" error={errors.nome}><input className="nexo-input" value={f.nome} onChange={set("nome")} placeholder="Ex.: Essencial SP, Master SP, Black SP" /></Field>
+      <div className="nexo-field-row3">
+        <Field label="Mensalidade base (R$)"><input type="number" step="0.01" min="0" className="nexo-input" value={f.valorMensal} onChange={set("valorMensal")} /></Field>
+        <Field label="Taxa de ativação (R$)"><input type="number" step="0.01" min="0" className="nexo-input" value={f.taxaAtivacao} onChange={set("taxaAtivacao")} /></Field>
+        <Field label="Rastreador (R$)"><input type="number" step="0.01" min="0" className="nexo-input" value={f.rastreador} onChange={set("rastreador")} placeholder="0 = obrigatório" /></Field>
+      </div>
+      <div className="nexo-field-row">
+        <Field label="Participação (% do valor Fipe)"><input type="number" step="0.01" min="0" className="nexo-input" value={f.franquiaPercentual} onChange={set("franquiaPercentual")} placeholder="Ex.: 6" /></Field>
+        <Field label="…ou valor fixo da franquia (R$)"><input type="number" step="0.01" min="0" className="nexo-input" value={f.valorFranquia} onChange={set("valorFranquia")} /></Field>
+      </div>
+      <div className="nexo-neg-div"><span>Mensalidade por faixa do valor Fipe</span></div>
+      <div className="nexo-cliente-sub" style={{ marginTop: -6 }}>Opcional. O sistema usa a primeira faixa cujo limite cobre o valor Fipe do veículo; sem faixas, usa a mensalidade base.</div>
+      {faixas.map((x, i) => (
+        <div key={i} className="nexo-cob-linha" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
+          <input type="number" className="nexo-input" value={x.ate} onChange={(e) => setF({ ...f, faixas: faixas.map((y, j) => (j === i ? { ...y, ate: e.target.value } : y)) })} placeholder="Fipe até (R$)" />
+          <input type="number" step="0.01" className="nexo-input" value={x.mensalidade} onChange={(e) => setF({ ...f, faixas: faixas.map((y, j) => (j === i ? { ...y, mensalidade: e.target.value } : y)) })} placeholder="Mensalidade (R$)" />
+          <button className="nexo-icon-btn" onClick={() => setF({ ...f, faixas: faixas.filter((_, j) => j !== i) })}><Trash2 size={13} /></button>
+        </div>
+      ))}
+      <div><button className="nexo-btn nexo-btn-sm" onClick={() => setF({ ...f, faixas: [...faixas, { ate: "", mensalidade: "" }] })}><Plus size={12} /> Adicionar faixa</button></div>
+      <div className="nexo-neg-div"><span>Coberturas, assistências e benefícios</span></div>
+      <EditorCoberturas valor={f.coberturas || []} onChange={(v) => setF({ ...f, coberturas: v })} />
+      <Field label="Observações do plano"><textarea className="nexo-textarea" value={f.beneficios} onChange={set("beneficios")} placeholder="Texto livre (opcional)" /></Field>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar plano</button>
+      </div>
+    </>
+  );
+}
+
 /** Se uma tela ou janela der erro, mostra um aviso no lugar dela em vez de derrubar o sistema inteiro. */
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { erro: null }; }
@@ -5116,13 +6631,13 @@ const NAV_GRUPOS = [
   { titulo: "", chaves: ["dashboard"] },
   { titulo: "Cadastros", chaves: ["clientes", "veiculos"] },
   { titulo: "Financeiro", chaves: ["financeiro", "comissoes", "adesoes"] },
-  { titulo: "Seguros", chaves: ["cotacoes", "consultoras"] },
+  { titulo: "Seguros", chaves: ["cotacoes", "atividades", "planos", "consultoras"] },
   { titulo: "Gestão", chaves: ["relatorios", "usuarios"] },
 ];
 
 const SUBTITULOS = {
   dashboard: "Visão geral do negócio", clientes: "Cadastro e histórico", veiculos: "Frota cadastrada",
-  financeiro: "Boletos e recebimentos", relatorios: "Exportações", cotacoes: "Seguradoras, planos e cotações",
+  financeiro: "Boletos e recebimentos", relatorios: "Exportações", cotacoes: "Negociações e cotações em andamento", atividades: "Ligações, visitas e retornos", planos: "Seguradoras, planos e coberturas",
   consultoras: "Equipe de vendas", adesoes: "Adesões e recebimentos", comissoes: "O que a corretora recebe das seguradoras",
   usuarios: "Acessos e permissões", clienteDetail: "Dados, veículos e boletos",
 };
@@ -5133,14 +6648,16 @@ const NAV_ITEMS = [
   { key: "veiculos", label: "Veículos", Icon: Car },
   { key: "financeiro", label: "Financeiro", Icon: Receipt },
   { key: "relatorios", label: "Relatórios", Icon: FileText },
-  { key: "cotacoes", label: "Cotação de seguros", Icon: Wallet },
+  { key: "cotacoes", label: "Pipeline", Icon: IconeKanban },
+  { key: "atividades", label: "Atividades", Icon: ClipboardList },
+  { key: "planos", label: "Planos e seguradoras", Icon: Wallet },
   { key: "consultoras", label: "Consultoras", Icon: Users },
   { key: "adesoes", label: "Adesões", Icon: FileDown },
   { key: "comissoes", label: "Comissões", Icon: CreditCard },
   { key: "usuarios", label: "Usuários", Icon: Shield },
 ];
 
-const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], comissoesCorretora: [], usuarios: [] };
+const EMPTY_DB = { clientes: [], veiculos: [], boletos: [], seguradoras: [], planos: [], cotacoes: [], consultoras: [], adesoes: [], comissoes: [], comissoesCorretora: [], funis: [], fases: [], negociacoes: [], atividades: [], eventos: [], usuarios: [] };
 const rowToUsuario = (r) => ({ userId: r.user_id, nome: r.nome || "", email: r.email || "", role: r.role || "operador" });
 
 const rowToConsultora = (r) => ({
@@ -5208,12 +6725,14 @@ const seguradoraToRow = (s) => ({ nome: s.nome, link_portal: s.linkPortal || nul
 const rowToPlano = (r) => ({
   id: r.id, seguradoraId: r.seguradora_id, nome: r.nome || "",
   valorMensal: r.valor_mensal ?? "", valorFranquia: r.valor_franquia ?? "", beneficios: r.beneficios || "",
+  taxaAtivacao: r.taxa_ativacao ?? "", rastreador: r.rastreador ?? "", franquiaPercentual: r.franquia_percentual ?? "", tabela: r.tabela || "",
+  faixas: Array.isArray(r.faixas) ? r.faixas : [], coberturas: Array.isArray(r.coberturas) ? r.coberturas : [],
 });
 const planoToRow = (p) => ({
   seguradora_id: p.seguradoraId, nome: p.nome,
-  valor_mensal: p.valorMensal === "" || p.valorMensal == null ? null : Number(p.valorMensal),
-  valor_franquia: p.valorFranquia === "" || p.valorFranquia == null ? null : Number(p.valorFranquia),
-  beneficios: p.beneficios || null,
+  valor_mensal: numOuNull(p.valorMensal), valor_franquia: numOuNull(p.valorFranquia), beneficios: p.beneficios || null,
+  taxa_ativacao: numOuNull(p.taxaAtivacao), rastreador: numOuNull(p.rastreador), franquia_percentual: numOuNull(p.franquiaPercentual),
+  tabela: p.tabela || null, faixas: p.faixas || [], coberturas: p.coberturas || [],
 });
 
 const rowToCotacao = (r) => ({
@@ -5279,7 +6798,7 @@ const boletoToRow = (b) => ({
   data_vencimento: b.dataVencimento || null, valor: paraNumeroBR(b.valor), data_pagamento: b.dataPagamento || null,
 });
 
-export default function App() {
+function AppInterno() {
   const [sessao, setSessao] = useState(undefined); // undefined = verificando, null = sem sessão, objeto = logado
   const [perfil, setPerfil] = useState(undefined); // undefined = carregando, null = sem perfil, objeto = { role, nome }
   const [db, setDb] = useState(EMPTY_DB);
@@ -5289,6 +6808,7 @@ export default function App() {
   const [selectedClienteId, setSelectedClienteId] = useState(null);
   const [modal, setModal] = useState(null); // { type, data, defaultClienteId, defaultVeiculoId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [negAbertaId, setNegAbertaId] = useState(null);
   const [tema, setTema] = useState(() => {
     try { return localStorage.getItem("nexo-tema") === "light" ? "light" : "dark"; } catch { return "dark"; }
   });
@@ -5324,14 +6844,14 @@ export default function App() {
   }, [sessao]);
 
   const ehAdmin = perfil?.role === "admin";
-  const modulosDoOperador = ["clientes", "veiculos", "financeiro", "cotacoes", "clienteDetail"];
+  const modulosDoOperador = ["clientes", "veiculos", "financeiro", "cotacoes", "atividades", "planos", "clienteDetail"];
   const podeVer = (chave) => ehAdmin || modulosDoOperador.includes(chave);
 
   const carregarTudo = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes] = await Promise.all([
+      const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes, funisRes, fasesRes, negociacoesRes, atividadesRes, eventosRes] = await Promise.all([
         supabase.from("clientes").select("*").order("nome"),
         supabase.from("veiculos").select("*"),
         supabase.from("boletos").select("*"),
@@ -5343,6 +6863,11 @@ export default function App() {
         supabase.from("comissoes").select("*"),
         supabase.from("perfis").select("*").order("nome"),
         supabase.from("comissoes_corretora").select("*"),
+        supabase.from("funis").select("*").order("ordem"),
+        supabase.from("fases").select("*").order("ordem"),
+        supabase.from("negociacoes").select("*"),
+        supabase.from("negociacao_atividades").select("*"),
+        supabase.from("negociacao_eventos").select("*").order("created_at", { ascending: false }).limit(3000),
       ]);
       if (clientesRes.error) throw clientesRes.error;
       if (veiculosRes.error) throw veiculosRes.error;
@@ -5365,6 +6890,11 @@ export default function App() {
         comissoes: (comissoesRes.data || []).map(rowToComissao),
         usuarios: (usuariosRes.data || []).map(rowToUsuario),
         comissoesCorretora: comissoesCorretoraRes.error ? [] : (comissoesCorretoraRes.data || []).map(rowToComissaoCorretora),
+        funis: funisRes.error ? [] : (funisRes.data || []).map(rowToFunil),
+        fases: fasesRes.error ? [] : (fasesRes.data || []).map(rowToFase),
+        negociacoes: negociacoesRes.error ? [] : (negociacoesRes.data || []).map(rowToNegociacao),
+        atividades: atividadesRes.error ? [] : (atividadesRes.data || []).map(rowToAtividade),
+        eventos: eventosRes.error ? [] : (eventosRes.data || []).map(rowToEvento),
       });
     } catch (e) {
       console.error(e);
@@ -5734,6 +7264,234 @@ export default function App() {
     } catch (e) {
       notify("Não foi possível atualizar a comissão: " + e.message);
     }
+  };
+
+  // --- Pipeline de cotações (negociações) ---
+  const nomeUsuario = perfil?.nome || (sessao?.user?.email || "Usuário").split("@")[0];
+  const negAberta = negAbertaId ? db.negociacoes.find((n) => n.id === negAbertaId) : null;
+
+  const registrarEvento = async (negociacaoId, texto, tipo = "geral", url = "") => {
+    try {
+      const { data, error } = await supabase.from("negociacao_eventos").insert({ negociacao_id: negociacaoId, tipo, texto, url: url || null, autor: nomeUsuario }).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, eventos: [rowToEvento(data), ...prev.eventos] }));
+    } catch (e) {
+      notify("Não foi possível registrar no histórico: " + e.message);
+    }
+  };
+  const delEvento = async (id) => {
+    try {
+      const { error } = await supabase.from("negociacao_eventos").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, eventos: prev.eventos.filter((e) => e.id !== id) }));
+    } catch (e) { notify("Não foi possível excluir: " + e.message); }
+  };
+
+  const atualizarNegociacao = async (id, patch, eventos) => {
+    try {
+      const { data, error } = await supabase.from("negociacoes").update({ ...negociacaoToRow(patch), updated_at: new Date().toISOString() }).eq("id", id).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, negociacoes: prev.negociacoes.map((n) => (n.id === id ? rowToNegociacao(data) : n)) }));
+      const lista = Array.isArray(eventos) ? eventos : eventos ? [eventos] : [];
+      for (const t of lista) await registrarEvento(id, t);
+      return true;
+    } catch (e) {
+      notify("Não foi possível salvar a negociação: " + e.message);
+      return false;
+    }
+  };
+
+  const criarNegociacao = async (f) => {
+    try {
+      let funilSalvo = "";
+      try { funilSalvo = localStorage.getItem("nexo-funil") || ""; } catch {}
+      const funil = db.funis.find((x) => x.id === funilSalvo) || db.funis[0];
+      if (!funil) { notify("Crie um funil antes (rode o script pipeline-cotacoes.sql no Supabase)."); return; }
+      const fases = db.fases.filter((x) => x.funilId === funil.id).sort((a, b) => a.ordem - b.ordem);
+      const fase = fases.find((x) => x.tipo === "entrada") || fases[0];
+      const agora = new Date().toISOString();
+      const nova = {
+        codigo: gerarCodigoNegociacao(), funilId: funil.id, faseId: fase?.id || "", faseDesde: agora,
+        fasesLog: fase ? [{ faseId: fase.id, entrouEm: agora, saiuEm: null }] : [],
+        nomeContato: f.nomeContato.trim(), email: f.email.trim(), celular: f.celular, tipoVeiculo: f.tipoVeiculo, placa: f.placa, marca: f.marca,
+        modelo: f.modelo, anoModelo: f.anoModelo, combustivel: f.combustivel, codigoFipe: f.codigoFipe, valorFipe: f.valorFipe, estado: f.estado,
+        cidade: f.cidade, veiculoTrabalho: f.veiculoTrabalho, origemLead: f.origemLead, seguradoraId: f.seguradoraId, consultoraId: f.consultoraId,
+        validadeDias: 4, tags: [],
+      };
+      const { data, error } = await supabase.from("negociacoes").insert(negociacaoToRow(nova)).select().single();
+      if (error) throw error;
+      const criada = rowToNegociacao(data);
+      setDb((prev) => ({ ...prev, negociacoes: [criada, ...prev.negociacoes] }));
+      closeModal();
+      await registrarEvento(criada.id, "criou a negociação pela pipeline");
+      setNegAbertaId(criada.id);
+      if (f.enviarEmail && f.email) window.open(linkEmail(f.email, "Sua cotação", `Olá ${primeiroNome(f.nomeContato)}! Veja os planos para o seu veículo: ${urlPublicaCotacao(criada.codigo, "comparar")}`), "_blank");
+    } catch (e) {
+      notify("Não foi possível criar a negociação: " + e.message);
+    }
+  };
+
+  const moverNegociacao = async (id, faseId) => {
+    const n = db.negociacoes.find((x) => x.id === id);
+    const destino = db.fases.find((x) => x.id === faseId);
+    const origem = db.fases.find((x) => x.id === n?.faseId);
+    if (!n || !destino || n.faseId === faseId) return;
+    const agora = new Date().toISOString();
+    const log = (n.fasesLog || []).map((e, i, arr) => (i === arr.length - 1 && !e.saiuEm ? { ...e, saiuEm: agora } : e)).concat([{ faseId, entrouEm: agora, saiuEm: null }]);
+    const ok = await atualizarNegociacao(id, { faseId, faseDesde: agora, fasesLog: log }, `moveu a negociação de “${origem?.nome || "—"}” para “${destino.nome}”`);
+    if (ok && destino.tipo === "ganho" && !n.clienteId) {
+      if (await confirmDialog("Venda concretizada! Quer cadastrar agora o cliente, o veículo e a adesão desta negociação?", { titulo: "Converter em cliente", textoConfirmar: "Cadastrar agora", perigo: false })) {
+        await converterNegociacao({ ...n, faseId });
+      }
+    }
+  };
+
+  const excluirNegociacao = async (n) => {
+    if (!await confirmDialog(`Excluir a negociação de ${n.nomeContato}? As atividades e o histórico dela também serão removidos.`)) return;
+    try {
+      const { error } = await supabase.from("negociacoes").delete().eq("id", n.id);
+      if (error) throw error;
+      setDb((prev) => ({
+        ...prev, negociacoes: prev.negociacoes.filter((x) => x.id !== n.id),
+        atividades: prev.atividades.filter((a) => a.negociacaoId !== n.id), eventos: prev.eventos.filter((e) => e.negociacaoId !== n.id),
+      }));
+      setNegAbertaId(null);
+    } catch (e) { notify("Não foi possível excluir a negociação: " + e.message); }
+  };
+
+  const alternarPerdida = async (n) => {
+    if (n.perdida) { await atualizarNegociacao(n.id, { perdida: false, motivoPerda: "" }, "reabriu a negociação"); return; }
+    const motivo = window.prompt("Motivo da perda (opcional):");
+    if (motivo === null) return;
+    await atualizarNegociacao(n.id, { perdida: true, motivoPerda: motivo }, `marcou a negociação como perdida${motivo ? `: ${motivo}` : ""}`);
+  };
+
+  const addAtividade = async (negId, dados) => {
+    try {
+      const { data, error } = await supabase.from("negociacao_atividades").insert({ negociacao_id: negId, tipo: dados.tipo, descricao: dados.descricao || null, quando: dados.quando, responsavel: dados.responsavel || null }).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, atividades: [...prev.atividades, rowToAtividade(data)] }));
+      await registrarEvento(negId, `agendou “${dados.tipo}” para ${dataHoraBR(dados.quando)}`);
+    } catch (e) { notify("Não foi possível salvar a atividade: " + e.message); }
+  };
+  const toggleAtividade = async (a) => {
+    try {
+      const concluida = !a.concluida;
+      const { data, error } = await supabase.from("negociacao_atividades").update({ concluida, concluida_em: concluida ? new Date().toISOString() : null }).eq("id", a.id).select().single();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, atividades: prev.atividades.map((x) => (x.id === a.id ? rowToAtividade(data) : x)) }));
+      if (concluida) await registrarEvento(a.negociacaoId, `concluiu a atividade “${a.tipo}”`);
+    } catch (e) { notify("Não foi possível atualizar a atividade: " + e.message); }
+  };
+  const delAtividade = async (id) => {
+    try {
+      const { error } = await supabase.from("negociacao_atividades").delete().eq("id", id);
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, atividades: prev.atividades.filter((a) => a.id !== id) }));
+    } catch (e) { notify("Não foi possível excluir a atividade: " + e.message); }
+  };
+
+  const copiarLinkNegociacao = async (n) => {
+    await copiarTexto(urlPublicaCotacao(n.codigo, "comparar"));
+    showToast("Link da cotação copiado.", "success");
+  };
+  const baixarPdf = (n) => {
+    const plano = db.planos.find((p) => p.id === n.planoId);
+    if (!plano) { notify("Escolha um plano na aba Cotações antes de gerar o PDF."); return; }
+    try {
+      gerarPdfNegociacao(n, plano, db.consultoras.find((c) => c.id === n.consultoraId));
+      registrarEvento(n.id, "baixou o PDF da cotação", "cotacao");
+    } catch (e) { notify("Não foi possível gerar o PDF: " + e.message); }
+  };
+
+  const converterNegociacao = async (n) => {
+    try {
+      const consultora = db.consultoras.find((c) => c.id === n.consultoraId);
+      let cliente = db.clientes.find((c) => c.id === n.clienteId) || db.clientes.find((c) => normalizarTexto(c.nome) === normalizarTexto(n.nomeContato));
+      let criouCliente = false;
+      if (!cliente) {
+        const { data, error } = await supabase.from("clientes").insert(clienteToRow({ nome: n.nomeContato, telefone: n.celular, whatsapp: n.celular, email: n.email, status: "Ativo", indicadoPor: n.afiliado })).select().single();
+        if (error) throw error;
+        cliente = rowToCliente(data);
+        criouCliente = true;
+        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, cliente] }));
+      }
+      let veiculoNovo = false;
+      if (n.placa && !db.veiculos.some((v) => normPlaca(v.placa) === normPlaca(n.placa))) {
+        const { data, error } = await supabase.from("veiculos").insert(veiculoToRow({
+          clienteId: cliente.id, tipoVeiculo: n.tipoVeiculo || "Carro ou utilitário", marca: n.marca || "Não informada", modelo: n.modelo || "Não informado",
+          ano: n.anoModelo, anoFabricacao: "", placa: normPlaca(n.placa), renavam: "", chassi: "", cor: "", combustivel: n.combustivel, codigoFipe: n.codigoFipe,
+          valorFipe: n.valorFipe, quilometragem: "", valorVeiculo: "", valorCoberto: "", diaVencimento: "", valorMensal: n.mensalidade,
+          estadoCirculacao: n.estado, cidadeCirculacao: n.cidade, veiculoTrabalho: n.veiculoTrabalho, dataCadastro: todayISO(), status: "Ativo",
+        })).select().single();
+        if (error) throw error;
+        veiculoNovo = true;
+        setDb((prev) => ({ ...prev, veiculos: [...prev.veiculos, rowToVeiculo(data)] }));
+      }
+      let adesaoNova = false;
+      if (Number(n.taxaAtivacao) > 0 && !db.adesoes.some((a) => a.clienteId === cliente.id && Number(a.valorAdesao) === Number(n.taxaAtivacao) && a.dataVenda === todayISO())) {
+        const { data, error } = await supabase.from("adesoes").insert(adesaoToRow({
+          clienteId: cliente.id, consultoraId: n.consultoraId, seguradoraId: n.seguradoraId, dataVenda: todayISO(), valorAdesao: n.taxaAtivacao,
+          comissaoConsultora: comissaoDaNegociacao(n, consultora) || "", valorRecebido: "", dataRecebimento: "", status: "Pendente",
+        })).select().single();
+        if (error) throw error;
+        adesaoNova = true;
+        setDb((prev) => ({ ...prev, adesoes: [...prev.adesoes, rowToAdesao(data)] }));
+      }
+      await atualizarNegociacao(n.id, { clienteId: cliente.id }, `converteu em cliente${criouCliente ? " (novo)" : " (já existia)"}${veiculoNovo ? ", veículo" : ""}${adesaoNova ? " e adesão" : ""}`);
+      notify(`Pronto! ${criouCliente ? "Cliente cadastrado" : "Cliente já existia"}${veiculoNovo ? ", veículo cadastrado" : ""}${adesaoNova ? " e adesão criada (pendente)" : ""}.`);
+    } catch (e) {
+      notify("Não foi possível converter a negociação: " + e.message);
+    }
+  };
+
+  const recarregarFunis = async () => {
+    const [f, fs] = await Promise.all([supabase.from("funis").select("*").order("ordem"), supabase.from("fases").select("*").order("ordem")]);
+    if (!f.error && !fs.error) setDb((prev) => ({ ...prev, funis: (f.data || []).map(rowToFunil), fases: (fs.data || []).map(rowToFase) }));
+  };
+  const salvarFunilConfig = async ({ funilId, nome, fases }) => {
+    try {
+      if (nome.trim()) { const { error } = await supabase.from("funis").update({ nome: nome.trim() }).eq("id", funilId); if (error) throw error; }
+      const manter = new Set(fases.filter((x) => x.id).map((x) => x.id));
+      for (const ex of db.fases.filter((x) => x.funilId === funilId)) {
+        if (!manter.has(ex.id)) { const { error } = await supabase.from("fases").delete().eq("id", ex.id); if (error) throw error; }
+      }
+      for (let i = 0; i < fases.length; i++) {
+        const x = fases[i];
+        if (!x.nome.trim()) continue;
+        const linha = { funil_id: funilId, nome: x.nome.trim(), ordem: i + 1, cor: x.cor || null, tipo: x.tipo || "andamento" };
+        const { error } = x.id ? await supabase.from("fases").update(linha).eq("id", x.id) : await supabase.from("fases").insert(linha);
+        if (error) throw error;
+      }
+      await recarregarFunis();
+      showToast("Colunas salvas.", "success");
+    } catch (e) { notify("Não foi possível salvar as colunas: " + e.message); }
+  };
+  const criarFunil = async (nome) => {
+    try {
+      const { data, error } = await supabase.from("funis").insert({ nome, ordem: db.funis.length + 1 }).select().single();
+      if (error) throw error;
+      const padrao = [["Novas", "entrada", "#8A9AAE"], ["Em andamento", "andamento", "#4C97E6"], ["Concluídas", "ganho", "#34D399"]];
+      const { error: e2 } = await supabase.from("fases").insert(padrao.map(([n, tipo, cor], i) => ({ funil_id: data.id, nome: n, ordem: i + 1, tipo, cor })));
+      if (e2) throw e2;
+      await recarregarFunis();
+      showToast(`Funil “${nome}” criado.`, "success");
+    } catch (e) { notify("Não foi possível criar o funil: " + e.message); }
+  };
+  const excluirFunil = async (id) => {
+    if (db.negociacoes.some((n) => n.funilId === id)) { notify("Mova ou exclua as negociações deste funil antes de excluí-lo."); return; }
+    if (!await confirmDialog("Excluir este funil e todas as colunas dele?")) return;
+    try {
+      const { error } = await supabase.from("funis").delete().eq("id", id);
+      if (error) throw error;
+      await recarregarFunis();
+    } catch (e) { notify("Não foi possível excluir o funil: " + e.message); }
+  };
+
+  const handlersNeg = {
+    mover: moverNegociacao, update: atualizarNegociacao, addAtividade, toggleAtividade, delAtividade, addEvento: registrarEvento, delEvento,
+    enviar: (id) => openModal("enviarCotacao", { id }), pdf: baixarPdf, converter: converterNegociacao, perdida: alternarPerdida, excluir: excluirNegociacao,
+    copiarLink: copiarLinkNegociacao,
   };
 
   // --- Comissões da corretora (regras por fonte e lançamentos) ---
@@ -6171,7 +7929,7 @@ export default function App() {
 
   const titleMap = {
     dashboard: "Dashboard", clientes: "Clientes", veiculos: "Veículos", financeiro: "Financeiro", relatorios: "Relatórios",
-    cotacoes: "Cotação de seguros", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões", usuarios: "Usuários",
+    cotacoes: "Pipeline", atividades: "Atividades", planos: "Planos e seguradoras", consultoras: "Consultoras", adesoes: "Adesões", comissoes: "Comissões", usuarios: "Usuários",
     clienteDetail: "Detalhes do cliente",
   };
 
@@ -6298,7 +8056,9 @@ export default function App() {
                 <FinanceiroView db={db} onOpenModal={openModal} onDeleteBoleto={deleteBoleto} onMarcarPago={marcarPago} onImportarBaixa={importarBaixaBoletosCSV} />
               )}
               {view === "relatorios" && <RelatoriosView db={db} />}
-              {view === "cotacoes" && (
+              {view === "cotacoes" && <PipelineView db={db} onNova={() => openModal("novaNegociacao")} onAbrir={setNegAbertaId} onMover={moverNegociacao} onConfigFunis={() => openModal("funis")} />}
+              {view === "atividades" && <AtividadesView db={db} onAbrir={setNegAbertaId} onToggle={toggleAtividade} onDelete={delAtividade} />}
+              {view === "planos" && (
                 <CotacoesView
                   db={db}
                   onOpenModal={openModal}
@@ -6334,6 +8094,11 @@ export default function App() {
         </div>
       )}
 
+      {negAberta && (
+        <ErrorBoundary fallback={null} resetKey={negAbertaId || ""} onError={(e) => { setNegAbertaId(null); notify("Não foi possível abrir a negociação: " + (e.message || e)); }}>
+          <NegociacaoModal n={negAberta} db={db} perfilNome={nomeUsuario} handlers={handlersNeg} onClose={() => setNegAbertaId(null)} />
+        </ErrorBoundary>
+      )}
       <ErrorBoundary fallback={null} resetKey={modal ? modal.type + (modal.data?.id || "") : ""} onError={(e) => { closeModal(); notify("Não foi possível abrir esta janela: " + (e.message || e)); }}>
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
@@ -6398,6 +8163,21 @@ export default function App() {
           <FonteForm initial={modal.data} outraAutomatica={db.seguradoras.some((s) => s.comissaoAutomatica && s.id !== modal.data?.id)} onSave={saveFonteComissao} onCancel={closeModal} />
         </Modal>
       )}
+      {modal && modal.type === "novaNegociacao" && (
+        <Modal title="Adicione uma nova negociação" onClose={closeModal} wide>
+          <NovaNegociacaoForm seguradoras={db.seguradoras} consultoras={db.consultoras} onSave={criarNegociacao} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "enviarCotacao" && db.negociacoes.some((x) => x.id === modal.data?.id) && (
+        <Modal title="Enviar cotação" onClose={closeModal}>
+          <EnviarCotacaoModal n={db.negociacoes.find((x) => x.id === modal.data.id)} db={db} onClose={closeModal} onEvento={(id, t) => registrarEvento(id, t, "cotacao")} onPdf={baixarPdf} />
+        </Modal>
+      )}
+      {modal && modal.type === "funis" && (
+        <Modal title="Funis e colunas do Pipeline" onClose={closeModal} wide>
+          <ConfigFunilForm db={db} funilInicial={(() => { try { return localStorage.getItem("nexo-funil") || ""; } catch { return ""; } })()} onSalvar={salvarFunilConfig} onNovoFunil={criarFunil} onExcluirFunil={excluirFunil} onCancel={closeModal} />
+        </Modal>
+      )}
       {modal && modal.type === "lancamento" && (
         <Modal title={modal.data?.id ? "Editar lançamento" : "Novo lançamento de comissão"} onClose={closeModal} wide>
           <LancamentoForm initial={modal.data} seguradoras={db.seguradoras} clientes={db.clientes} onSave={saveLancamento} onCancel={closeModal} />
@@ -6411,4 +8191,19 @@ export default function App() {
       </ErrorBoundary>
     </div>
   );
+}
+
+export default function App() {
+  const params = new URLSearchParams(window.location.search);
+  const codigoCotacao = params.get("cotacao");
+  if (codigoCotacao) {
+    return (
+      <div className="nexo" data-theme="light">
+        <style>{STYLE}</style>
+        <CotacaoPublica codigo={codigoCotacao} modo={params.get("modo") || ""} />
+        <MensagensHost />
+      </div>
+    );
+  }
+  return <AppInterno />;
 }
