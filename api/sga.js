@@ -184,6 +184,40 @@ export default async function handler(req, res) {
       });
     }
 
+    if (acao === "bases") {
+      // Lista regionais e cooperativas (nomes de bases, sem dados pessoais) e conta os boletos do mês por base
+      const [reg, coop] = await Promise.all([
+        chamar("listar/regional/todos", "GET", tokenUsuario),
+        chamar("listar/cooperativa/todos", "GET", tokenUsuario),
+      ]);
+      const comoLista = (j) => (Array.isArray(j) ? j : (j && (j.regionais || j.cooperativas || j.dados || j.data)) || []);
+      const regionais = comoLista(reg.json).map((x) => ({ codigo: x.codigo_regional, nome: x.descricao_regional || x.nome, situacao: x.situacao }));
+      const cooperativas = comoLista(coop.json).map((x) => ({ codigo: x.codigo_cooperativa, nome: x.nome || x.descricao_cooperativa || x.descricao, situacao: x.situacao }));
+      // boletos do mês do voluntário: em quais regionais/cooperativas estão os veículos
+      const hoje = new Date();
+      const r = await chamar("listar/boleto-associado/periodo", "POST", tokenUsuario, {
+        data_vencimento_inicial: ddmmyyyy(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+        data_vencimento_final: ddmmyyyy(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
+        codigo_voluntario: [Number(codigoVoluntario)], quantidade_por_pagina: 1000, inicio_paginacao: 0,
+      });
+      const nomeReg = (c) => (regionais.find((x) => String(x.codigo) === String(c)) || {}).nome || `regional ${c}`;
+      const nomeCoop = (c) => (cooperativas.find((x) => String(x.codigo) === String(c)) || {}).nome || `cooperativa ${c}`;
+      const contagem = {};
+      for (const b of (r.json && r.json.boletos) || []) {
+        for (const v of b.veiculos || []) {
+          const k = `${nomeReg(v.codigo_regional)} (reg ${v.codigo_regional}) / ${nomeCoop(v.codigo_cooperativa)} (coop ${v.codigo_cooperativa}) / ${minhaBase(v.codigo_voluntario) ? "voluntário EU" : "OUTRO voluntário"}`;
+          contagem[k] = (contagem[k] || 0) + 1;
+        }
+      }
+      return res.status(200).json({
+        ok: reg.ok || coop.ok, etapa: "bases",
+        mensagem: !reg.ok && !coop.ok ? "Libere no token (Gerenciar APIs) os endpoints 'Regional - Listar' e 'Cooperativa - Listar'." : "Bases cadastradas no SGA e onde estão os veículos dos seus boletos deste mês.",
+        regional_status_http: reg.status, cooperativa_status_http: coop.status,
+        veiculos_dos_seus_boletos_do_mes_por_base: contagem,
+        regionais, cooperativas,
+      });
+    }
+
     if (acao === "veiculos") {
       // POST /listar/veiculo — veículos do voluntário (codigo_situacao obrigatório; 1 = normalmente ATIVO)
       const r = await chamar("listar/veiculo", "POST", tokenUsuario, {
