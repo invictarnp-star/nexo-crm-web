@@ -184,6 +184,38 @@ export default async function handler(req, res) {
       });
     }
 
+    if (acao === "relatorio") {
+      // Relatório legível dos boletos do mês (dados reais, só da sua base) — para mostrar NA TELA do Nexo.
+      const mesParam = String(req.query.mes || "");
+      const [ano, mes] = /^\d{4}-\d{2}$/.test(mesParam) ? mesParam.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+      const ini = new Date(ano, mes - 1, 1), fim = new Date(ano, mes, 0);
+      const todos = [];
+      let pagina = 0, totalPaginas = 1;
+      while (pagina < totalPaginas && pagina < 20) {
+        const r = await chamar("listar/boleto-associado/periodo", "POST", tokenUsuario, {
+          data_vencimento_inicial: ddmmyyyy(ini), data_vencimento_final: ddmmyyyy(fim),
+          codigo_voluntario: [Number(codigoVoluntario)], quantidade_por_pagina: 500, inicio_paginacao: pagina, link_boleto: true,
+        });
+        if (!r.ok) return res.status(200).json({ ok: false, etapa: "relatorio", status_http: r.status, mensagem: "O SGA recusou a consulta.", resposta_sga: mascarar(r.json) || r.texto });
+        todos.push(...((r.json && r.json.boletos) || []));
+        totalPaginas = Number(r.json && r.json.numero_paginas) || 1;
+        pagina++;
+      }
+      const linhas = todos
+        .filter((b) => !Array.isArray(b.veiculos) || b.veiculos.length === 0 || b.veiculos.some((v) => minhaBase(v.codigo_voluntario)))
+        .map((b) => ({
+          nosso_numero: b.nosso_numero, cliente: b.nome_associado, cpf: b.cpf, codigo_associado: b.codigo_associado,
+          placas: (b.veiculos || []).map((v) => v.placa).filter(Boolean),
+          valor: Number(b.valor_boleto) || 0, valor_pago: Number(b.valor_pagamento) || 0,
+          vencimento: b.data_vencimento, pagamento: b.data_pagamento, situacao: b.situacao_boleto,
+          mes_referente: b.mes_referente, tipo: b.tipo_boleto,
+          parcela: b.parcelado === "Y" && b.qtde_parcela ? `${b.parcela_paga ?? "?"}/${b.qtde_parcela}` : "",
+          link: b.link_boleto || b.url_boleto || b.link || null,
+          celular: b.celular || null,
+        }));
+      return res.status(200).json({ ok: true, etapa: "relatorio", mes: `${String(mes).padStart(2, "0")}/${ano}`, total: linhas.length, boletos: linhas });
+    }
+
     if (acao === "bases") {
       // Lista regionais e cooperativas (nomes de bases, sem dados pessoais) e conta os boletos do mês por base
       const [reg, coop] = await Promise.all([
