@@ -7465,12 +7465,118 @@ function ConfiguracoesView({ db, onSalvar }) {
       )}
 
       {aba === "link" && <DiagnosticoLink db={db} />}
-      {aba === "sga" && <IntegracaoSGA />}
+      {aba === "sga" && <><RelatorioBoletosSGA /><IntegracaoSGA /></>}
     </div>
   );
 }
 
 /* Integração com o SGA (Hinova) — Etapa 1: teste de conexão, somente leitura */
+/* Relatório legível dos boletos do SGA (só leitura, nada é gravado no Nexo) */
+function RelatorioBoletosSGA() {
+  const mesAtual = mesRefDe(todayISO());
+  const [mes, setMes] = useState(mesAtual);
+  const [dados, setDados] = useState(null);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [busca, setBusca] = useState("");
+  const [situacao, setSituacao] = useState("validos");
+  const meses = Array.from({ length: 8 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m - 4 + i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  async function buscar() {
+    setCarregando(true); setErro(""); setDados(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const resp = await fetch(`/api/sga?acao=relatorio&mes=${mes}`, { headers: { Authorization: `Bearer ${data?.session?.access_token || ""}` } });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.mensagem || "O SGA não respondeu.");
+      setDados(json);
+    } catch (e) { setErro(e.message); } finally { setCarregando(false); }
+  }
+  const validos = (b) => b.situacao !== "CANCELADO" && b.situacao !== "EXCLUIDO";
+  const lista = (dados?.boletos || []).filter((b) => {
+    if (situacao === "validos" && !validos(b)) return false;
+    if (situacao !== "validos" && situacao !== "todos" && b.situacao !== situacao) return false;
+    if (busca) {
+      const t = normalizarTexto(busca);
+      if (!normalizarTexto(b.cliente).includes(t) && !b.placas.some((p) => normPlaca(p).includes(normPlaca(busca))) && !String(b.nosso_numero).includes(busca)) return false;
+    }
+    return true;
+  }).sort((x, y) => String(x.vencimento).localeCompare(String(y.vencimento)) || String(x.cliente).localeCompare(String(y.cliente), "pt-BR"));
+  const base = (dados?.boletos || []).filter(validos);
+  const pagos = base.filter((b) => b.situacao === "BAIXADO");
+  const abertos = base.filter((b) => b.situacao === "ABERTO");
+  const hoje = todayISO();
+  const vencidos = abertos.filter((b) => b.vencimento && b.vencimento < hoje);
+  const corSit = { BAIXADO: "var(--success)", ABERTO: "var(--info)", CANCELADO: "var(--text-faint)", EXCLUIDO: "var(--text-faint)" };
+  return (
+    <div className="nexo-card" style={{ marginTop: 16 }}>
+      <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <div className="nexo-chart-title">Relatório de boletos do SGA</div>
+          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Boletos da sua base pelo mês de vencimento, direto do SGA (só leitura).</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select className="nexo-select" style={{ width: "auto" }} value={mes} onChange={(e) => setMes(e.target.value)}>
+            {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+          </select>
+          <button className="nexo-btn nexo-btn-primary" disabled={carregando} onClick={buscar}>{carregando ? "Buscando no SGA…" : "Gerar relatório"}</button>
+        </div>
+      </div>
+      {erro && <div style={{ color: "var(--danger)", marginBottom: 10 }}>{erro}</div>}
+      {dados && (
+        <>
+          <div className="nexo-mini-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos válidos</div><div className="nexo-mini-kpi-value">{base.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(base.map((b) => b.valor)))}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Pagos (baixados)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--success)" }}>{pagos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(pagos.map((b) => b.valor)))}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Em aberto</div><div className="nexo-mini-kpi-value" style={{ color: "var(--info)" }}>{abertos.length - vencidos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(abertos.filter((b) => !vencidos.includes(b)).map((b) => b.valor)))}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Vencidos (inadimplentes)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--danger)" }}>{vencidos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(vencidos.map((b) => b.valor)))}</div></div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            <input className="nexo-input" style={{ maxWidth: 280 }} placeholder="Buscar cliente, placa ou Nosso Número" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <select className="nexo-select" style={{ width: "auto" }} value={situacao} onChange={(e) => setSituacao(e.target.value)}>
+              <option value="validos">Válidos (aberto + baixado)</option>
+              <option value="ABERTO">Só em aberto</option>
+              <option value="BAIXADO">Só pagos</option>
+              <option value="CANCELADO">Cancelados</option>
+              <option value="EXCLUIDO">Excluídos</option>
+              <option value="todos">Todos</option>
+            </select>
+            <button className="nexo-btn" onClick={() => exportarCSV(`boletos-sga-${mes}.csv`, [
+              { titulo: "Cliente", valor: (b) => b.cliente }, { titulo: "CPF/CNPJ", valor: (b) => b.cpf },
+              { titulo: "Placas", valor: (b) => b.placas.join(" | ") }, { titulo: "Nosso Número", valor: (b) => b.nosso_numero },
+              { titulo: "Vencimento", valor: (b) => formatDateBR(b.vencimento) }, { titulo: "Valor", valor: (b) => String(b.valor).replace(".", ",") },
+              { titulo: "Situação", valor: (b) => b.situacao }, { titulo: "Pagamento", valor: (b) => (b.pagamento ? formatDateBR(b.pagamento) : "") },
+              { titulo: "Mês referente", valor: (b) => b.mes_referente }, { titulo: "Parcela", valor: (b) => b.parcela },
+            ], lista)}><Download size={14} /> Exportar CSV</button>
+            <span className="nexo-cell-muted" style={{ alignSelf: "center" }}>{lista.length} boleto(s) na lista</span>
+          </div>
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Cliente</th><th>Placas</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Pagamento</th><th>Nosso nº</th><th></th></tr></thead>
+              <tbody>
+                {lista.map((b) => {
+                  const venc = b.situacao === "ABERTO" && b.vencimento && b.vencimento < hoje;
+                  return (
+                    <tr key={b.nosso_numero}>
+                      <td><div className="nexo-cliente-nome">{b.cliente}</div>{b.parcela && <div className="nexo-cliente-sub">parcela {b.parcela} · ref. {b.mes_referente}</div>}</td>
+                      <td title={b.placas.join(", ")}>{b.placas.length > 1 ? <><PlacaChip placa={b.placas[0]} /> <span className="nexo-tag-frota">+{b.placas.length - 1}</span></> : b.placas[0] ? <PlacaChip placa={b.placas[0]} /> : "—"}</td>
+                      <td>{formatDateBR(b.vencimento)}</td>
+                      <td className="mono">{formatBRL(b.valor)}</td>
+                      <td style={{ color: venc ? "var(--danger)" : corSit[b.situacao] || "var(--text)", fontWeight: 600 }}>{venc ? "VENCIDO" : b.situacao}</td>
+                      <td>{b.pagamento ? formatDateBR(b.pagamento) : "—"}</td>
+                      <td className="mono nexo-cell-muted">{b.nosso_numero}</td>
+                      <td>{b.link && <a className="nexo-btn nexo-btn-sm" href={b.link} target="_blank" rel="noreferrer">2ª via</a>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function IntegracaoSGA() {
   const [rodando, setRodando] = useState("");
   const [resultado, setResultado] = useState(null);
