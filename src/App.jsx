@@ -7387,7 +7387,7 @@ function ConfiguracoesView({ db, onSalvar }) {
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Configurações<span className="nexo-section-count">cotação, mensagens e link do cliente</span></div>
-        {aba !== "link" && (
+        {aba !== "link" && aba !== "sga" && (
           <div className="nexo-topbar-actions">
             <button className="nexo-btn" disabled={JSON.stringify(f) === JSON.stringify(CONFIG_COTACAO_PADRAO)} onClick={() => { if (window.confirm("Voltar todos os campos para o padrão do sistema? (Só vale depois de salvar.)")) setF({ ...CONFIG_COTACAO_PADRAO }); }}>Restaurar padrão</button>
             <button className="nexo-btn nexo-btn-primary" disabled={!mudou || salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar configurações"}</button>
@@ -7395,7 +7395,7 @@ function ConfiguracoesView({ db, onSalvar }) {
         )}
       </div>
       <div className="nexo-tabs">
-        {[["modelo", "Modelo da cotação"], ["mensagens", "Mensagens de envio"], ["link", "Link do cliente"]].map(([k, rot]) => (
+        {[["modelo", "Modelo da cotação"], ["mensagens", "Mensagens de envio"], ["link", "Link do cliente"], ["sga", "Integração SGA"]].map(([k, rot]) => (
           <div key={k} className={`nexo-tab ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>{rot}</div>
         ))}
       </div>
@@ -7465,6 +7465,50 @@ function ConfiguracoesView({ db, onSalvar }) {
       )}
 
       {aba === "link" && <DiagnosticoLink db={db} />}
+      {aba === "sga" && <IntegracaoSGA />}
+    </div>
+  );
+}
+
+/* Integração com o SGA (Hinova) — Etapa 1: teste de conexão, somente leitura */
+function IntegracaoSGA() {
+  const [rodando, setRodando] = useState("");
+  const [resultado, setResultado] = useState(null);
+  async function executar(acao) {
+    setRodando(acao); setResultado(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      const resp = await fetch(`/api/sga?acao=${acao}`, { headers: { Authorization: `Bearer ${token || ""}` } });
+      const texto = await resp.text();
+      let json; try { json = JSON.parse(texto); } catch { json = { ok: false, mensagem: resp.status === 404 ? "A função api/sga.js ainda não foi publicada no GitHub." : texto.slice(0, 300) }; }
+      setResultado(json);
+    } catch (e) {
+      setResultado({ ok: false, mensagem: e.message });
+    } finally {
+      setRodando("");
+    }
+  }
+  return (
+    <div className="nexo-card">
+      <div className="nexo-chart-title">Integração com o SGA (Hinova)</div>
+      <div className="nexo-chart-sub">Etapa 1 — só leitura: confere se o acesso funciona e mostra o formato dos dados (mascarados). Nada é gravado no Nexo.</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        <button className="nexo-btn nexo-btn-primary" disabled={!!rodando} onClick={() => executar("teste")}>{rodando === "teste" ? "Testando…" : "1. Testar conexão"}</button>
+        <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("boletos")}>{rodando === "boletos" ? "Buscando…" : "2. Amostra de boletos do mês"}</button>
+        <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("veiculos")}>{rodando === "veiculos" ? "Buscando…" : "3. Amostra de veículos ativos"}</button>
+        <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("situacoes")}>{rodando === "situacoes" ? "Buscando…" : "4. Situações de boleto"}</button>
+      </div>
+      {resultado && (
+        <>
+          <div style={{ fontWeight: 600, marginBottom: 8, color: resultado.ok ? "var(--success)" : "var(--danger)" }}>
+            {resultado.ok ? "✔ " : "✖ "}{resultado.mensagem || (resultado.ok ? "Consulta feita." : "Não deu certo.")}
+          </div>
+          <pre className="mono" style={{ fontSize: 11.5, whiteSpace: "pre-wrap", wordBreak: "break-word", background: "var(--surface-2)", border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, maxHeight: 360, overflow: "auto" }}>
+            {JSON.stringify(resultado, null, 2)}
+          </pre>
+        </>
+      )}
     </div>
   );
 }
