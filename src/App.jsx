@@ -837,8 +837,17 @@ function planoAjusteFrota(db, cliente, veiculo, evento, mesInicio) {
         r.criar.push({ clienteId: cliente.id, veiculoId: veiculo.id, numero: p.numero, nossoNumero: "", dataEmissao: hoje, dataVencimento: p.dataVencimento, valor: valorVeic, dataPagamento: "" });
       });
   } else {
-    futuros.filter((b) => !boletoCobreVeiculo(b, veiculo.id)).forEach((b) => {
-      if (b.dataVencimento && b.dataVencimento < hoje) return;
+    // um boleto por mês: se o cliente tem mais de um boleto no mês, o carro entra no que já cobre mais veículos
+    const porMes = new Map();
+    futuros.forEach((b) => { const m = mesRefDe(b.dataVencimento); porMes.set(m, [...(porMes.get(m) || []), b]); });
+    const escolhidos = [];
+    porMes.forEach((lista) => {
+      if (lista.some((b) => boletoCobreVeiculo(b, veiculo.id))) return;
+      const vigentes = lista.filter((b) => !(b.dataVencimento && b.dataVencimento < hoje));
+      if (vigentes.length === 0) return;
+      escolhidos.push(vigentes.slice().sort((x, y) => veiculosDoBoleto(y).length - veiculosDoBoleto(x).length)[0]);
+    });
+    escolhidos.forEach((b) => {
       if (b.nossoNumero) { r.emitidos.push(b); return; }
       const antes = veiculosDoBoleto(b);
       const ids = [...antes, veiculo.id];
@@ -851,6 +860,204 @@ function planoAjusteFrota(db, cliente, veiculo, evento, mesInicio) {
   return r;
 }
 const planoAjusteVazio = (r) => r.excluir.length + r.atualizar.length + r.criar.length + r.emitidos.length + r.avisos.length === 0;
+
+/* Importação em lote das mensalidades a partir do relatório do SGA
+   (Nome, Placa, CPF/CNPJ, Valor Último Boleto, Data Vencimento Último Boleto Emitido).
+   Regra: mesmo cliente + mesmo valor (+ mesmo dia de vencimento) = um boleto só (boleto unificado da frota). */
+function lerLinhasMensalidadeSGA(cabecalhos, linhas) {
+  return linhas.map((l) => {
+    const col = (...c) => valorDaColuna(cabecalhos, l, c);
+    const vencBruto = col("datavencimentoultimoboletoemitido", "datavencimentoultimoboleto", "datadevencimento", "datavencimento", "vencimento", "diadevencimento", "diavencimento");
+    const diaNum = /^\d{1,2}$/.test(String(vencBruto).trim()) ? parseInt(vencBruto, 10) : 0;
+    const vencISO = diaNum ? "" : paraDataISO(vencBruto);
+    return {
+      nome: semSeparador(col("nome", "nomedocliente", "associado", "cliente", "proprietario")),
+      placa: col("placa", "placas", "placadoveiculo"),
+      cpf: col("cpfcnpj", "cpf", "cnpj"),
+      codigoSga: col("codigosga", "codigocliente", "matricula"),
+      valor: paraNumeroBR(col("valorultimoboleto", "valordoultimoboleto", "valordamensalidade", "valormensalidade", "mensalidade", "valormensal", "valordoboleto", "valor")),
+      dia: diaNum || (vencISO ? Number(vencISO.slice(8, 10)) : 0),
+    };
+  }).filter((x) => x.nome || x.placa || x.cpf);
+}
+
+function planoImportMensalidades(db, linhas, opc) {
+  const qtd = Math.max(1, Math.min(120, parseInt(opc.qtd, 10) || 0));
+  const porCpf = new Map(db.clientes.filter((c) => c.cpf).map((c) => [c.cpf.replace(/\D/g, ""), c]));
+  const porCodigo = new Map(db.clientes.filter((c) => c.codigoSga).map((c) => [normalizarTexto(c.codigoSga), c]));
+  const porNome = new Map(db.clientes.map((c) => [normalizarTexto(c.nome).replace(/\s+/g, " "), c]));
+  const porPlaca = new Map(db.veiculos.map((v) => [normPlaca(v.placa), v]));
+  const r = { zerados: [], semCliente: new Map(), placasNaoEncontradas: [], semDia: [], jaConfigurados: 0, clientes: [], boletos: [], veiculosValor: [], mesesPulados: 0 };
+  const grupos = new Map();
+  for (const l of linhas) {
+    if (!(l.valor > 0)) { r.zerados.push(l); continue; }
+    const cpfL = String(l.cpf || "").replace(/\D/g, "");
+    const cliente = (cpfL && porCpf.get(cpfL)) || (l.codigoSga && porCodigo.get(normalizarTexto(l.codigoSga))) || porNome.get(normalizarTexto(l.nome).replace(/\s+/g, " "));
+    if (!cliente) { r.semCliente.set(cpfL || l.nome, l); continue; }
+    if (!l.dia) { r.semDia.push(l); continue; }
+    const placas = separarPlacas(l.placa);
+    const veics = placas.map((pl) => porPlaca.get(pl)).filter((v) => v && v.clienteId === cliente.id);
+    placas.filter((pl) => !veics.some((v) => normPlaca(v.placa) === pl)).forEach((pl) => r.placasNaoEncontradas.push({ placa: pl, nome: cliente.nome }));
+    const chave = `${cliente.id}|${l.valor.toFixed(2)}|${opc.juntarDias ? "" : l.dia}`;
+    const g = grupos.get(chave) || { cliente, valor: l.valor, dia: l.dia, veiculoIds: [], placas: [] };
+    g.dia = Math.min(g.dia, l.dia);
+    veics.forEach((v) => { if (!g.veiculoIds.includes(v.id)) g.veiculoIds.push(v.id); });
+    placas.forEach((pl) => { if (!g.placas.includes(pl)) g.placas.push(pl); });
+    grupos.set(chave, g);
+  }
+  const porCliente = new Map();
+  grupos.forEach((g) => porCliente.set(g.cliente.id, [...(porCliente.get(g.cliente.id) || []), g]));
+  const [anoI, mesI] = opc.mesInicio.split("-").map(Number);
+  const dataNoMes = (i, dia) => {
+    const alvo = new Date(anoI, mesI - 1 + i, 1);
+    const ultimo = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+    return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, ultimo)).padStart(2, "0")}`;
+  };
+  const hoje = todayISO();
+  porCliente.forEach((gs, clienteId) => {
+    const cliente = gs[0].cliente;
+    if (!opc.atualizarConfigurados && clienteTemParcelas(cliente)) { r.jaConfigurados++; return; }
+    const total = round2(sum(gs.map((g) => g.valor)));
+    const todosIndividuais = gs.length > 1 && gs.every((g) => g.placas.length <= 1);
+    const primeiro = gs.map((g) => dataNoMes(0, g.dia)).sort()[0];
+    r.clientes.push({ cliente, grupos: gs, total, campos: { mensalidade_valor: total, parcelas_qtd: qtd, primeiro_vencimento: primeiro, cobranca_frota: todosIndividuais ? "por_veiculo" : null } });
+    gs.forEach((g) => {
+      if (g.veiculoIds.length === 1) {
+        const v = db.veiculos.find((x) => x.id === g.veiculoIds[0]);
+        if (v && Number(v.valorMensal) !== g.valor) r.veiculosValor.push({ id: v.id, valor: g.valor });
+      }
+    });
+    if (!opc.lancar) return;
+    const existentes = db.boletos.filter((b) => b.clienteId === clienteId);
+    gs.forEach((g) => {
+      for (let i = 0; i < qtd; i++) {
+        const venc = dataNoMes(i, g.dia);
+        const mes = mesRefDe(venc);
+        const conflito = existentes.some((b) => mesRefDe(b.dataVencimento) === mes &&
+          (veiculosDoBoleto(b).length === 0 || veiculosDoBoleto(b).some((id) => g.veiculoIds.includes(id))));
+        if (conflito) { r.mesesPulados++; continue; }
+        r.boletos.push({
+          clienteId, veiculoId: g.veiculoIds.length === 1 ? g.veiculoIds[0] : null, veiculoIds: g.veiculoIds.length > 1 ? g.veiculoIds : [],
+          numero: `PARC ${i + 1}/${qtd}`, nossoNumero: "", dataEmissao: hoje, dataVencimento: venc, valor: g.valor, dataPagamento: "",
+        });
+      }
+    });
+  });
+  r.clientes.sort((a, b) => a.cliente.nome.localeCompare(b.cliente.nome, "pt-BR"));
+  return r;
+}
+
+function ImportarMensalidadesModal({ db, onAplicar, onCancel }) {
+  const mesAtual = mesRefDe(todayISO());
+  const proximoMes = (() => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+  const [linhas, setLinhas] = useState(null);
+  const [arquivo, setArquivo] = useState("");
+  const [lendo, setLendo] = useState(false);
+  const [erro, setErro] = useState("");
+  const [qtd, setQtd] = useState("12");
+  const [mesInicio, setMesInicio] = useState(proximoMes);
+  const [juntarDias, setJuntarDias] = useState(false);
+  const [atualizarConfigurados, setAtualizarConfigurados] = useState(true);
+  const [lancar, setLancar] = useState(true);
+  const [aplicando, setAplicando] = useState(false);
+  const inputRef = useRef(null);
+  const plano = useMemo(() => (linhas ? planoImportMensalidades(db, linhas, { qtd, mesInicio, juntarDias, atualizarConfigurados, lancar }) : null),
+    [db, linhas, qtd, mesInicio, juntarDias, atualizarConfigurados, lancar]);
+  const meses = Array.from({ length: 14 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m - 2 + i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+
+  async function escolher(e) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setLendo(true); setErro("");
+    try {
+      const { cabecalhos, linhas: brutas } = await lerArquivoComoTabela(f);
+      const lidas = lerLinhasMensalidadeSGA(cabecalhos, brutas);
+      if (lidas.length === 0) throw new Error("não encontrei linhas com Nome/Placa/CPF neste arquivo.");
+      setLinhas(lidas); setArquivo(f.name);
+    } catch (err) {
+      setErro("Não foi possível ler o arquivo: " + err.message);
+    } finally {
+      setLendo(false);
+    }
+  }
+
+  const boletosPorMes = plano ? sum(plano.clientes.map((c) => c.grupos.length)) : 0;
+  const unificados = plano ? sum(plano.clientes.map((c) => c.grupos.filter((g) => g.placas.length > 1).length)) : 0;
+  const totalMes = plano ? round2(sum(plano.clientes.map((c) => c.total))) : 0;
+  const lista = (titulo, itens, cor) => itens.length > 0 && (
+    <details style={{ fontSize: 12.5, marginBottom: 8 }}>
+      <summary style={{ cursor: "pointer", color: cor || "var(--text)", fontWeight: 600 }}>{titulo} ({itens.length})</summary>
+      <div style={{ maxHeight: 160, overflowY: "auto", padding: "6px 0 0 14px", color: "var(--text-dim)" }}>{itens.map((t, i) => <div key={i}>{t}</div>)}</div>
+    </details>
+  );
+
+  return (
+    <>
+      <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 12 }}>
+        Use o relatório de veículos do SGA com <strong>Nome, Placa, CPF/CNPJ, Valor Último Boleto</strong> e <strong>Data Vencimento Último Boleto Emitido</strong>.
+        Mesmo cliente com o mesmo valor conta como <strong>um boleto só</strong> (boleto unificado). Veículos com valor zerado (boleto ainda não emitido) ficam de fora.
+        Nada é gravado antes de você confirmar.
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+        <button type="button" className="nexo-btn" disabled={lendo} onClick={() => inputRef.current?.click()}>
+          <Upload size={14} /> {lendo ? "Lendo…" : arquivo ? "Trocar arquivo" : "Escolher relatório do SGA"}
+        </button>
+        <input ref={inputRef} type="file" accept=".xls,.xlsx,.csv,.html,.ods,.pdf" style={{ display: "none" }} onChange={escolher} />
+        {arquivo && <span className="nexo-cell-muted">{arquivo} · {linhas.length} veículo(s) lido(s)</span>}
+      </div>
+      {erro && <div style={{ color: "var(--danger)", fontSize: 12.5, marginBottom: 10 }}>{erro}</div>}
+      {plano && (
+        <>
+          <div className="nexo-field-row3">
+            <Field label="Quantidade de parcelas">
+              <input type="number" min="1" max="120" className="nexo-input mono" value={qtd} onChange={(e) => setQtd(e.target.value)} />
+            </Field>
+            <Field label="Primeira parcela em">
+              <select className="nexo-select" value={mesInicio} onChange={(e) => setMesInicio(e.target.value)}>
+                {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+              </select>
+            </Field>
+            <Field label="Lançar os boletos">
+              <select className="nexo-select" value={lancar ? "s" : "n"} onChange={(e) => setLancar(e.target.value === "s")}>
+                <option value="s">Sim, lançar no Financeiro</option>
+                <option value="n">Não, só preencher os cadastros</option>
+              </select>
+            </Field>
+          </div>
+          <label style={{ display: "flex", gap: 8, fontSize: 12.5, marginBottom: 6, cursor: "pointer" }}>
+            <input type="checkbox" checked={juntarDias} onChange={(e) => setJuntarDias(e.target.checked)} />
+            Juntar valores iguais do mesmo cliente mesmo quando o dia de vencimento é diferente
+          </label>
+          <label style={{ display: "flex", gap: 8, fontSize: 12.5, marginBottom: 12, cursor: "pointer" }}>
+            <input type="checkbox" checked={atualizarConfigurados} onChange={(e) => setAtualizarConfigurados(e.target.checked)} />
+            Atualizar também clientes que já têm mensalidade cadastrada (boletos de meses já lançados nunca são duplicados)
+          </label>
+          <div className="nexo-mini-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Clientes</div><div className="nexo-mini-kpi-value">{plano.clientes.length}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos por mês</div><div className="nexo-mini-kpi-value">{boletosPorMes}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{unificados} unificado(s)</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Previsão mensal</div><div className="nexo-mini-kpi-value">{formatBRL(totalMes)}</div></div>
+            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos a lançar</div><div className="nexo-mini-kpi-value" style={{ color: "var(--success)" }}>{plano.boletos.length}</div>{plano.mesesPulados > 0 && <div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{plano.mesesPulados} já existiam (pulados)</div>}</div>
+          </div>
+          {lista("Clientes que vão receber a mensalidade", plano.clientes.map((c) => `${c.cliente.nome} — ${formatBRL(c.total)}/mês · ${c.grupos.length} boleto(s): ` +
+            c.grupos.map((g) => `${formatBRL(g.valor)} dia ${g.dia}${g.placas.length > 1 ? ` (unificado, ${g.placas.length} carros)` : g.placas[0] ? ` (${g.placas[0]})` : ""}`).join(" + ")))}
+          {lista("Zerados — boleto ainda não emitido, ficaram de fora", plano.zerados.map((l) => `${l.nome} · ${l.placa}`), "var(--warning)")}
+          {lista("Clientes não encontrados no CRM (cadastre-os antes: Veículos → importar este mesmo arquivo)", Array.from(plano.semCliente.values()).map((l) => `${l.nome} · ${l.cpf} · ${l.placa}`), "var(--danger)")}
+          {lista("Placas não encontradas no cadastro do cliente (o boleto é lançado mesmo assim, sem essa placa)", plano.placasNaoEncontradas.map((x) => `${x.placa} · ${x.nome}`), "var(--warning)")}
+          {lista("Sem data de vencimento no relatório (ficaram de fora)", plano.semDia.map((l) => `${l.nome} · ${l.placa}`), "var(--warning)")}
+          {plano.jaConfigurados > 0 && <div className="nexo-cell-muted" style={{ fontSize: 12, marginBottom: 8 }}>{plano.jaConfigurados} cliente(s) que já tinham mensalidade foram mantidos como estão.</div>}
+        </>
+      )}
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" disabled={!plano || plano.clientes.length === 0 || aplicando}
+          onClick={async () => { setAplicando(true); await onAplicar(plano); setAplicando(false); }}>
+          {aplicando ? "Importando…" : `Confirmar importação${plano ? ` (${plano.clientes.length} clientes)` : ""}`}
+        </button>
+      </div>
+    </>
+  );
+}
 
 function AjusteFrotaModal({ db, dados, onAplicar, onCancel }) {
   const cliente = db.clientes.find((c) => c.id === dados.clienteId);
@@ -2458,6 +2665,9 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
             {importando ? "Importando…" : "Importar arquivo"}
           </button>
           <input ref={fileInputRef} type="file" accept=".csv,.xls,.xlsx,.ods,.html,.pdf" style={{ display: "none" }} onChange={handleArquivoSelecionado} />
+          <button className="nexo-btn" onClick={() => onOpenModal("importarMensalidades")}>
+            <Upload size={14} /> Importar mensalidades (SGA)
+          </button>
           <button
             className="nexo-btn"
             onClick={() =>
@@ -7882,6 +8092,46 @@ function AppInterno() {
     setModal({ type: "ajusteFrota", data: { clienteId: cliente.id, veiculo: veiculoSalvo, evento } });
   };
 
+  const aplicarImportMensalidades = async (plano) => {
+    try {
+      const emLotes = async (itens, tamanho, fn) => { for (let i = 0; i < itens.length; i += tamanho) await fn(itens.slice(i, i + tamanho)); };
+      const clientesAtualizados = [];
+      await emLotes(plano.clientes, 20, async (lote) => {
+        const res = await Promise.all(lote.map((c) => supabase.from("clientes").update(c.campos).eq("id", c.cliente.id).select().single()));
+        const erro = res.find((x) => x.error);
+        if (erro) throw erro.error;
+        res.forEach((x) => clientesAtualizados.push(rowToCliente(x.data)));
+      });
+      setDb((prev) => ({ ...prev, clientes: prev.clientes.map((c) => clientesAtualizados.find((a) => a.id === c.id) || c) }));
+      await emLotes(plano.veiculosValor, 20, async (lote) => {
+        const res = await Promise.all(lote.map((v) => supabase.from("veiculos").update({ valor_mensal: v.valor }).eq("id", v.id)));
+        const erro = res.find((x) => x.error);
+        if (erro) throw erro.error;
+      });
+      const mapaValor = new Map(plano.veiculosValor.map((v) => [v.id, v.valor]));
+      setDb((prev) => ({ ...prev, veiculos: prev.veiculos.map((v) => (mapaValor.has(v.id) ? { ...v, valorMensal: mapaValor.get(v.id) } : v)) }));
+      const criados = [];
+      await emLotes(plano.boletos.map(boletoToRow), 500, async (lote) => {
+        const { data, error } = await supabase.from("boletos").insert(lote).select();
+        if (error) throw error;
+        criados.push(...(data || []).map(rowToBoleto));
+      });
+      if (criados.length > 0) setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...criados] }));
+      closeModal();
+      notify(
+        `Importação de mensalidades concluída:\n` +
+        `${clientesAtualizados.length} cliente(s) com mensalidade e parcelas preenchidas\n` +
+        `${plano.veiculosValor.length} veículo(s) com o valor mensal atualizado\n` +
+        `${criados.length} boleto(s) lançado(s) no Financeiro\n` +
+        `${plano.mesesPulados} parcela(s) pulada(s) porque o mês já tinha boleto\n` +
+        `${plano.zerados.length} veículo(s) zerado(s) (boleto ainda não emitido) ficaram de fora`
+      );
+    } catch (e) {
+      notify("A importação parou no meio por um erro (o que já foi gravado continua salvo; pode importar o mesmo arquivo de novo que não duplica): " + e.message);
+      carregarTudo();
+    }
+  };
+
   const aplicarAjusteFrota = async (plano) => {
     try {
       if (plano.excluir.length > 0) {
@@ -9204,6 +9454,11 @@ function AppInterno() {
       {modal && modal.type === "veiculo" && (
         <Modal title={modal.data ? "Editar veículo" : "Novo veículo"} onClose={closeModal} wide>
           <VeiculoForm initial={modal.data} clientes={db.clientes} defaultClienteId={modal.defaultClienteId} onSave={saveVeiculo} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "importarMensalidades" && (
+        <Modal title="Importar mensalidades do SGA" onClose={closeModal} wide>
+          <ImportarMensalidadesModal db={db} onAplicar={aplicarImportMensalidades} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "ajusteFrota" && (
