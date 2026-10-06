@@ -8,7 +8,7 @@ import {
 import {
   LayoutDashboard, Users, Car, Receipt, Plus, Search, X, Pencil, Trash2,
   Phone, Mail, MapPin, Calendar, CheckCircle2, XCircle, AlertTriangle,
-  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight,
+  Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight, ChevronLeft,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
   Bell, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen, Info,
   Link2, Copy, Camera, Inbox, Paperclip, Send, StickyNote, MoreVertical, ChevronDown, Settings, Check, List, ClipboardList, Download
@@ -773,6 +773,25 @@ function computeBoletoStatus(b) {
   return "Em aberto";
 }
 
+/* --- Parcelas da mensalidade do cliente (geradas pelo cadastro do cliente) --- */
+// As parcelas viram boletos normais na tabela "boletos" (mesmo status, baixa manual e baixa
+// pelo relatório). O número "PARC 3/12" identifica que o boleto foi gerado pelo cadastro do cliente.
+const PARCELA_REGEX = /^PARC \d+\/\d+$/;
+const ehParcelaGerada = (b) => PARCELA_REGEX.test(String(b?.numero || "").trim());
+function somarMesesParcela(dataISO, meses) {
+  // Soma meses mantendo o dia; se o mês não tem esse dia (ex.: 31), usa o último dia do mês.
+  const [y, m, d] = dataISO.split("-").map(Number);
+  const alvo = new Date(y, m - 1 + meses, 1);
+  const ultimoDia = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+  return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, "0")}-${String(Math.min(d, ultimoDia)).padStart(2, "0")}`;
+}
+function listaParcelasCliente(valor, qtd, primeiroVencimento) {
+  const v = Number(valor) || 0;
+  const n = Math.max(0, Math.min(120, parseInt(qtd, 10) || 0));
+  if (!(v > 0) || n < 1 || !primeiroVencimento) return [];
+  return Array.from({ length: n }, (_, i) => ({ numero: `PARC ${i + 1}/${n}`, dataVencimento: somarMesesParcela(primeiroVencimento, i), valor: v }));
+}
+
 function normalizarTexto(s) {
   return (s || "")
     .toString()
@@ -1162,14 +1181,26 @@ function Kpi({ icon, label, value, tone, wide, extra }) {
 /* Forms                                                                */
 /* ------------------------------------------------------------------ */
 
-function ClienteForm({ initial, onSave, onCancel }) {
+function ClienteForm({ initial, onSave, onCancel, boletos = [] }) {
   const [f, setF] = useState(
     initial || {
       nome: "", nascimento: "", sexo: "", cpf: "", cnhNumero: "", cnhEmissao: "", cnhValidade: "",
       telefone: "", whatsapp: "", email: "", cep: "", endereco: "", status: "Ativo",
       codigoSga: "", ultimoContato: "", indicadoPor: "",
+      mensalidadeValor: "", parcelasQtd: "", primeiroVencimento: "",
     }
   );
+  // Resumo das parcelas (boletos) deste cliente e prévia das parcelas que serão consideradas
+  const parcelasPrevistas = listaParcelasCliente(paraNumeroBR(f.mensalidadeValor), f.parcelasQtd, f.primeiroVencimento);
+  const resumoParcelasCliente = (() => {
+    const r = { Pago: 0, Vencido: 0, aberto: 0 };
+    if (!initial?.id) return r;
+    boletos.filter((b) => b.clienteId === initial.id).forEach((b) => {
+      const st = computeBoletoStatus(b);
+      if (st === "Pago") r.Pago++; else if (st === "Vencido") r.Vencido++; else r.aberto++;
+    });
+    return r;
+  })();
   const [errors, setErrors] = useState({});
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [cepMsg, setCepMsg] = useState("");
@@ -1227,6 +1258,13 @@ function ClienteForm({ initial, onSave, onCancel }) {
     const errs = {};
     if (!f.nome.trim()) errs.nome = "Informe o nome completo.";
     if (!f.cpf.trim()) errs.cpf = "Informe o CPF ou CNPJ.";
+    const algumParcela = String(f.mensalidadeValor || "").trim() || String(f.parcelasQtd || "").trim() || f.primeiroVencimento;
+    if (algumParcela) {
+      if (!(paraNumeroBR(f.mensalidadeValor) > 0)) errs.mensalidadeValor = "Informe o valor da mensalidade.";
+      const q = parseInt(f.parcelasQtd, 10);
+      if (!(q >= 1 && q <= 120)) errs.parcelasQtd = "Informe de 1 a 120 parcelas.";
+      if (!f.primeiroVencimento) errs.primeiroVencimento = "Informe a data do 1º vencimento.";
+    }
     if (Object.keys(errs).length) return setErrors(errs);
     onSave({ ...f, id: initial?.id });
   }
@@ -1330,6 +1368,32 @@ function ClienteForm({ initial, onSave, onCancel }) {
           <option>Inativo</option>
         </select>
       </Field>
+      <div className="nexo-chart-title" style={{ marginTop: 6 }}>Mensalidade e parcelas</div>
+      <div className="nexo-chart-sub" style={{ marginBottom: 10 }}>Opcional. Ao salvar, as parcelas são lançadas como boletos no Financeiro (um por mês, sem duplicar meses que já têm boleto).</div>
+      <div className="nexo-field-row3">
+        <Field label="Valor da mensalidade (R$)" error={errors.mensalidadeValor}>
+          <input className="nexo-input mono" inputMode="decimal" value={f.mensalidadeValor ?? ""} onChange={set("mensalidadeValor")} placeholder="Ex.: 150,00" />
+        </Field>
+        <Field label="Quantidade de parcelas" error={errors.parcelasQtd}>
+          <input type="number" min="1" max="120" step="1" className="nexo-input mono" value={f.parcelasQtd ?? ""} onChange={set("parcelasQtd")} placeholder="Ex.: 12" />
+        </Field>
+        <Field label="Data do 1º vencimento" error={errors.primeiroVencimento}>
+          <input type="date" className="nexo-input" value={f.primeiroVencimento ?? ""} onChange={set("primeiroVencimento")} />
+        </Field>
+      </div>
+      {parcelasPrevistas.length > 0 && (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: -4, marginBottom: 10 }}>
+          {parcelasPrevistas.length} parcela(s) de {formatBRL(parcelasPrevistas[0].valor)}: de {formatDateBR(parcelasPrevistas[0].dataVencimento)} até {formatDateBR(parcelasPrevistas[parcelasPrevistas.length - 1].dataVencimento)} · total {formatBRL(parcelasPrevistas[0].valor * parcelasPrevistas.length)}
+        </div>
+      )}
+      {initial?.id && (
+        <div style={{ fontSize: 12, marginTop: -4, marginBottom: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <span style={{ color: "var(--text-faint)" }}>Situação dos boletos deste cliente:</span>
+          <span style={{ color: "var(--success)", fontWeight: 600 }}>{resumoParcelasCliente.Pago} pago(s)</span>
+          <span style={{ color: "var(--info)", fontWeight: 600 }}>{resumoParcelasCliente.aberto} em aberto</span>
+          <span style={{ color: "var(--danger)", fontWeight: 600 }}>{resumoParcelasCliente.Vencido} vencido(s) / inadimplente(s)</span>
+        </div>
+      )}
       <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
         <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
         <button className="nexo-btn nexo-btn-primary" onClick={submit}>Salvar cliente</button>
@@ -1777,6 +1841,92 @@ const PALETA_GRAFICOS = {
   light: { border: "#D6DEE9", textFaint: "#7A8BA1", accent: "#2563EB", violet: "#7C5CE0", surface3: "#EBEFF6", success: "#0F9F6E", info: "#5B7090", danger: "#D63A2E", warning: "#B7791F" },
 };
 
+/* Previsão de recebimentos por mês: conta os boletos/parcelas pelo mês de VENCIMENTO. */
+function PrevisaoRecebimentos({ boletosComStatus, pal }) {
+  const mesAtual = mesRefDe(todayISO());
+  const [mesSel, setMesSel] = useState(mesAtual);
+  const deslocarMes = (chave, n) => {
+    const [a, m] = chave.split("-").map(Number);
+    const d = new Date(a, m - 1 + n, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const porMes = useMemo(() => {
+    const mapa = new Map();
+    boletosComStatus.forEach((b) => {
+      const chave = mesRefDe(b.dataVencimento);
+      if (!chave) return;
+      const x = mapa.get(chave) || { qtd: 0, valor: 0, pagos: 0, valorPago: 0, abertos: 0, valorAberto: 0, vencidos: 0, valorVencido: 0 };
+      const v = Number(b.valor) || 0;
+      x.qtd++; x.valor += v;
+      if (b.status === "Pago") { x.pagos++; x.valorPago += v; }
+      else if (b.status === "Vencido") { x.vencidos++; x.valorVencido += v; }
+      else { x.abertos++; x.valorAberto += v; }
+      mapa.set(chave, x);
+    });
+    return mapa;
+  }, [boletosComStatus]);
+  const vazio = { qtd: 0, valor: 0, pagos: 0, valorPago: 0, abertos: 0, valorAberto: 0, vencidos: 0, valorVencido: 0 };
+  const dados = porMes.get(mesSel) || vazio;
+  const opcoesMes = Array.from(new Set([...porMes.keys(), mesAtual, mesSel, deslocarMes(mesAtual, -1), deslocarMes(mesAtual, 1)])).sort();
+  const grafico = [-2, -1, 0, 1, 2, 3].map((n) => {
+    const chave = deslocarMes(mesSel, n);
+    const x = porMes.get(chave) || vazio;
+    const [a, m] = chave.split("-").map(Number);
+    const label = new Date(a, m - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+    return { chave, label, Pagos: x.valorPago, "Em aberto": x.valorAberto, Vencidos: x.valorVencido };
+  });
+  const miniKpi = (rotulo, valor, sub, cor) => (
+    <div className="nexo-mini-kpi">
+      <div className="nexo-mini-kpi-label">{rotulo}</div>
+      <div className="nexo-mini-kpi-value" style={cor ? { color: cor } : undefined}>{valor}</div>
+      {sub && <div className="nexo-cell-muted" style={{ fontSize: 11.5, marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+  return (
+    <div className="nexo-card" style={{ marginBottom: 16 }}>
+      <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <div className="nexo-chart-title">Boletos a receber no mês</div>
+          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Previsão pelo vencimento de cada boleto/parcela · vencidos sem baixa contam como inadimplentes</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button type="button" className="nexo-btn nexo-btn-sm" title="Mês anterior" onClick={() => setMesSel(deslocarMes(mesSel, -1))}><ChevronLeft size={14} /></button>
+          <select className="nexo-select" style={{ width: "auto", minWidth: 170 }} value={mesSel} onChange={(e) => setMesSel(e.target.value)}>
+            {opcoesMes.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+          </select>
+          <button type="button" className="nexo-btn nexo-btn-sm" title="Próximo mês" onClick={() => setMesSel(deslocarMes(mesSel, 1))}><ChevronRight size={14} /></button>
+        </div>
+      </div>
+      <div className="nexo-mini-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+        {miniKpi("Boletos a receber", dados.qtd, rotuloMes(mesSel))}
+        {miniKpi("Valor previsto", formatBRL(dados.valor), "soma das parcelas do mês")}
+        {miniKpi("Pagos", dados.pagos, formatBRL(dados.valorPago), "var(--success)")}
+        {miniKpi("Em aberto", dados.abertos, formatBRL(dados.valorAberto), "var(--info)")}
+        {miniKpi("Vencidos (inadimplentes)", dados.vencidos, formatBRL(dados.valorVencido), "var(--danger)")}
+      </div>
+      <div className="nexo-chart-sub" style={{ marginBottom: 6 }}>Previsão de receita por mês de vencimento (clique numa barra para ver o mês)</div>
+      <div style={{ height: 230 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={grafico} margin={{ left: 0, right: 8 }} onClick={(e) => { const c = e?.activePayload?.[0]?.payload?.chave; if (c) setMesSel(c); }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={pal.border} vertical={false} />
+            <XAxis dataKey="label" stroke={pal.textFaint} fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke={pal.textFaint} fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`} width={54} />
+            <Tooltip
+              contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-md)", color: "var(--text)" }}
+              labelStyle={{ color: "var(--text)" }}
+              formatter={(v) => formatBRL(v)}
+            />
+            <Legend verticalAlign="bottom" height={26} formatter={(v) => <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{v}</span>} />
+            <Bar dataKey="Pagos" stackId="p" fill={pal.success} />
+            <Bar dataKey="Em aberto" stackId="p" fill={pal.info} />
+            <Bar dataKey="Vencidos" stackId="p" fill={pal.danger} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   const pal = PALETA_GRAFICOS[tema === "light" ? "light" : "dark"];
   const fonteAuto = db.seguradoras.find((s) => s.comissaoAutomatica && s.tipoComissao === "mensalidade");
@@ -1902,6 +2052,8 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
             </span>
           )} />
       </div>
+
+      <PrevisaoRecebimentos boletosComStatus={boletosComStatus} pal={pal} />
 
       <div className="nexo-two-grid">
         <div className="nexo-card">
@@ -7299,13 +7451,28 @@ const rowToCliente = (r) => ({
   telefone: r.telefone || "", whatsapp: r.whatsapp || "", email: r.email || "",
   cep: r.cep || "", endereco: r.endereco || "", status: r.status || "Ativo",
   codigoSga: r.codigo_sga || "", ultimoContato: r.ultimo_contato || "", indicadoPor: r.indicado_por || "",
+  mensalidadeValor: r.mensalidade_valor != null ? String(r.mensalidade_valor).replace(".", ",") : "",
+  parcelasQtd: r.parcelas_qtd ?? "", primeiroVencimento: r.primeiro_vencimento || "",
+  _tinhaParcelas: r.mensalidade_valor != null || r.parcelas_qtd != null || r.primeiro_vencimento != null,
 });
+// Campos de mensalidade/parcelas: só vão para o banco quando preenchidos (ou para limpar um valor que existia),
+// assim o restante do cadastro continua funcionando normalmente mesmo antes da migração SQL.
+const parcelasClienteToRow = (c) => {
+  const preenchido = [c.mensalidadeValor, c.parcelasQtd, c.primeiroVencimento].some((x) => x !== undefined && x !== null && String(x).trim() !== "");
+  if (!preenchido && !c._tinhaParcelas) return {};
+  return {
+    mensalidade_valor: String(c.mensalidadeValor ?? "").trim() ? paraNumeroBR(c.mensalidadeValor) : null,
+    parcelas_qtd: String(c.parcelasQtd ?? "").trim() ? parseInt(c.parcelasQtd, 10) : null,
+    primeiro_vencimento: c.primeiroVencimento || null,
+  };
+};
 const clienteToRow = (c) => ({
   nome: c.nome, nascimento: c.nascimento || null, sexo: c.sexo || null, cpf: c.cpf || null,
   cnh_numero: c.cnhNumero || null, cnh_emissao: c.cnhEmissao || null, cnh_validade: c.cnhValidade || null,
   telefone: c.telefone || null, whatsapp: c.whatsapp || null, email: c.email || null,
   cep: c.cep || null, endereco: c.endereco || null, status: c.status || "Ativo",
   codigo_sga: c.codigoSga || null, ultimo_contato: c.ultimoContato || null, indicado_por: c.indicadoPor || null,
+  ...parcelasClienteToRow(c),
 });
 const rowToVeiculo = (r) => ({
   id: r.id, clienteId: r.cliente_id, tipoVeiculo: r.tipo_veiculo || "Carro ou utilitário",
@@ -7463,18 +7630,66 @@ function AppInterno() {
 
   const saveCliente = async (cliente) => {
     try {
+      const anterior = cliente.id ? db.clientes.find((c) => c.id === cliente.id) : null;
+      let salvo;
       if (cliente.id) {
         const { data, error } = await supabase.from("clientes").update(clienteToRow(cliente)).eq("id", cliente.id).select().single();
         if (error) throw error;
-        setDb((prev) => ({ ...prev, clientes: prev.clientes.map((c) => (c.id === data.id ? rowToCliente(data) : c)) }));
+        salvo = rowToCliente(data);
+        setDb((prev) => ({ ...prev, clientes: prev.clientes.map((c) => (c.id === data.id ? salvo : c)) }));
       } else {
         const { data, error } = await supabase.from("clientes").insert(clienteToRow(cliente)).select().single();
         if (error) throw error;
-        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, rowToCliente(data)] }));
+        salvo = rowToCliente(data);
+        setDb((prev) => ({ ...prev, clientes: [...prev.clientes, salvo] }));
       }
       closeModal();
+      await gerarParcelasDoCliente(salvo, anterior);
     } catch (e) {
       notify("Não foi possível salvar o cliente: " + e.message);
+    }
+  };
+
+  // Lança as parcelas da mensalidade como boletos (tabela "boletos" já existente).
+  // Regras de segurança: nunca altera nem apaga boletos que já existem, e não cria
+  // parcela em mês que o cliente já tem boleto (evita duplicar).
+  const gerarParcelasDoCliente = async (cliente, anterior) => {
+    if (!cliente) return;
+    const parcelas = listaParcelasCliente(paraNumeroBR(cliente.mensalidadeValor), cliente.parcelasQtd, cliente.primeiroVencimento);
+    if (parcelas.length === 0) return;
+    const boletosDoCliente = db.boletos.filter((b) => b.clienteId === cliente.id);
+    const mudou = !anterior ||
+      paraNumeroBR(anterior.mensalidadeValor) !== paraNumeroBR(cliente.mensalidadeValor) ||
+      String(anterior.parcelasQtd) !== String(cliente.parcelasQtd) ||
+      (anterior.primeiroVencimento || "") !== (cliente.primeiroVencimento || "");
+    if (!mudou && boletosDoCliente.some(ehParcelaGerada)) return; // nada mudou e as parcelas já foram lançadas
+    const mesesComBoleto = new Set(boletosDoCliente.map((b) => mesRefDe(b.dataVencimento)).filter(Boolean));
+    const novas = parcelas.filter((p) => !mesesComBoleto.has(mesRefDe(p.dataVencimento)));
+    const puladas = parcelas.length - novas.length;
+    if (novas.length === 0) {
+      showToast(`Todos os ${parcelas.length} mês(es) das parcelas já têm boleto lançado para este cliente — nada novo foi criado.`, "info");
+      return;
+    }
+    const ok = await confirmDialog(
+      `Lançar ${novas.length} parcela(s) de ${formatBRL(novas[0].valor)} no Financeiro para ${cliente.nome}` +
+      ` (de ${formatDateBR(novas[0].dataVencimento)} até ${formatDateBR(novas[novas.length - 1].dataVencimento)})?` +
+      (puladas > 0 ? ` ${puladas} mês(es) que já têm boleto serão mantidos como estão.` : ""),
+      { titulo: "Lançar parcelas", textoConfirmar: "Lançar parcelas", perigo: false }
+    );
+    if (!ok) return;
+    try {
+      const veiculosDoCliente = db.veiculos.filter((v) => v.clienteId === cliente.id);
+      const veiculoUnico = veiculosDoCliente.length === 1 ? veiculosDoCliente[0].id : null;
+      const linhas = novas.map((p) => boletoToRow({
+        clienteId: cliente.id, veiculoId: veiculoUnico, numero: p.numero, nossoNumero: "",
+        dataEmissao: todayISO(), dataVencimento: p.dataVencimento, valor: p.valor, dataPagamento: "",
+      }));
+      const { data, error } = await supabase.from("boletos").insert(linhas).select();
+      if (error) throw error;
+      setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
+      showToast(`${novas.length} parcela(s) lançada(s) no Financeiro.`, "success");
+    } catch (e) {
+      notify("O cliente foi salvo, mas não foi possível lançar as parcelas: " + e.message);
     }
   };
 
@@ -8203,6 +8418,8 @@ function AppInterno() {
       let baixados = 0, naoEncontrados = 0, jaBaixados = 0, ignoradosAberto = 0, valoresCorrigidos = 0;
       let clientesCriados = 0, boletosCriados = 0, semDadosParaCriarBoleto = 0;
       let cpfsPreenchidos = 0, veiculosVinculados = 0, valoresVeiculosPreenchidos = 0;
+      let parcelasConciliadas = 0;
+      const parcelasUsadas = new Set(); // parcelas já conciliadas nesta importação
       const atualizacoes = [];
       const cpfsParaPreencher = new Map(); // clienteId -> cpf
       const valoresVeiculos = new Map(); // veiculoId -> valor mensal
@@ -8287,6 +8504,48 @@ function AppInterno() {
           continue;
         }
 
+        // Nosso Número ainda não cadastrado: antes de criar boleto novo, tenta casar com uma
+        // parcela gerada pelo cadastro do cliente (PARC x/y, sem Nosso Número) — evita duplicar.
+        {
+          const cpfL = (linha.cpf || "").replace(/\D/g, "");
+          const clienteExistente =
+            (cpfL && clientesPorCpf.get(cpfL)) ||
+            (normalizarTexto(linha.codigoSga) && clientesPorCodigoSga.get(normalizarTexto(linha.codigoSga))) ||
+            (normalizarTexto(linha.nomeCliente) && clientesPorNome.get(normalizarTexto(linha.nomeCliente)));
+          if (clienteExistente) {
+            const estaPagoLinha = situacaoNorm === "baixado" || situacaoNorm === "pago";
+            const candidatas = db.boletos
+              .filter((b) => b.clienteId === clienteExistente.id && !b.nossoNumero && ehParcelaGerada(b) && !parcelasUsadas.has(b.id))
+              .sort((x, y) => (x.dataVencimento || "").localeCompare(y.dataVencimento || ""));
+            let parcela = null;
+            if (linha.dataVencimento) {
+              // relatório trouxe vencimento: casa com a parcela do mesmo mês
+              parcela = candidatas.find((b) => mesRefDe(b.dataVencimento) === mesRefDe(linha.dataVencimento)) || null;
+            } else if (estaPagoLinha) {
+              // sem vencimento no relatório: baixa a parcela em aberto mais antiga que já poderia ter sido paga
+              const dataRef = linha.dataPagamento || todayISO();
+              const limite = somarMesesParcela(dataRef, 1);
+              parcela = candidatas.find((b) => !b.dataPagamento && b.dataVencimento && b.dataVencimento <= limite) || null;
+            }
+            if (parcela) {
+              parcelasUsadas.add(parcela.id);
+              const campos = { nosso_numero: linha.nossoNumero };
+              const valorRel = paraNumeroBR(linha.valor);
+              if (valorRel > 0 && !(Number(parcela.valor) > 0)) { campos.valor = valorRel; valoresCorrigidos++; }
+              if (estaPagoLinha) {
+                if (parcela.dataPagamento) jaBaixados++;
+                else { campos.data_pagamento = linha.dataPagamento || todayISO(); baixados++; }
+              } else if (situacaoNorm === "aberto") {
+                ignoradosAberto++;
+              }
+              registrarCpf(clienteExistente, linha);
+              atualizacoes.push({ id: parcela.id, campos });
+              parcelasConciliadas++;
+              continue;
+            }
+          }
+        }
+
         // Boleto não existe ainda — garante que o cliente existe (cria se precisar).
         naoEncontrados++;
         const cliente = await buscarOuCriarCliente(linha);
@@ -8355,6 +8614,7 @@ function AppInterno() {
       notify(
         `Importação concluída:\n` +
         `${baixados} boleto(s) existente(s) baixado(s) agora\n` +
+        `${parcelasConciliadas} parcela(s) do cadastro do cliente conciliada(s) com o Nosso Número do relatório\n` +
         `${veiculosVinculados} boleto(s) vinculado(s) ao veículo (boletos de 1 veículo)\n` +
         `${valoresVeiculosPreenchidos} veículo(s) com o valor mensal preenchido\n` +
         `${cpfsPreenchidos} cliente(s) com CPF/CNPJ completado\n` +
@@ -8703,7 +8963,7 @@ function AppInterno() {
       <ErrorBoundary fallback={null} resetKey={modal ? modal.type + (modal.data?.id || "") : ""} onError={(e) => { closeModal(); notify("Não foi possível abrir esta janela: " + (e.message || e)); }}>
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
-          <ClienteForm initial={modal.data} onSave={saveCliente} onCancel={closeModal} />
+          <ClienteForm initial={modal.data} onSave={saveCliente} onCancel={closeModal} boletos={db.boletos} />
         </Modal>
       )}
       {modal && modal.type === "veiculo" && (
