@@ -7499,6 +7499,7 @@ function IntegracaoSGA() {
         <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("veiculos")}>{rodando === "veiculos" ? "Buscando…" : "3. Amostra de veículos ativos"}</button>
         <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("situacoes")}>{rodando === "situacoes" ? "Buscando…" : "4. Situações de boleto"}</button>
         <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("resumo")}>{rodando === "resumo" ? "Contando…" : "5. Resumo do mês"}</button>
+        <button className="nexo-btn" disabled={!!rodando} onClick={() => executar("bases")}>{rodando === "bases" ? "Buscando…" : "6. Minhas bases"}</button>
       </div>
       {resultado && (
         <>
