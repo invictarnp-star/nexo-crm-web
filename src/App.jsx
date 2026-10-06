@@ -785,11 +785,116 @@ function somarMesesParcela(dataISO, meses) {
   const ultimoDia = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
   return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, "0")}-${String(Math.min(d, ultimoDia)).padStart(2, "0")}`;
 }
+function agendaParcelas(qtd, primeiroVencimento) {
+  const n = Math.max(0, Math.min(120, parseInt(qtd, 10) || 0));
+  if (n < 1 || !primeiroVencimento) return [];
+  return Array.from({ length: n }, (_, i) => ({ numero: `PARC ${i + 1}/${n}`, dataVencimento: somarMesesParcela(primeiroVencimento, i) }));
+}
 function listaParcelasCliente(valor, qtd, primeiroVencimento) {
   const v = Number(valor) || 0;
-  const n = Math.max(0, Math.min(120, parseInt(qtd, 10) || 0));
-  if (!(v > 0) || n < 1 || !primeiroVencimento) return [];
-  return Array.from({ length: n }, (_, i) => ({ numero: `PARC ${i + 1}/${n}`, dataVencimento: somarMesesParcela(primeiroVencimento, i), valor: v }));
+  if (!(v > 0)) return [];
+  return agendaParcelas(qtd, primeiroVencimento).map((p) => ({ ...p, valor: v }));
+}
+/* --- Frota: um boleto pode cobrir vários veículos (boleto unificado) --- */
+// Lista de veículos que o boleto cobre: usa veiculo_ids (boleto unificado) ou o veiculo_id de sempre.
+const veiculosDoBoleto = (b) => (Array.isArray(b?.veiculoIds) && b.veiculoIds.length ? b.veiculoIds : (b?.veiculoId ? [b.veiculoId] : []));
+const boletoCobreVeiculo = (b, veiculoId) => veiculosDoBoleto(b).includes(veiculoId);
+const ehCobrancaPorVeiculo = (c) => c?.cobrancaFrota === "por_veiculo";
+const clienteTemParcelas = (c) => !!(c && parseInt(c.parcelasQtd, 10) > 0 && c.primeiroVencimento);
+
+// Calcula (sem gravar nada) o ajuste dos boletos/parcelas quando um veículo entra ou sai da frota.
+// Só mexe em parcelas geradas pelo cadastro (PARC x/y), ainda não pagas, sem Nosso Número e que ainda
+// não venceram. Pagas, vencidas (inadimplência) e já emitidas pela seguradora ficam como estão.
+function planoAjusteFrota(db, cliente, veiculo, evento, mesInicio) {
+  const hoje = todayISO();
+  const porVeiculo = ehCobrancaPorVeiculo(cliente);
+  const valorProprio = Number(veiculo.valorMensal) > 0 ? Number(veiculo.valorMensal) : 0;
+  const valorVeic = valorProprio || (porVeiculo ? paraNumeroBR(cliente.mensalidadeValor) : 0);
+  const doCliente = db.boletos.filter((b) => b.clienteId === cliente.id);
+  const futuros = doCliente.filter((b) => ehParcelaGerada(b) && !b.dataPagamento && mesRefDe(b.dataVencimento) >= mesInicio);
+  const r = { excluir: [], atualizar: [], criar: [], emitidos: [], vencidosMantidos: 0, avisos: [], valorVeic };
+  if (evento === "cancelar") {
+    futuros.filter((b) => boletoCobreVeiculo(b, veiculo.id)).forEach((b) => {
+      if (b.dataVencimento && b.dataVencimento < hoje) { r.vencidosMantidos++; return; }
+      if (b.nossoNumero) { r.emitidos.push(b); return; }
+      const restantes = veiculosDoBoleto(b).filter((id) => id !== veiculo.id);
+      if (restantes.length === 0) { r.excluir.push(b); return; }
+      const novoValor = valorProprio > 0 ? Math.max(0, round2(Number(b.valor) - valorProprio)) : Number(b.valor);
+      r.atualizar.push({ b, novoValor, campos: { veiculo_ids: restantes.length > 1 ? restantes : null, veiculo_id: restantes.length === 1 ? restantes[0] : null, valor: novoValor } });
+    });
+    if (r.atualizar.length > 0 && !(valorProprio > 0)) r.avisos.push("Este veículo não tem valor mensal cadastrado: a placa sai do boleto unificado, mas o valor do boleto não muda. Ajuste o valor no Financeiro, se precisar.");
+  } else if (porVeiculo) {
+    if (!(valorVeic > 0)) {
+      r.avisos.push("Este veículo não tem valor mensal cadastrado e o cliente não tem valor de mensalidade padrão. Preencha o valor mensal do veículo e salve de novo para lançar os boletos dele.");
+      return r;
+    }
+    agendaParcelas(cliente.parcelasQtd, cliente.primeiroVencimento)
+      .filter((p) => mesRefDe(p.dataVencimento) >= mesInicio)
+      .forEach((p) => {
+        const mes = mesRefDe(p.dataVencimento);
+        const jaTem = doCliente.some((b) => mesRefDe(b.dataVencimento) === mes && (boletoCobreVeiculo(b, veiculo.id) || veiculosDoBoleto(b).length === 0));
+        if (jaTem) return;
+        r.criar.push({ clienteId: cliente.id, veiculoId: veiculo.id, numero: p.numero, nossoNumero: "", dataEmissao: hoje, dataVencimento: p.dataVencimento, valor: valorVeic, dataPagamento: "" });
+      });
+  } else {
+    futuros.filter((b) => !boletoCobreVeiculo(b, veiculo.id)).forEach((b) => {
+      if (b.dataVencimento && b.dataVencimento < hoje) return;
+      if (b.nossoNumero) { r.emitidos.push(b); return; }
+      const antes = veiculosDoBoleto(b);
+      const ids = [...antes, veiculo.id];
+      // se o boleto ainda não cobria nenhum veículo, o valor dele já é a mensalidade combinada: só liga a placa
+      const novoValor = valorProprio > 0 && antes.length > 0 ? round2(Number(b.valor) + valorProprio) : Number(b.valor);
+      r.atualizar.push({ b, novoValor, campos: { veiculo_ids: ids.length > 1 ? ids : null, veiculo_id: ids.length === 1 ? ids[0] : null, valor: novoValor } });
+    });
+    if (r.atualizar.some((a) => veiculosDoBoleto(a.b).length > 0) && !(valorProprio > 0)) r.avisos.push("Este veículo não tem valor mensal cadastrado: a placa entra no boleto unificado, mas o valor do boleto não muda. Ajuste o valor no Financeiro, se precisar.");
+  }
+  return r;
+}
+const planoAjusteVazio = (r) => r.excluir.length + r.atualizar.length + r.criar.length + r.emitidos.length + r.avisos.length === 0;
+
+function AjusteFrotaModal({ db, dados, onAplicar, onCancel }) {
+  const cliente = db.clientes.find((c) => c.id === dados.clienteId);
+  const veiculo = dados.veiculo;
+  const mesAtual = mesRefDe(todayISO());
+  const [mesInicio, setMesInicio] = useState(mesAtual);
+  const [aplicando, setAplicando] = useState(false);
+  const plano = useMemo(() => (cliente ? planoAjusteFrota(db, cliente, veiculo, dados.evento, mesInicio) : null), [db, cliente, veiculo, dados.evento, mesInicio]);
+  if (!cliente || !plano) return null;
+  const meses = Array.from(new Set([mesAtual, ...agendaParcelas(cliente.parcelasQtd, cliente.primeiroVencimento).map((p) => mesRefDe(p.dataVencimento))]))
+    .filter((m) => m >= mesAtual).sort();
+  const cancelar = dados.evento === "cancelar";
+  const porVeiculo = ehCobrancaPorVeiculo(cliente);
+  const nadaAFazer = plano.excluir.length + plano.atualizar.length + plano.criar.length === 0;
+  const linha = (txt, cor) => <div style={{ fontSize: 13, marginBottom: 6, color: cor || "var(--text)" }}>{txt}</div>;
+  return (
+    <>
+      <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 12 }}>
+        Veículo <PlacaChip placa={veiculo.placa} /> de <strong>{cliente.nome}</strong> · cobrança {porVeiculo ? "um boleto por veículo" : "boleto unificado"}.
+      </div>
+      <Field label={cancelar ? "O cancelamento vale a partir de" : "Incluir o veículo nos boletos a partir de"}>
+        <select className="nexo-select" value={mesInicio} onChange={(e) => setMesInicio(e.target.value)}>
+          {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+        </select>
+      </Field>
+      <div className="nexo-mini-kpi" style={{ marginBottom: 12 }}>
+        {plano.criar.length > 0 && linha(`• ${plano.criar.length} boleto(s) novo(s) deste veículo, de ${formatBRL(plano.valorVeic)} cada (${formatDateBR(plano.criar[0].dataVencimento)} a ${formatDateBR(plano.criar[plano.criar.length - 1].dataVencimento)})`, "var(--success)")}
+        {plano.atualizar.length > 0 && linha(`• ${plano.atualizar.length} boleto(s) ${cancelar ? "deixam de cobrar esta placa" : "passam a cobrar esta placa"}` +
+          (Number(plano.atualizar[0].b.valor) !== plano.atualizar[0].novoValor ? `: de ${formatBRL(plano.atualizar[0].b.valor)} para ${formatBRL(plano.atualizar[0].novoValor)} por mês` : " (valor mantido)"), "var(--info)")}
+        {plano.excluir.length > 0 && linha(`• ${plano.excluir.length} boleto(s) futuro(s) deste veículo sairão da previsão (ainda não emitidos), total ${formatBRL(sum(plano.excluir.map((b) => b.valor)))}`, "var(--danger)")}
+        {plano.vencidosMantidos > 0 && linha(`• ${plano.vencidosMantidos} boleto(s) já vencido(s) continuam em aberto (inadimplência mantida)`, "var(--text-dim)")}
+        {plano.emitidos.length > 0 && linha(`• ${plano.emitidos.length} boleto(s) já emitido(s) pela seguradora (com Nosso Número) não foram alterados — resolva com a seguradora: ${plano.emitidos.map((b) => formatDateBR(b.dataVencimento)).join(", ")}`, "var(--warning)")}
+        {nadaAFazer && plano.emitidos.length === 0 && plano.vencidosMantidos === 0 && linha("Nenhum boleto precisa de ajuste a partir deste mês.", "var(--text-dim)")}
+        {plano.avisos.map((a, i) => <div key={i} style={{ fontSize: 12, color: "var(--warning)", marginTop: 4 }}>{a}</div>)}
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Não ajustar agora</button>
+        <button className="nexo-btn nexo-btn-primary" disabled={nadaAFazer || aplicando}
+          onClick={async () => { setAplicando(true); await onAplicar(plano); setAplicando(false); }}>
+          {aplicando ? "Ajustando…" : "Confirmar ajuste"}
+        </button>
+      </div>
+    </>
+  );
 }
 
 function normalizarTexto(s) {
@@ -1181,15 +1286,21 @@ function Kpi({ icon, label, value, tone, wide, extra }) {
 /* Forms                                                                */
 /* ------------------------------------------------------------------ */
 
-function ClienteForm({ initial, onSave, onCancel, boletos = [] }) {
+function ClienteForm({ initial, onSave, onCancel, boletos = [], veiculos = [] }) {
   const [f, setF] = useState(
     initial || {
       nome: "", nascimento: "", sexo: "", cpf: "", cnhNumero: "", cnhEmissao: "", cnhValidade: "",
       telefone: "", whatsapp: "", email: "", cep: "", endereco: "", status: "Ativo",
       codigoSga: "", ultimoContato: "", indicadoPor: "",
-      mensalidadeValor: "", parcelasQtd: "", primeiroVencimento: "",
+      mensalidadeValor: "", parcelasQtd: "", primeiroVencimento: "", cobrancaFrota: "unificado",
     }
   );
+  const veiculosAtivosCliente = initial?.id ? veiculos.filter((v) => v.clienteId === initial.id && v.status !== "Inativo") : [];
+  const somaValorMensalAtivos = round2(sum(veiculosAtivosCliente.map((v) => v.valorMensal)));
+  const porVeiculoForm = f.cobrancaFrota === "por_veiculo";
+  const agendaForm = agendaParcelas(f.parcelasQtd, f.primeiroVencimento);
+  const valorPadraoForm = paraNumeroBR(f.mensalidadeValor);
+  const valoresPorVeiculo = veiculosAtivosCliente.map((v) => (Number(v.valorMensal) > 0 ? Number(v.valorMensal) : valorPadraoForm)).filter((x) => x > 0);
   // Resumo das parcelas (boletos) deste cliente e prévia das parcelas que serão consideradas
   const parcelasPrevistas = listaParcelasCliente(paraNumeroBR(f.mensalidadeValor), f.parcelasQtd, f.primeiroVencimento);
   const resumoParcelasCliente = (() => {
@@ -1260,7 +1371,8 @@ function ClienteForm({ initial, onSave, onCancel, boletos = [] }) {
     if (!f.cpf.trim()) errs.cpf = "Informe o CPF ou CNPJ.";
     const algumParcela = String(f.mensalidadeValor || "").trim() || String(f.parcelasQtd || "").trim() || f.primeiroVencimento;
     if (algumParcela) {
-      if (!(paraNumeroBR(f.mensalidadeValor) > 0)) errs.mensalidadeValor = "Informe o valor da mensalidade.";
+      if (!porVeiculoForm && !(paraNumeroBR(f.mensalidadeValor) > 0)) errs.mensalidadeValor = "Informe o valor da mensalidade.";
+      if (porVeiculoForm && veiculosAtivosCliente.length > 0 && valoresPorVeiculo.length === 0) errs.mensalidadeValor = "Nenhum veículo tem valor mensal: informe um valor padrão.";
       const q = parseInt(f.parcelasQtd, 10);
       if (!(q >= 1 && q <= 120)) errs.parcelasQtd = "Informe de 1 a 120 parcelas.";
       if (!f.primeiroVencimento) errs.primeiroVencimento = "Informe a data do 1º vencimento.";
@@ -1370,9 +1482,22 @@ function ClienteForm({ initial, onSave, onCancel, boletos = [] }) {
       </Field>
       <div className="nexo-chart-title" style={{ marginTop: 6 }}>Mensalidade e parcelas</div>
       <div className="nexo-chart-sub" style={{ marginBottom: 10 }}>Opcional. Ao salvar, as parcelas são lançadas como boletos no Financeiro (um por mês, sem duplicar meses que já têm boleto).</div>
+      <Field label="Cobrança da frota">
+        <select className="nexo-select" value={f.cobrancaFrota || "unificado"} onChange={set("cobrancaFrota")}>
+          <option value="unificado">Boleto unificado (um boleto por mês para todos os veículos)</option>
+          <option value="por_veiculo">Um boleto por veículo (cada carro com o seu valor mensal)</option>
+        </select>
+      </Field>
+      {!porVeiculoForm && somaValorMensalAtivos > 0 && (
+        <div style={{ fontSize: 12, marginTop: -6, marginBottom: 10 }}>
+          <button type="button" className="nexo-btn nexo-btn-sm" onClick={() => setF({ ...f, mensalidadeValor: String(somaValorMensalAtivos.toFixed(2)).replace(".", ",") })}>
+            Usar a soma dos {veiculosAtivosCliente.length} veículo(s) ativo(s): {formatBRL(somaValorMensalAtivos)}
+          </button>
+        </div>
+      )}
       <div className="nexo-field-row3">
-        <Field label="Valor da mensalidade (R$)" error={errors.mensalidadeValor}>
-          <input className="nexo-input mono" inputMode="decimal" value={f.mensalidadeValor ?? ""} onChange={set("mensalidadeValor")} placeholder="Ex.: 150,00" />
+        <Field label={porVeiculoForm ? "Valor padrão (veículos sem valor mensal)" : "Valor da mensalidade (R$)"} error={errors.mensalidadeValor}>
+          <input className="nexo-input mono" inputMode="decimal" value={f.mensalidadeValor ?? ""} onChange={set("mensalidadeValor")} placeholder={porVeiculoForm ? "Opcional" : "Ex.: 150,00"} />
         </Field>
         <Field label="Quantidade de parcelas" error={errors.parcelasQtd}>
           <input type="number" min="1" max="120" step="1" className="nexo-input mono" value={f.parcelasQtd ?? ""} onChange={set("parcelasQtd")} placeholder="Ex.: 12" />
@@ -1381,7 +1506,15 @@ function ClienteForm({ initial, onSave, onCancel, boletos = [] }) {
           <input type="date" className="nexo-input" value={f.primeiroVencimento ?? ""} onChange={set("primeiroVencimento")} />
         </Field>
       </div>
-      {parcelasPrevistas.length > 0 && (
+      {porVeiculoForm && agendaForm.length > 0 && (
+        <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: -4, marginBottom: 10 }}>
+          {initial?.id
+            ? `${valoresPorVeiculo.length} veículo(s) × ${agendaForm.length} parcela(s) = ${valoresPorVeiculo.length * agendaForm.length} boleto(s) · ${formatBRL(sum(valoresPorVeiculo))} por mês`
+            : "Cadastre os veículos deste cliente (com o valor mensal de cada um) e depois edite o cliente e salve para lançar os boletos."}
+          {veiculosAtivosCliente.length > valoresPorVeiculo.length && ` · ${veiculosAtivosCliente.length - valoresPorVeiculo.length} veículo(s) sem valor ficarão de fora`}
+        </div>
+      )}
+      {!porVeiculoForm && parcelasPrevistas.length > 0 && (
         <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: -4, marginBottom: 10 }}>
           {parcelasPrevistas.length} parcela(s) de {formatBRL(parcelasPrevistas[0].valor)}: de {formatDateBR(parcelasPrevistas[0].dataVencimento)} até {formatDateBR(parcelasPrevistas[parcelasPrevistas.length - 1].dataVencimento)} · total {formatBRL(parcelasPrevistas[0].valor * parcelasPrevistas.length)}
         </div>
@@ -2760,10 +2893,10 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
 
   const filtered = boletosComStatus.filter((b) => {
     const cliente = clientePorId.get(b.clienteId);
-    const veiculo = veiculoPorId.get(b.veiculoId);
+    const veiculosB = veiculosDoBoleto(b).map((id) => veiculoPorId.get(id)).filter(Boolean);
     if (fCliente && !(cliente && cliente.nome.toLowerCase().includes(fCliente.toLowerCase()))) return false;
     if (fCpf && !(cliente && cliente.cpf.replace(/\D/g, "").includes(fCpf.replace(/\D/g, "")))) return false;
-    if (fPlaca && !(veiculo && veiculo.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
+    if (fPlaca && !veiculosB.some((v) => v.placa.toLowerCase().includes(fPlaca.toLowerCase()))) return false;
     if (fStatus !== "Todos" && b.status !== fStatus) return false;
     if (fMes !== "todos" && (b.dataVencimento || "").slice(0, 7) !== fMes) return false;
     if (fDe && b.dataVencimento && b.dataVencimento < fDe) return false;
@@ -2898,6 +3031,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                   const cliente = clientePorId.get(b.clienteId);
                   const veiculo = veiculoPorId.get(b.veiculoId);
                   const nFrota = !veiculo ? (qtdVeiculosCliente.get(b.clienteId) || 0) : 0;
+                  const placasUnificado = (b.veiculoIds || []).map((id) => veiculoPorId.get(id)).filter(Boolean).map((v) => v.placa);
                   const dias = b.dataVencimento ? Math.round((parseISODate(b.dataVencimento) - hojeZero) / 86400000) : null;
                   return (
                     <tr key={b.id} className={b.status === "Vencido" ? "venc" : b.status === "A vencer" ? "avencer" : ""}>
@@ -2908,7 +3042,12 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                         </div>
                       </td>
                       <td>
-                        {veiculo ? (
+                        {placasUnificado.length > 1 ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={placasUnificado.join(", ")}>
+                            <PlacaChip placa={placasUnificado[0]} />
+                            <span className="nexo-tag-frota">+{placasUnificado.length - 1} · unificado</span>
+                          </div>
+                        ) : veiculo ? (
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <PlacaChip placa={veiculo.placa} />
                             <span className="nexo-cell-muted">{veiculo.marca} {veiculo.modelo}</span>
@@ -3066,7 +3205,11 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
                             <div className="mono">{b.numero}</div>
                             {b.nossoNumero && <div className="nexo-cliente-sub mono">Nosso nº {b.nossoNumero}</div>}
                           </td>
-                          <td>{veic ? <PlacaChip placa={veic.placa} /> : <span className="nexo-cell-muted">—</span>}</td>
+                          <td>{(b.veiculoIds || []).length > 1 ? (
+                            <span title={b.veiculoIds.map((id) => veiculosDoCliente.find((v) => v.id === id)?.placa).filter(Boolean).join(", ")}>
+                              <PlacaChip placa={veiculosDoCliente.find((v) => v.id === b.veiculoIds[0])?.placa} /> <span className="nexo-tag-frota">+{b.veiculoIds.length - 1}</span>
+                            </span>
+                          ) : veic ? <PlacaChip placa={veic.placa} /> : <span className="nexo-cell-muted">—</span>}</td>
                           <td>{formatDateBR(b.dataVencimento)}</td>
                           <td className="mono">{formatBRL(b.valor)}</td>
                           <td><StatusBadge status={b.status} /></td>
@@ -3105,7 +3248,7 @@ function RelatoriosView({ db }) {
 
   const colunasBoleto = [
     { titulo: "Cliente", valor: (b) => nomeCliente(b.clienteId) },
-    { titulo: "Placa", valor: (b) => placaVeiculo(b.veiculoId) },
+    { titulo: "Placa", valor: (b) => (veiculosDoBoleto(b).length > 1 ? veiculosDoBoleto(b).map(placaVeiculo).join(" | ") : placaVeiculo(b.veiculoId)) },
     { titulo: "Número", valor: (b) => b.numero },
     { titulo: "Vencimento", valor: (b) => formatDateBR(b.dataVencimento) },
     { titulo: "Valor", valor: (b) => b.valor },
@@ -7453,7 +7596,8 @@ const rowToCliente = (r) => ({
   codigoSga: r.codigo_sga || "", ultimoContato: r.ultimo_contato || "", indicadoPor: r.indicado_por || "",
   mensalidadeValor: r.mensalidade_valor != null ? String(r.mensalidade_valor).replace(".", ",") : "",
   parcelasQtd: r.parcelas_qtd ?? "", primeiroVencimento: r.primeiro_vencimento || "",
-  _tinhaParcelas: r.mensalidade_valor != null || r.parcelas_qtd != null || r.primeiro_vencimento != null,
+  _tinhaParcelas: r.mensalidade_valor != null || r.parcelas_qtd != null || r.primeiro_vencimento != null || r.cobranca_frota != null,
+  cobrancaFrota: r.cobranca_frota === "por_veiculo" ? "por_veiculo" : "unificado",
 });
 // Campos de mensalidade/parcelas: só vão para o banco quando preenchidos (ou para limpar um valor que existia),
 // assim o restante do cadastro continua funcionando normalmente mesmo antes da migração SQL.
@@ -7464,6 +7608,7 @@ const parcelasClienteToRow = (c) => {
     mensalidade_valor: String(c.mensalidadeValor ?? "").trim() ? paraNumeroBR(c.mensalidadeValor) : null,
     parcelas_qtd: String(c.parcelasQtd ?? "").trim() ? parseInt(c.parcelasQtd, 10) : null,
     primeiro_vencimento: c.primeiroVencimento || null,
+    cobranca_frota: c.cobrancaFrota === "por_veiculo" ? "por_veiculo" : null,
   };
 };
 const clienteToRow = (c) => ({
@@ -7505,11 +7650,14 @@ const rowToBoleto = (r) => ({
   id: r.id, clienteId: r.cliente_id, veiculoId: r.veiculo_id || "", numero: r.numero || "", nossoNumero: r.nosso_numero || "",
   dataEmissao: r.data_emissao || "", dataVencimento: r.data_vencimento || "", valor: r.valor ?? "",
   dataPagamento: r.data_pagamento || "",
+  veiculoIds: Array.isArray(r.veiculo_ids) ? r.veiculo_ids : [],
 });
 const boletoToRow = (b) => ({
   cliente_id: b.clienteId, veiculo_id: b.veiculoId || null, numero: b.numero, nosso_numero: b.nossoNumero || null,
   data_emissao: b.dataEmissao || null,
   data_vencimento: b.dataVencimento || null, valor: paraNumeroBR(b.valor), data_pagamento: b.dataPagamento || null,
+  // boleto unificado da frota: só envia a lista de veículos quando existe (não afeta os boletos comuns)
+  ...(Array.isArray(b.veiculoIds) && b.veiculoIds.length > 1 ? { veiculo_ids: b.veiculoIds } : {}),
 });
 
 function AppInterno() {
@@ -7655,51 +7803,122 @@ function AppInterno() {
   // parcela em mês que o cliente já tem boleto (evita duplicar).
   const gerarParcelasDoCliente = async (cliente, anterior) => {
     if (!cliente) return;
-    const parcelas = listaParcelasCliente(paraNumeroBR(cliente.mensalidadeValor), cliente.parcelasQtd, cliente.primeiroVencimento);
-    if (parcelas.length === 0) return;
+    const porVeiculo = ehCobrancaPorVeiculo(cliente);
+    const valorBase = paraNumeroBR(cliente.mensalidadeValor);
+    const agenda = agendaParcelas(cliente.parcelasQtd, cliente.primeiroVencimento);
+    if (agenda.length === 0 || (!porVeiculo && !(valorBase > 0))) return;
     const boletosDoCliente = db.boletos.filter((b) => b.clienteId === cliente.id);
     const mudou = !anterior ||
-      paraNumeroBR(anterior.mensalidadeValor) !== paraNumeroBR(cliente.mensalidadeValor) ||
+      paraNumeroBR(anterior.mensalidadeValor) !== valorBase ||
       String(anterior.parcelasQtd) !== String(cliente.parcelasQtd) ||
-      (anterior.primeiroVencimento || "") !== (cliente.primeiroVencimento || "");
+      (anterior.primeiroVencimento || "") !== (cliente.primeiroVencimento || "") ||
+      (anterior.cobrancaFrota || "unificado") !== (cliente.cobrancaFrota || "unificado");
     if (!mudou && boletosDoCliente.some(ehParcelaGerada)) return; // nada mudou e as parcelas já foram lançadas
-    const mesesComBoleto = new Set(boletosDoCliente.map((b) => mesRefDe(b.dataVencimento)).filter(Boolean));
-    const novas = parcelas.filter((p) => !mesesComBoleto.has(mesRefDe(p.dataVencimento)));
-    const puladas = parcelas.length - novas.length;
+    const ativos = db.veiculos.filter((v) => v.clienteId === cliente.id && v.status !== "Inativo");
+    const novas = [];
+    let puladas = 0;
+    const semValor = [];
+    if (porVeiculo) {
+      if (ativos.length === 0) { showToast("Cobrança por veículo: cadastre os veículos do cliente e salve o cliente de novo para lançar os boletos.", "warning"); return; }
+      ativos.forEach((v) => {
+        const valor = Number(v.valorMensal) > 0 ? Number(v.valorMensal) : valorBase;
+        if (!(valor > 0)) { semValor.push(v.placa); return; }
+        agenda.forEach((p) => {
+          const mes = mesRefDe(p.dataVencimento);
+          const jaTem = boletosDoCliente.some((b) => mesRefDe(b.dataVencimento) === mes && (boletoCobreVeiculo(b, v.id) || veiculosDoBoleto(b).length === 0));
+          if (jaTem) { puladas++; return; }
+          novas.push({ ...p, valor, veiculoId: v.id, veiculoIds: [] });
+        });
+      });
+    } else {
+      const ids = ativos.map((v) => v.id);
+      const mesesComBoleto = new Set(boletosDoCliente.map((b) => mesRefDe(b.dataVencimento)).filter(Boolean));
+      agenda.forEach((p) => {
+        if (mesesComBoleto.has(mesRefDe(p.dataVencimento))) { puladas++; return; }
+        // 1 veículo: liga direto nele; vários: boleto unificado com a lista de placas
+        novas.push({ ...p, valor: valorBase, veiculoId: ids.length === 1 ? ids[0] : null, veiculoIds: ids.length > 1 ? ids : [] });
+      });
+    }
+    const avisoSemValor = semValor.length > 0 ? ` Ficaram de fora ${semValor.length} veículo(s) sem valor mensal (${semValor.join(", ")}).` : "";
     if (novas.length === 0) {
-      showToast(`Todos os ${parcelas.length} mês(es) das parcelas já têm boleto lançado para este cliente — nada novo foi criado.`, "info");
+      showToast(`Nenhuma parcela nova para lançar: os meses já têm boleto para este cliente.${avisoSemValor}`, "info");
       return;
     }
+    const datas = novas.map((p) => p.dataVencimento).sort();
+    const totalMes = porVeiculo ? sum(Array.from(new Map(novas.map((p) => [p.veiculoId, p.valor])).values())) : valorBase;
     const ok = await confirmDialog(
-      `Lançar ${novas.length} parcela(s) de ${formatBRL(novas[0].valor)} no Financeiro para ${cliente.nome}` +
-      ` (de ${formatDateBR(novas[0].dataVencimento)} até ${formatDateBR(novas[novas.length - 1].dataVencimento)})?` +
-      (puladas > 0 ? ` ${puladas} mês(es) que já têm boleto serão mantidos como estão.` : ""),
+      `Lançar ${novas.length} boleto(s) no Financeiro para ${cliente.nome}` +
+      (porVeiculo ? ` (um por veículo, ${formatBRL(totalMes)} por mês somando a frota)` : ` (${formatBRL(valorBase)} por mês${novas[0].veiculoIds.length > 1 ? `, unificado para ${novas[0].veiculoIds.length} veículos` : ""})`) +
+      `, de ${formatDateBR(datas[0])} até ${formatDateBR(datas[datas.length - 1])}?` +
+      (puladas > 0 ? ` ${puladas} parcela(s) de meses que já têm boleto serão mantidas como estão.` : "") + avisoSemValor,
       { titulo: "Lançar parcelas", textoConfirmar: "Lançar parcelas", perigo: false }
     );
     if (!ok) return;
     try {
-      const veiculosDoCliente = db.veiculos.filter((v) => v.clienteId === cliente.id);
-      const veiculoUnico = veiculosDoCliente.length === 1 ? veiculosDoCliente[0].id : null;
       const linhas = novas.map((p) => boletoToRow({
-        clienteId: cliente.id, veiculoId: veiculoUnico, numero: p.numero, nossoNumero: "",
+        clienteId: cliente.id, veiculoId: p.veiculoId, veiculoIds: p.veiculoIds, numero: p.numero, nossoNumero: "",
         dataEmissao: todayISO(), dataVencimento: p.dataVencimento, valor: p.valor, dataPagamento: "",
       }));
       const { data, error } = await supabase.from("boletos").insert(linhas).select();
       if (error) throw error;
       setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
-      showToast(`${novas.length} parcela(s) lançada(s) no Financeiro.`, "success");
+      showToast(`${novas.length} boleto(s) lançado(s) no Financeiro.`, "success");
     } catch (e) {
       notify("O cliente foi salvo, mas não foi possível lançar as parcelas: " + e.message);
     }
   };
 
+  // Veículo entrou/saiu da frota de um cliente que tem parcelas: abre a janela de ajuste (nada é gravado sem confirmar).
+  const abrirAjusteFrota = (veiculoSalvo, anteriorVeic) => {
+    if (!veiculoSalvo) return;
+    const cliente = db.clientes.find((c) => c.id === veiculoSalvo.clienteId);
+    if (!clienteTemParcelas(cliente)) return;
+    if (anteriorVeic && anteriorVeic.clienteId !== veiculoSalvo.clienteId) return;
+    const ativoAntes = anteriorVeic ? anteriorVeic.status !== "Inativo" : false;
+    const ativoAgora = veiculoSalvo.status !== "Inativo";
+    const evento = ativoAntes && !ativoAgora ? "cancelar" : !ativoAntes && ativoAgora ? "incluir" : null;
+    if (!evento) return;
+    if (planoAjusteVazio(planoAjusteFrota(db, cliente, veiculoSalvo, evento, mesRefDe(todayISO())))) return;
+    setModal({ type: "ajusteFrota", data: { clienteId: cliente.id, veiculo: veiculoSalvo, evento } });
+  };
+
+  const aplicarAjusteFrota = async (plano) => {
+    try {
+      if (plano.excluir.length > 0) {
+        const ids = plano.excluir.map((b) => b.id);
+        const { error } = await supabase.from("boletos").delete().in("id", ids);
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, boletos: prev.boletos.filter((b) => !ids.includes(b.id)) }));
+      }
+      if (plano.atualizar.length > 0) {
+        const res = await Promise.all(plano.atualizar.map((a) => supabase.from("boletos").update(a.campos).eq("id", a.b.id).select().single()));
+        const erro = res.find((r) => r.error);
+        if (erro) throw erro.error;
+        const atualizados = res.map((r) => rowToBoleto(r.data));
+        setDb((prev) => ({ ...prev, boletos: prev.boletos.map((b) => atualizados.find((a) => a.id === b.id) || b) }));
+      }
+      if (plano.criar.length > 0) {
+        const { data, error } = await supabase.from("boletos").insert(plano.criar.map(boletoToRow)).select();
+        if (error) throw error;
+        setDb((prev) => ({ ...prev, boletos: [...prev.boletos, ...(data || []).map(rowToBoleto)] }));
+      }
+      closeModal();
+      showToast("Boletos da frota ajustados.", "success");
+    } catch (e) {
+      notify("Não foi possível ajustar os boletos da frota: " + e.message);
+    }
+  };
+
   const saveVeiculo = async (veiculo) => {
     try {
+      const anteriorVeic = veiculo.id ? db.veiculos.find((v) => v.id === veiculo.id) : null;
+      let veiculoSalvo = null;
       if (veiculo.id) {
         const anterior = db.veiculos.find((v) => v.id === veiculo.id);
         const { data, error } = await supabase.from("veiculos").update(veiculoToRow(veiculo)).eq("id", veiculo.id).select().single();
         if (error) throw error;
         setDb((prev) => ({ ...prev, veiculos: prev.veiculos.map((v) => (v.id === data.id ? rowToVeiculo(data) : v)) }));
+        veiculoSalvo = rowToVeiculo(data);
         const valorAntigo = anterior ? Number(anterior.valorFipe) || null : null;
         const valorNovo = Number(veiculo.valorFipe) || null;
         if (veiculo.codigoFipe && valorNovo != null && valorNovo !== valorAntigo) {
@@ -7715,6 +7934,7 @@ function AppInterno() {
         const { data, error } = await supabase.from("veiculos").insert(veiculoToRow(veiculo)).select().single();
         if (error) throw error;
         setDb((prev) => ({ ...prev, veiculos: [...prev.veiculos, rowToVeiculo(data)] }));
+        veiculoSalvo = rowToVeiculo(data);
         if (data.codigo_fipe && data.valor_fipe != null) {
           await supabase.from("fipe_historico").insert({
             veiculo_id: data.id,
@@ -7726,6 +7946,7 @@ function AppInterno() {
         }
       }
       closeModal();
+      abrirAjusteFrota(veiculoSalvo, anteriorVeic);
     } catch (e) {
       notify("Não foi possível salvar o veículo: " + e.message);
     }
@@ -8497,7 +8718,7 @@ function AppInterno() {
           const veiculoUnico = veiculoUnicoDaLinha(linha);
           if (veiculoUnico) {
             registrarValorMensal(veiculoUnico, valorRelatorio);
-            if (!boleto.veiculoId && veiculoUnico.clienteId === boleto.clienteId) { campos.veiculo_id = veiculoUnico.id; veiculosVinculados++; }
+            if (!boleto.veiculoId && !(boleto.veiculoIds || []).length && veiculoUnico.clienteId === boleto.clienteId) { campos.veiculo_id = veiculoUnico.id; veiculosVinculados++; }
           }
           registrarCpf(db.clientes.find((cl) => cl.id === boleto.clienteId), linha);
           if (Object.keys(campos).length > 0) atualizacoes.push({ id: boleto.id, campos });
@@ -8517,15 +8738,29 @@ function AppInterno() {
             const candidatas = db.boletos
               .filter((b) => b.clienteId === clienteExistente.id && !b.nossoNumero && ehParcelaGerada(b) && !parcelasUsadas.has(b.id))
               .sort((x, y) => (x.dataVencimento || "").localeCompare(y.dataVencimento || ""));
+            // Frota com um boleto por veículo: se o relatório traz a placa, fica só com as parcelas daquele carro
+            let cands = candidatas;
+            const placasLinha = separarPlacas(linha.placa);
+            if (placasLinha.length > 0) {
+              const idsPlaca = new Set(db.veiculos.filter((v) => v.clienteId === clienteExistente.id && placasLinha.includes(normPlaca(v.placa))).map((v) => v.id));
+              const porPlaca = cands.filter((b) => veiculosDoBoleto(b).some((id) => idsPlaca.has(id)));
+              if (porPlaca.length > 0) cands = porPlaca;
+            }
+            const valorLinha = paraNumeroBR(linha.valor);
+            const preferirValor = (lista) => (valorLinha > 0 && lista.find((b) => Math.abs(Number(b.valor) - valorLinha) < 0.01)) || lista[0] || null;
             let parcela = null;
             if (linha.dataVencimento) {
               // relatório trouxe vencimento: casa com a parcela do mesmo mês
-              parcela = candidatas.find((b) => mesRefDe(b.dataVencimento) === mesRefDe(linha.dataVencimento)) || null;
+              parcela = preferirValor(cands.filter((b) => mesRefDe(b.dataVencimento) === mesRefDe(linha.dataVencimento)));
             } else if (estaPagoLinha) {
               // sem vencimento no relatório: baixa a parcela em aberto mais antiga que já poderia ter sido paga
               const dataRef = linha.dataPagamento || todayISO();
               const limite = somarMesesParcela(dataRef, 1);
-              parcela = candidatas.find((b) => !b.dataPagamento && b.dataVencimento && b.dataVencimento <= limite) || null;
+              const elegiveis = cands.filter((b) => !b.dataPagamento && b.dataVencimento && b.dataVencimento <= limite);
+              if (elegiveis.length > 0) {
+                const mesMaisAntigo = mesRefDe(elegiveis[0].dataVencimento);
+                parcela = preferirValor(elegiveis.filter((b) => mesRefDe(b.dataVencimento) === mesMaisAntigo));
+              }
             }
             if (parcela) {
               parcelasUsadas.add(parcela.id);
@@ -8963,12 +9198,17 @@ function AppInterno() {
       <ErrorBoundary fallback={null} resetKey={modal ? modal.type + (modal.data?.id || "") : ""} onError={(e) => { closeModal(); notify("Não foi possível abrir esta janela: " + (e.message || e)); }}>
       {modal && modal.type === "cliente" && (
         <Modal title={modal.data ? "Editar cliente" : "Novo cliente"} onClose={closeModal}>
-          <ClienteForm initial={modal.data} onSave={saveCliente} onCancel={closeModal} boletos={db.boletos} />
+          <ClienteForm initial={modal.data} onSave={saveCliente} onCancel={closeModal} boletos={db.boletos} veiculos={db.veiculos} />
         </Modal>
       )}
       {modal && modal.type === "veiculo" && (
         <Modal title={modal.data ? "Editar veículo" : "Novo veículo"} onClose={closeModal} wide>
           <VeiculoForm initial={modal.data} clientes={db.clientes} defaultClienteId={modal.defaultClienteId} onSave={saveVeiculo} onCancel={closeModal} />
+        </Modal>
+      )}
+      {modal && modal.type === "ajusteFrota" && (
+        <Modal title={modal.data.evento === "cancelar" ? "Veículo inativado — ajustar boletos" : "Veículo incluído — ajustar boletos"} onClose={closeModal}>
+          <AjusteFrotaModal db={db} dados={modal.data} onAplicar={aplicarAjusteFrota} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "boleto" && (
