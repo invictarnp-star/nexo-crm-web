@@ -77,13 +77,26 @@ export default async function handler(req, res) {
   const acao = String(req.query.acao || "teste");
   try {
     // 1) Autenticar usuário (POST /usuario/autenticar) — retorna token_usuario
-    const auth = await chamar("usuario/autenticar", "POST", process.env.SGA_TOKEN, { usuario: process.env.SGA_USUARIO, senha: process.env.SGA_SENHA });
+    const usuarioBruto = String(process.env.SGA_USUARIO);
+    const senhaBruta = String(process.env.SGA_SENHA);
+    const tokenBruto = String(process.env.SGA_TOKEN);
+    const auth = await chamar("usuario/autenticar", "POST", tokenBruto.trim(), { usuario: usuarioBruto.trim(), senha: senhaBruta.trim() });
     const tokenUsuario = auth.json && auth.json.token_usuario;
     if (!auth.ok || !tokenUsuario) {
+      const erroSga = auth.json && (auth.json.error || auth.json.erro || auth.json);
+      const motivo = (erroSga && (erroSga.mensagem || erroSga.message)) || auth.texto || "sem mensagem";
       return res.status(200).json({
         ok: false, etapa: "autenticacao", status_http: auth.status,
-        mensagem: "O SGA não aceitou o login. Confira token, usuário e senha no Vercel, e se o endpoint 'usuario/autenticar' está liberado no token (Gerenciar APIs).",
-        resposta_sga: mascarar(auth.json) || auth.texto,
+        mensagem: `O SGA recusou o login: "${motivo}"`,
+        codigo_erro_sga: erroSga && (erroSga.codigo_erro || erroSga.code),
+        diagnostico_sem_revelar_dados: {
+          letras_no_login: usuarioBruto.trim().length,
+          login_tem_espaco_no_meio: /\s/.test(usuarioBruto.trim()),
+          letras_na_senha: senhaBruta.trim().length,
+          tinha_espaco_sobrando_no_inicio_ou_fim: usuarioBruto !== usuarioBruto.trim() || senhaBruta !== senhaBruta.trim() || tokenBruto !== tokenBruto.trim(),
+          letras_no_token: tokenBruto.trim().length,
+          primeira_letra_do_login: usuarioBruto.trim().slice(0, 1),
+        },
       });
     }
 
@@ -133,6 +146,41 @@ export default async function handler(req, res) {
         total_registros_no_sga: r.json && r.json.total_registros, paginas: r.json && r.json.numero_paginas,
         nesta_pagina: lista.length, descartados_outros_voluntarios: lista.length - meus.length,
         exemplo_mascarado: meus.length ? mascarar(meus[0]) : (r.ok ? null : mascarar(r.json) || r.texto),
+      });
+    }
+
+    if (acao === "resumo") {
+      // Conta TODOS os boletos com vencimento no mês (só números, nenhum dado pessoal)
+      const hoje = new Date();
+      const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      const todos = [];
+      let pagina = 0, totalPaginas = 1;
+      while (pagina < totalPaginas && pagina < 20) {
+        const r = await chamar("listar/boleto-associado/periodo", "POST", tokenUsuario, {
+          data_vencimento_inicial: ddmmyyyy(ini), data_vencimento_final: ddmmyyyy(fim),
+          codigo_voluntario: [Number(codigoVoluntario)], quantidade_por_pagina: 500, inicio_paginacao: pagina,
+        });
+        if (!r.ok) return res.status(200).json({ ok: false, etapa: "resumo", status_http: r.status, resposta_sga: mascarar(r.json) || r.texto });
+        todos.push(...((r.json && r.json.boletos) || []));
+        totalPaginas = Number(r.json && r.json.numero_paginas) || 1;
+        pagina++;
+      }
+      const meus = todos.filter((b) => !Array.isArray(b.veiculos) || b.veiculos.length === 0 || b.veiculos.some((v) => minhaBase(v.codigo_voluntario)));
+      const contar = (fn) => meus.reduce((m, b) => { const k = fn(b) || "(vazio)"; m[k] = m[k] || { qtd: 0, valor: 0 }; m[k].qtd++; m[k].valor = Math.round((m[k].valor + (Number(b.valor_boleto) || 0)) * 100) / 100; return m; }, {});
+      const nossos = new Set(meus.map((b) => String(b.nosso_numero)));
+      const associados = new Set(meus.map((b) => String(b.codigo_associado)));
+      const veiculos = new Set(meus.flatMap((b) => (b.veiculos || []).map((v) => String(v.codigo_veiculo))));
+      return res.status(200).json({
+        ok: true, etapa: "resumo",
+        mensagem: `Resumo dos boletos com vencimento em ${String(hoje.getMonth() + 1).padStart(2, "0")}/${hoje.getFullYear()} da sua base (só números).`,
+        boletos_lidos: todos.length, boletos_da_sua_base: meus.length, nosso_numero_diferentes: nossos.size,
+        associados_diferentes: associados.size, veiculos_diferentes: veiculos.size,
+        boletos_com_varios_veiculos: meus.filter((b) => (b.veiculos || []).length > 1).length,
+        por_situacao: contar((b) => b.situacao_boleto),
+        por_tipo: contar((b) => b.tipo_boleto),
+        por_mes_referente: contar((b) => b.mes_referente),
+        pagos_com_data_pagamento: meus.filter((b) => b.data_pagamento).length,
       });
     }
 
