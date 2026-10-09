@@ -269,7 +269,12 @@ const STYLE = `
 .nexo-searchbar input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
 .nexo-searchbar input::placeholder { color: var(--text-faint); }
 .nexo-filters { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px 18px; margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; box-shadow: var(--shadow-sm); }
-.nexo-filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 130px; flex: 1; }
+.nexo-filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 130px; flex: 1 1 150px; }
+.nexo-filter-field > * { min-width: 0; width: 100%; box-sizing: border-box; }
+.nexo-filters input[type="date"] { -webkit-appearance: none; appearance: none; min-height: 38px; text-align: left; }
+.nexo-filters input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+.nexo-veic-modelo { white-space: nowrap; }
+@media (max-width: 1180px) { .nexo-veic-modelo, .nexo-col-md { display: none; } }
 .nexo-filter-field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--text-faint); font-weight: 700; }
 
 /* ---------- Campos ---------- */
@@ -306,7 +311,7 @@ const STYLE = `
 .nexo-actions-cell { display: flex; gap: 6px; justify-content: flex-end; }
 
 /* ---------- Selos ---------- */
-.nexo-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.nexo-badge { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
 .nexo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
 /* ---------- Estado vazio ---------- */
@@ -355,6 +360,11 @@ const STYLE = `
 .nexo-veiculo-card:hover { border-color: var(--border); }
 .nexo-veiculo-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .nexo-mini-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.nexo-mini-kpis.cinco { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1180px) { .nexo-mini-kpis.cinco { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.nexo-mes-ref { display: flex; align-items: center; gap: 6px; }
+.nexo-mes-ref .nexo-select { width: auto; min-width: 180px; }
+.nexo-dash-bloco { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin: 22px 2px 10px; }
 .nexo-mini-kpi { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px 16px; }
 .nexo-mini-kpi-label { font-size: 11px; color: var(--text-faint); margin-bottom: 5px; font-weight: 500; }
 .nexo-mini-kpi-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
@@ -393,6 +403,11 @@ const STYLE = `
 .nexo-vgroup-body { border-top: 1px solid var(--border-soft); }
 .nexo-vrow { display: grid; grid-template-columns: 112px minmax(0, 1.6fr) 130px 120px 90px auto; gap: 12px; align-items: center; padding: 10px 16px 10px 60px; border-bottom: 1px solid var(--border-soft); transition: background .12s; }
 .nexo-vrow:last-child { border-bottom: none; }
+@media (max-width: 1180px) {
+  .nexo-vrow { grid-template-columns: 104px minmax(0, 1fr) 110px 80px auto; padding-left: 20px; }
+  .nexo-vrow-fipe { display: none; }
+}
+.nexo-toolbar .nexo-searchbar { min-width: 220px; flex: 1 1 260px; }
 .nexo-vrow:hover { background: var(--accent-soft); }
 .nexo-vrow.plano { padding: 10px 4px; }
 .nexo-vrow-nome { font-size: 13px; font-weight: 600; }
@@ -684,8 +699,10 @@ html .nexo-nav { scrollbar-width: thin; scrollbar-color: var(--border) transpare
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 1024px) {
-  .nexo-charts-grid { grid-template-columns: 1fr; }
   .nexo-detail-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .nexo-charts-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
@@ -697,7 +714,9 @@ html .nexo-nav { scrollbar-width: thin; scrollbar-color: var(--border) transpare
   .nexo-content { padding: 18px 14px 48px; }
   .nexo-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .nexo-kpi-value { font-size: 20px; }
-  .nexo-mini-kpis { grid-template-columns: repeat(2, 1fr); }
+  .nexo-mini-kpis, .nexo-mini-kpis.cinco { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nexo-mes-ref .nexo-select { min-width: 0; flex: 1; }
+  .nexo-mes-ref { width: 100%; }
   .nexo-field-row, .nexo-field-row3 { grid-template-columns: 1fr; }
   .nexo-overlay.open { display: block; position: fixed; inset: 0; background: var(--overlay); z-index: 39; }
   .nexo-topbar { padding: 0 12px; }
@@ -774,7 +793,7 @@ function computeBoletoStatus(b) {
 }
 
 /* Versão do sistema — aparece no rodapé do menu para conferir se a atualização certa foi publicada */
-const APP_VERSAO = "2026.10.08-b";
+const APP_VERSAO = "2026.10.09-a";
 
 /* O Supabase devolve no máximo 1.000 linhas por consulta: busca em lotes até trazer a tabela inteira */
 async function selecionarTudo(montarConsulta) {
@@ -2297,9 +2316,7 @@ const PALETA_GRAFICOS = {
 };
 
 /* Previsão de recebimentos por mês: conta os boletos/parcelas pelo mês de VENCIMENTO. */
-function PrevisaoRecebimentos({ boletosComStatus, pal }) {
-  const mesAtual = mesRefDe(todayISO());
-  const [mesSel, setMesSel] = useState(mesAtual);
+function PrevisaoRecebimentos({ boletosComStatus, pal, mesSel, setMesSel }) {
   const deslocarMes = (chave, n) => {
     const [a, m] = chave.split("-").map(Number);
     const d = new Date(a, m - 1 + n, 1);
@@ -2322,7 +2339,6 @@ function PrevisaoRecebimentos({ boletosComStatus, pal }) {
   }, [boletosComStatus]);
   const vazio = { qtd: 0, valor: 0, pagos: 0, valorPago: 0, abertos: 0, valorAberto: 0, vencidos: 0, valorVencido: 0 };
   const dados = porMes.get(mesSel) || vazio;
-  const opcoesMes = Array.from(new Set([...porMes.keys(), mesAtual, mesSel, deslocarMes(mesAtual, -1), deslocarMes(mesAtual, 1)])).sort();
   const grafico = [-2, -1, 0, 1, 2, 3].map((n) => {
     const chave = deslocarMes(mesSel, n);
     const x = porMes.get(chave) || vazio;
@@ -2341,18 +2357,11 @@ function PrevisaoRecebimentos({ boletosComStatus, pal }) {
     <div className="nexo-card" style={{ marginBottom: 16 }}>
       <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div className="nexo-chart-title">Boletos a receber no mês</div>
+          <div className="nexo-chart-title">Boletos a receber em {rotuloMes(mesSel)}</div>
           <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Previsão pelo vencimento de cada boleto/parcela · vencidos sem baixa contam como inadimplentes</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button type="button" className="nexo-btn nexo-btn-sm" title="Mês anterior" onClick={() => setMesSel(deslocarMes(mesSel, -1))}><ChevronLeft size={14} /></button>
-          <select className="nexo-select" style={{ width: "auto", minWidth: 170 }} value={mesSel} onChange={(e) => setMesSel(e.target.value)}>
-            {opcoesMes.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
-          </select>
-          <button type="button" className="nexo-btn nexo-btn-sm" title="Próximo mês" onClick={() => setMesSel(deslocarMes(mesSel, 1))}><ChevronRight size={14} /></button>
-        </div>
       </div>
-      <div className="nexo-mini-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+      <div className="nexo-mini-kpis cinco">
         {miniKpi("Boletos a receber", dados.qtd, rotuloMes(mesSel))}
         {miniKpi("Valor previsto", formatBRL(dados.valor), "soma das parcelas do mês")}
         {miniKpi("Pagos", dados.pagos, formatBRL(dados.valorPago), "var(--success)")}
@@ -2383,10 +2392,7 @@ function PrevisaoRecebimentos({ boletosComStatus, pal }) {
 }
 
 /* Carteira por seguradora: clientes, veículos por tipo, mensalidade e boletos do mês de cada seguradora */
-function CarteiraPorSeguradora({ db, boletosComStatus }) {
-  const mesAtual = mesRefDe(todayISO());
-  const [mes, setMes] = useState(mesAtual);
-  const meses = Array.from({ length: 10 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m - 7 + i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+function CarteiraPorSeguradora({ db, boletosComStatus, mes }) {
   const linhas = useMemo(() => {
     const nomePorId = new Map(db.seguradoras.map((sg) => [sg.id, sg.nome]));
     const veicPorId = new Map(db.veiculos.map((v) => [v.id, v]));
@@ -2424,15 +2430,12 @@ function CarteiraPorSeguradora({ db, boletosComStatus }) {
       <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
         <div>
           <div className="nexo-chart-title">Carteira por seguradora</div>
-          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Veículos ativos de cada seguradora/associação e os boletos com vencimento no mês escolhido.</div>
+          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Veículos ativos de cada seguradora e os boletos com vencimento em {rotuloMes(mes)}.</div>
         </div>
-        <select className="nexo-select" style={{ width: "auto", minWidth: 170 }} value={mes} onChange={(e) => setMes(e.target.value)}>
-          {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
-        </select>
       </div>
       <div className="nexo-table-scroll">
         <table className="nexo-table">
-          <thead><tr><th>Seguradora</th><th>Clientes</th><th>Veículos</th><th>Mensalidade</th><th>Boletos do mês</th><th>Pagos</th><th>Vencidos</th></tr></thead>
+          <thead><tr><th>Seguradora</th><th>Clientes</th><th>Veículos</th><th>Mensalidade</th><th>Boletos do mês</th></tr></thead>
           <tbody>
             {linhas.map((l) => (
               <tr key={l.chave}>
@@ -2443,9 +2446,14 @@ function CarteiraPorSeguradora({ db, boletosComStatus }) {
                   <div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{Object.entries(l.tipos).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${t.toLowerCase()}`).join(" · ") || "—"}</div>
                 </td>
                 <td className="mono">{l.mensal > 0 ? formatBRL(l.mensal) : "—"}</td>
-                <td><div className="mono">{formatBRL(l.bValor)}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{l.bQtd} boleto(s)</div></td>
-                <td style={{ color: "var(--success)", fontWeight: 600 }}>{l.bPagos}</td>
-                <td style={{ color: l.bVencidos ? "var(--danger)" : "var(--text-faint)", fontWeight: 600 }}>{l.bVencidos}{l.bVencidos > 0 && <div className="nexo-cell-muted" style={{ fontSize: 11.5, fontWeight: 400 }}>{formatBRL(l.bVencidosValor)}</div>}</td>
+                <td>
+                  <div className="mono">{formatBRL(l.bValor)}</div>
+                  <div style={{ fontSize: 11.5 }}>
+                    <span className="nexo-cell-muted">{l.bQtd} boleto(s) · </span>
+                    <span style={{ color: "var(--success)", fontWeight: 600 }}>{l.bPagos} pago(s)</span>
+                    {l.bVencidos > 0 && <span style={{ color: "var(--danger)", fontWeight: 600 }}> · {l.bVencidos} vencido(s) {formatBRL(l.bVencidosValor)}</span>}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -2484,6 +2492,9 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   ).sort().reverse();
   const mesPadrao = mesesComPagamento.includes(chaveMesAtual) ? chaveMesAtual : (mesesComPagamento[0] || chaveMesAtual);
   const mesEfetivo = mesComissao === "auto" ? mesPadrao : mesComissao;
+  const deslocarMesDash = (chave, n) => { const [a, m] = chave.split("-").map(Number); const d = new Date(a, m - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  const opcoesMesDash = Array.from(new Set([...mesesComPagamento, mesEfetivo,
+    ...Array.from({ length: 30 }, (_, i) => deslocarMesDash(chaveMesAtual, 6 - i))])).sort().reverse();
   const boletosPagosDoMes = boletosComStatus.filter((b) => b.status === "Pago" && mesRefDe(b.dataPagamento) === mesEfetivo);
   const valorBaseComissao = sum(boletosPagosDoMes.map((b) => b.valor));
   // comparação com o mês anterior ao mês escolhido
@@ -2552,20 +2563,15 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
         <div>
           <div className="nexo-section-title">Visão geral</div>
         </div>
-        <div className="nexo-topbar-actions">
-          <select
-            className="nexo-select"
-            style={{ width: "auto", minWidth: 190 }}
-            title="Mês usado no cálculo da comissão da corretora (boletos pagos nesse mês)"
-            value={mesComissao === "auto" ? mesPadrao : mesComissao}
-            onChange={(e) => setMesComissao(e.target.value)}
-          >
-            {Array.from(new Set([...mesesComPagamento, chaveMesAtual])).sort().reverse().map((m) => (
-              <option key={m} value={m}>Comissão de {rotuloMes(m)}</option>
-            ))}
+        <div className="nexo-mes-ref" title="Mês de referência: vale para a comissão, os boletos do mês e a carteira por seguradora">
+          <button type="button" className="nexo-btn nexo-btn-sm" title="Mês anterior" onClick={() => setMesComissao(deslocarMesDash(mesEfetivo, -1))}><ChevronLeft size={14} /></button>
+          <select className="nexo-select" value={mesEfetivo} onChange={(e) => setMesComissao(e.target.value)}>
+            {opcoesMesDash.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
           </select>
+          <button type="button" className="nexo-btn nexo-btn-sm" title="Próximo mês" onClick={() => setMesComissao(deslocarMesDash(mesEfetivo, 1))}><ChevronRight size={14} /></button>
         </div>
       </div>
+      <div className="nexo-dash-bloco" style={{ marginTop: 0 }}>Carteira</div>
 
       <div className="nexo-kpi-grid">
         <Kpi icon={Users} label="Clientes ativos" value={clientesAtivos} tone="accent" />
@@ -2584,8 +2590,10 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
           )} />
       </div>
 
-      <PrevisaoRecebimentos boletosComStatus={boletosComStatus} pal={pal} />
-      <CarteiraPorSeguradora db={db} boletosComStatus={boletosComStatus} />
+      <div className="nexo-dash-bloco">{rotuloMes(mesEfetivo)}</div>
+      <PrevisaoRecebimentos boletosComStatus={boletosComStatus} pal={pal} mesSel={mesEfetivo} setMesSel={setMesComissao} />
+      <CarteiraPorSeguradora db={db} boletosComStatus={boletosComStatus} mes={mesEfetivo} />
+      <div className="nexo-dash-bloco">Acompanhamento</div>
 
       <div className="nexo-two-grid">
         <div className="nexo-card">
@@ -2918,7 +2926,7 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Cliente</th><th>Contato</th><th>Veículos</th><th>Mensal</th><th>Em aberto</th><th>Recebido</th><th>Situação</th><th></th>
+                  <th>Cliente</th><th className="nexo-col-md">Contato</th><th>Veículos</th><th>Mensal</th><th>Em aberto</th><th className="nexo-col-md">Recebido</th><th>Situação</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -2939,11 +2947,11 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                           </div>
                         </div>
                       </td>
-                      <td className="nexo-cell-muted">{c.telefone || c.whatsapp || "—"}</td>
+                      <td className="nexo-cell-muted nexo-col-md">{c.telefone || c.whatsapp || "—"}</td>
                       <td>{s.veiculos.length > 0 ? s.veiculos.length : <span className="nexo-cell-muted">—</span>}</td>
                       <td className="mono">{s.mensal > 0 ? formatBRL(s.mensal) : <SemValor />}</td>
                       <td className="mono" style={{ color: s.emAberto > 0 ? "var(--warning)" : "var(--text-faint)" }}>{s.emAberto > 0 ? formatBRL(s.emAberto) : "—"}</td>
-                      <td className="mono" style={{ color: s.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>{s.recebido > 0 ? formatBRL(s.recebido) : "—"}</td>
+                      <td className="mono nexo-col-md" style={{ color: s.recebido > 0 ? "var(--success)" : "var(--text-faint)" }}>{s.recebido > 0 ? formatBRL(s.recebido) : "—"}</td>
                       <td><PillTom tom={s.sit.tom}>{s.sit.rotulo}</PillTom></td>
                       <td>
                         <div className="nexo-actions-cell" onClick={(e) => e.stopPropagation()}>
@@ -3479,7 +3487,7 @@ function FinanceiroView({ db, onOpenModal, onDeleteBoleto, onMarcarPago, onImpor
                         ) : veiculo ? (
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <PlacaChip placa={veiculo.placa} />
-                            <span className="nexo-cell-muted">{veiculo.marca} {veiculo.modelo}</span>
+                            <span className="nexo-cell-muted nexo-veic-modelo">{veiculo.marca} {veiculo.modelo}</span>
                           </div>
                         ) : nFrota > 1 ? (
                           <span className="nexo-tag-frota" title="Boleto sem veículo específico: cobre o cliente/frota">Frota · {nFrota} veículos</span>
