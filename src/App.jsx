@@ -774,7 +774,7 @@ function computeBoletoStatus(b) {
 }
 
 /* Versão do sistema — aparece no rodapé do menu para conferir se a atualização certa foi publicada */
-const APP_VERSAO = "2026.10.08-a";
+const APP_VERSAO = "2026.10.08-b";
 
 /* O Supabase devolve no máximo 1.000 linhas por consulta: busca em lotes até trazer a tabela inteira */
 async function selecionarTudo(montarConsulta) {
@@ -787,6 +787,30 @@ async function selecionarTudo(montarConsulta) {
   }
   return { data: todos, error: null };
 }
+
+/* --- Seguradora / associação de cada veículo (Invicta, Suhai, Porto...) --- */
+const CORES_SEGURADORA = ["#3E86BF", "#E0922F", "#2FA36B", "#9B5DE5", "#D64545", "#1FA3A3", "#B8860B", "#6C7A89"];
+function corSeguradora(nome) {
+  if (!nome) return "#6C7A89";
+  let h = 0;
+  for (const ch of String(nome)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CORES_SEGURADORA[h % (CORES_SEGURADORA.length - 1)];
+}
+function SeguradoraTag({ nome }) {
+  if (!nome) return <span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>sem seguradora</span>;
+  const cor = corSeguradora(nome);
+  return (
+    <span style={{ display: "inline-block", fontSize: 10.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase", whiteSpace: "nowrap",
+      padding: "2px 7px", borderRadius: 999, color: cor, background: cor + "1f", border: `1px solid ${cor}55` }}>{nome}</span>
+  );
+}
+const tipoVeiculoGrupo = (t) => {
+  const x = normalizarTexto(t || "");
+  if (x.includes("moto")) return "Motos";
+  if (x.includes("caminh")) return "Caminhões";
+  if (x.includes("carro") || x.includes("utilit") || !x) return "Carros";
+  return "Outros";
+};
 
 /* --- Parcelas da mensalidade do cliente (geradas pelo cadastro do cliente) --- */
 // As parcelas viram boletos normais na tabela "boletos" (mesmo status, baixa manual e baixa
@@ -1068,6 +1092,76 @@ function ImportarMensalidadesModal({ db, onAplicar, onCancel }) {
         <button className="nexo-btn nexo-btn-primary" disabled={!plano || plano.clientes.length === 0 || aplicando}
           onClick={async () => { setAplicando(true); await onAplicar(plano); setAplicando(false); }}>
           {aplicando ? "Importando…" : `Confirmar importação${plano ? ` (${plano.clientes.length} clientes)` : ""}`}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* Definir a seguradora de vários veículos de uma vez (sem apagar nada) */
+function SeguradoraLoteModal({ db, onAplicar, onCancel }) {
+  const [seguradoraId, setSeguradoraId] = useState("");
+  const [origem, setOrigem] = useState("arquivo"); // arquivo | semSeguradora
+  const [placasArquivo, setPlacasArquivo] = useState(null);
+  const [nomeArquivo, setNomeArquivo] = useState("");
+  const [sobrescrever, setSobrescrever] = useState(false);
+  const [aplicando, setAplicando] = useState(false);
+  const inputRef = useRef(null);
+  async function escolher(e) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    try {
+      const { cabecalhos, linhas } = await lerArquivoComoTabela(f);
+      const placas = new Set();
+      linhas.forEach((l) => separarPlacas(valorDaColuna(cabecalhos, l, ["placa", "placas", "placadoveiculo"])).forEach((p) => placas.add(p)));
+      if (placas.size === 0) throw new Error("não encontrei a coluna Placa neste arquivo.");
+      setPlacasArquivo(placas); setNomeArquivo(f.name);
+    } catch (err) { notify("Não foi possível ler o arquivo: " + err.message); }
+  }
+  const alvo = db.veiculos.filter((v) => {
+    if (!sobrescrever && v.seguradoraId) return false;
+    if (origem === "arquivo") return !!placasArquivo && placasArquivo.has(normPlaca(v.placa));
+    return !v.seguradoraId;
+  }).filter((v) => v.seguradoraId !== seguradoraId);
+  const naoEncontradas = origem === "arquivo" && placasArquivo
+    ? Array.from(placasArquivo).filter((p) => !db.veiculos.some((v) => normPlaca(v.placa) === p)).length : 0;
+  const nomeDestino = (db.seguradoras.find((sg) => sg.id === seguradoraId) || {}).nome;
+  return (
+    <>
+      <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 12 }}>
+        Marca a seguradora em vários veículos de uma vez. Só muda a seguradora — nenhum outro dado é alterado. Dica: use o relatório de veículos do SGA para marcar todos os da Invicta.
+      </div>
+      <Field label="Seguradora / associação">
+        <select className="nexo-select" value={seguradoraId} onChange={(e) => setSeguradoraId(e.target.value)}>
+          <option value="">Escolha…</option>
+          {db.seguradoras.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome}</option>)}
+        </select>
+      </Field>
+      <Field label="Quais veículos">
+        <select className="nexo-select" value={origem} onChange={(e) => setOrigem(e.target.value)}>
+          <option value="arquivo">Os das placas de um arquivo (ex.: relatório do SGA)</option>
+          <option value="semSeguradora">Todos os que ainda estão sem seguradora</option>
+        </select>
+      </Field>
+      {origem === "arquivo" && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+          <button type="button" className="nexo-btn" onClick={() => inputRef.current?.click()}><Upload size={14} /> {nomeArquivo ? "Trocar arquivo" : "Escolher arquivo"}</button>
+          <input ref={inputRef} type="file" accept=".xls,.xlsx,.csv,.html,.ods,.pdf" style={{ display: "none" }} onChange={escolher} />
+          {nomeArquivo && <span className="nexo-cell-muted">{nomeArquivo} · {placasArquivo.size} placa(s){naoEncontradas > 0 ? ` · ${naoEncontradas} não cadastrada(s) no Nexo` : ""}</span>}
+        </div>
+      )}
+      <label style={{ display: "flex", gap: 8, fontSize: 12.5, marginBottom: 12, cursor: "pointer" }}>
+        <input type="checkbox" checked={sobrescrever} onChange={(e) => setSobrescrever(e.target.checked)} />
+        Trocar também veículos que já têm outra seguradora marcada
+      </label>
+      <div className="nexo-mini-kpi" style={{ marginBottom: 12 }}>
+        {seguradoraId ? `${alvo.length} veículo(s) serão marcados como ${nomeDestino}.` : "Escolha a seguradora para ver quantos veículos serão marcados."}
+      </div>
+      <div className="nexo-modal-foot" style={{ padding: "4px 0 0", borderTop: "none" }}>
+        <button className="nexo-btn" onClick={onCancel}>Cancelar</button>
+        <button className="nexo-btn nexo-btn-primary" disabled={!seguradoraId || alvo.length === 0 || aplicando}
+          onClick={async () => { setAplicando(true); await onAplicar(seguradoraId, alvo.map((v) => v.id)); setAplicando(false); }}>
+          {aplicando ? "Salvando…" : `Marcar ${alvo.length} veículo(s)`}
         </button>
       </div>
     </>
@@ -1757,7 +1851,7 @@ function ClienteForm({ initial, onSave, onCancel, boletos = [], veiculos = [] })
   );
 }
 
-function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) {
+function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel, seguradoras = [] }) {
   const [f, setF] = useState(
     initial || {
       clienteId: defaultClienteId || "", tipoVeiculo: "Carro ou utilitário", marca: "", modelo: "", ano: "", anoFabricacao: "",
@@ -1887,6 +1981,12 @@ function VeiculoForm({ initial, clientes, defaultClienteId, onSave, onCancel }) 
         <select className="nexo-select" value={f.clienteId} onChange={set("clienteId")}>
           <option value="">Selecione um cliente</option>
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+      </Field>
+      <Field label="Seguradora / associação">
+        <select className="nexo-select" value={f.seguradoraId || ""} onChange={set("seguradoraId")}>
+          <option value="">— não informada —</option>
+          {seguradoras.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome}</option>)}
         </select>
       </Field>
 
@@ -2282,6 +2382,82 @@ function PrevisaoRecebimentos({ boletosComStatus, pal }) {
   );
 }
 
+/* Carteira por seguradora: clientes, veículos por tipo, mensalidade e boletos do mês de cada seguradora */
+function CarteiraPorSeguradora({ db, boletosComStatus }) {
+  const mesAtual = mesRefDe(todayISO());
+  const [mes, setMes] = useState(mesAtual);
+  const meses = Array.from({ length: 10 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m - 7 + i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  const linhas = useMemo(() => {
+    const nomePorId = new Map(db.seguradoras.map((sg) => [sg.id, sg.nome]));
+    const veicPorId = new Map(db.veiculos.map((v) => [v.id, v]));
+    const ativosPorCliente = new Map();
+    db.veiculos.filter((v) => v.status !== "Inativo").forEach((v) => ativosPorCliente.set(v.clienteId, [...(ativosPorCliente.get(v.clienteId) || []), v]));
+    const chaveDe = (sid) => (sid && nomePorId.has(sid) ? sid : "__sem");
+    const mapa = new Map();
+    const pegar = (k) => {
+      if (!mapa.has(k)) mapa.set(k, { chave: k, nome: k === "__sem" ? "" : nomePorId.get(k), clientes: new Set(), tipos: { Carros: 0, Motos: 0, "Caminhões": 0, Outros: 0 }, veiculos: 0, mensal: 0, bQtd: 0, bValor: 0, bPagos: 0, bVencidos: 0, bVencidosValor: 0 });
+      return mapa.get(k);
+    };
+    db.veiculos.filter((v) => v.status !== "Inativo").forEach((v) => {
+      const x = pegar(chaveDe(v.seguradoraId));
+      x.clientes.add(v.clienteId); x.veiculos++; x.tipos[tipoVeiculoGrupo(v.tipoVeiculo)]++; x.mensal += Number(v.valorMensal) || 0;
+    });
+    boletosComStatus.filter((b) => mesRefDe(b.dataVencimento) === mes).forEach((b) => {
+      let sid = null;
+      const ids = veiculosDoBoleto(b);
+      if (ids.length) sid = (veicPorId.get(ids[0]) || {}).seguradoraId;
+      else {
+        const segs = new Set((ativosPorCliente.get(b.clienteId) || []).map((v) => v.seguradoraId || ""));
+        if (segs.size === 1) sid = Array.from(segs)[0];
+      }
+      const x = pegar(chaveDe(sid));
+      const v = Number(b.valor) || 0;
+      x.bQtd++; x.bValor += v;
+      if (b.status === "Pago") x.bPagos++;
+      else if (b.status === "Vencido") { x.bVencidos++; x.bVencidosValor += v; }
+    });
+    return Array.from(mapa.values()).sort((a, b) => (a.chave === "__sem") - (b.chave === "__sem") || b.veiculos - a.veiculos);
+  }, [db.seguradoras, db.veiculos, boletosComStatus, mes]);
+  const semSeg = linhas.find((l) => l.chave === "__sem");
+  return (
+    <div className="nexo-card" style={{ marginBottom: 16 }}>
+      <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <div className="nexo-chart-title">Carteira por seguradora</div>
+          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Veículos ativos de cada seguradora/associação e os boletos com vencimento no mês escolhido.</div>
+        </div>
+        <select className="nexo-select" style={{ width: "auto", minWidth: 170 }} value={mes} onChange={(e) => setMes(e.target.value)}>
+          {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
+        </select>
+      </div>
+      <div className="nexo-table-scroll">
+        <table className="nexo-table">
+          <thead><tr><th>Seguradora</th><th>Clientes</th><th>Veículos</th><th>Mensalidade</th><th>Boletos do mês</th><th>Pagos</th><th>Vencidos</th></tr></thead>
+          <tbody>
+            {linhas.map((l) => (
+              <tr key={l.chave}>
+                <td><SeguradoraTag nome={l.nome} /></td>
+                <td>{l.clientes.size}</td>
+                <td>
+                  <div><strong>{l.veiculos}</strong></div>
+                  <div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{Object.entries(l.tipos).filter(([, n]) => n > 0).map(([t, n]) => `${n} ${t.toLowerCase()}`).join(" · ") || "—"}</div>
+                </td>
+                <td className="mono">{l.mensal > 0 ? formatBRL(l.mensal) : "—"}</td>
+                <td><div className="mono">{formatBRL(l.bValor)}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{l.bQtd} boleto(s)</div></td>
+                <td style={{ color: "var(--success)", fontWeight: 600 }}>{l.bPagos}</td>
+                <td style={{ color: l.bVencidos ? "var(--danger)" : "var(--text-faint)", fontWeight: 600 }}>{l.bVencidos}{l.bVencidos > 0 && <div className="nexo-cell-muted" style={{ fontSize: 11.5, fontWeight: 400 }}>{formatBRL(l.bVencidosValor)}</div>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {semSeg && semSeg.veiculos > 0 && (
+        <div className="nexo-cell-muted" style={{ fontSize: 12, marginTop: 8 }}>{semSeg.veiculos} veículo(s) ainda sem seguradora — marque em Veículos → “Definir seguradora em lote”.</div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   const pal = PALETA_GRAFICOS[tema === "light" ? "light" : "dark"];
   const fonteAuto = db.seguradoras.find((s) => s.comissaoAutomatica && s.tipoComissao === "mensalidade");
@@ -2409,6 +2585,7 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
       </div>
 
       <PrevisaoRecebimentos boletosComStatus={boletosComStatus} pal={pal} />
+      <CarteiraPorSeguradora db={db} boletosComStatus={boletosComStatus} />
 
       <div className="nexo-two-grid">
         <div className="nexo-card">
@@ -2568,6 +2745,8 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
 /* ------------------------------------------------------------------ */
 
 function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImportarClientes }) {
+  const [fSegCli, setFSegCli] = useState("todas");
+  const segNomeCli = useMemo(() => new Map(db.seguradoras.map((sg) => [sg.id, sg.nome])), [db.seguradoras]);
   const [query, setQuery] = useState("");
   const [importando, setImportando] = useState(false);
   const fileInputRef = useRef(null);
@@ -2607,6 +2786,8 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
 
   const filtered = db.clientes.filter((c) => {
     const s = info.get(c.id);
+    if (fSegCli === "sem" && !(s?.veiculos || []).some((v) => !v.seguradoraId)) return false;
+    if (fSegCli !== "todas" && fSegCli !== "sem" && !(s?.veiculos || []).some((v) => v.seguradoraId === fSegCli)) return false;
     if (filtro === "semcpf") { if (c.cpf) return false; }
     else if (filtro !== "todos" && s?.sit.chave !== filtro) return false;
     if (!query) return true;
@@ -2714,6 +2895,11 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
           <Search size={15} />
           <input placeholder="Pesquisar por nome, CPF ou placa" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
+        <select className="nexo-select" style={{ width: "auto" }} value={fSegCli} onChange={(e) => setFSegCli(e.target.value)}>
+          <option value="todas">Todas as seguradoras</option>
+          {db.seguradoras.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome}</option>)}
+          <option value="sem">Com veículo sem seguradora</option>
+        </select>
       </div>
       <div className="nexo-chips">
         {[["todos", "Todos"], ["emdia", "Em dia"], ["aberto", "Em aberto"], ["inadimplente", "Inadimplentes"], ["semcpf", "Sem CPF"], ["inativo", "Inativos"]].map(([k, rotulo]) => (
@@ -2746,6 +2932,10 @@ function ClientesView({ db, onOpenModal, onDeleteCliente, onOpenDetail, onImport
                           <div style={{ minWidth: 0 }}>
                             <div className="nexo-cliente-nome">{c.nome}</div>
                             <div className="nexo-cliente-sub mono">{c.cpf || "CPF não informado"}</div>
+                            {(() => {
+                              const nomes = Array.from(new Set(s.veiculos.map((v) => segNomeCli.get(v.seguradoraId)).filter(Boolean)));
+                              return nomes.length > 0 && <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>{nomes.map((n) => <SeguradoraTag key={n} nome={n} />)}</div>;
+                            })()}
                           </div>
                         </div>
                       </td>
@@ -2786,7 +2976,10 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
   const [modo, setModo] = useState("clientes"); // clientes | lista
   const [expandir, setExpandir] = useState("auto"); // auto | todos | nenhum
   const [overrides, setOverrides] = useState({});
+  const [fSeg, setFSeg] = useState("todas");
   const getCliente = (id) => db.clientes.find((c) => c.id === id);
+  const segPorId = new Map(db.seguradoras.map((sg) => [sg.id, sg.nome]));
+  const nomeSeg = (v) => segPorId.get(v.seguradoraId) || "";
 
   async function handleArquivoVeiculos(e) {
     const arquivo = e.target.files?.[0];
@@ -2846,6 +3039,8 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
     semfipe: db.veiculos.filter((v) => !v.codigoFipe).length,
   };
   const filtered = db.veiculos.filter((v) => {
+    if (fSeg === "sem" && v.seguradoraId) return false;
+    if (fSeg !== "todas" && fSeg !== "sem" && v.seguradoraId !== fSeg) return false;
     if (filtro === "ativos" && v.status !== "Ativo") return false;
     if (filtro === "inativos" && v.status === "Ativo") return false;
     if (filtro === "semvalor" && Number(v.valorMensal) > 0) return false;
@@ -2922,6 +3117,8 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
                   { titulo: "Código Fipe", valor: (v) => v.codigoFipe },
                   { titulo: "Valor Fipe", valor: (v) => v.valorFipe },
                   { titulo: "Valor mensal", valor: (v) => v.valorMensal },
+                  { titulo: "Seguradora", valor: (v) => nomeSeg(v) },
+                  { titulo: "Tipo", valor: (v) => v.tipoVeiculo },
                   { titulo: "Status", valor: (v) => v.status },
                 ],
                 filtered
@@ -2943,6 +3140,12 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
           <button className={modo === "clientes" ? "on" : ""} onClick={() => setModo("clientes")}>Por cliente</button>
           <button className={modo === "lista" ? "on" : ""} onClick={() => setModo("lista")}>Lista</button>
         </div>
+        <select className="nexo-select" style={{ width: "auto" }} value={fSeg} onChange={(e) => setFSeg(e.target.value)}>
+          <option value="todas">Todas as seguradoras</option>
+          {db.seguradoras.map((sg) => <option key={sg.id} value={sg.id}>{sg.nome} ({db.veiculos.filter((v) => v.seguradoraId === sg.id).length})</option>)}
+          <option value="sem">Sem seguradora ({db.veiculos.filter((v) => !v.seguradoraId).length})</option>
+        </select>
+        <button className="nexo-btn" onClick={() => onOpenModal("seguradoraLote")}>Definir seguradora em lote</button>
       </div>
       <div className="nexo-chips">
         {[["todos", "Todos"], ["ativos", "Ativos"], ["inativos", "Inativos"], ["semvalor", "Sem valor mensal"], ["semfipe", "Sem Fipe"]].map(([k, rotulo]) => (
@@ -2988,7 +3191,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
                 {aberto && (
                   <div className="nexo-vgroup-body">
                     {g.veiculos.map((v) => (
-                      <VeiculoLinha key={v.id} v={v} onEditar={() => onOpenModal("veiculo", v)} onExcluir={() => onDeleteVeiculo(v.id)} />
+                      <VeiculoLinha key={v.id} v={v} seguradoraNome={nomeSeg(v)} onEditar={() => onOpenModal("veiculo", v)} onExcluir={() => onDeleteVeiculo(v.id)} />
                     ))}
                   </div>
                 )}
@@ -3002,7 +3205,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
             <table className="nexo-table">
               <thead>
                 <tr>
-                  <th>Cliente</th><th>Veículo</th><th>Placa</th><th>Ano</th><th>Valor mensal</th><th>Fipe</th><th>Status</th><th></th>
+                  <th>Cliente</th><th>Veículo</th><th>Placa</th><th>Seguradora</th><th>Ano</th><th>Valor mensal</th><th>Fipe</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -3018,6 +3221,7 @@ function VeiculosView({ db, onOpenModal, onDeleteVeiculo, onOpenDetail, onImport
                       </td>
                       <td>{v.marca} {v.modelo}</td>
                       <td><PlacaChip placa={v.placa} /></td>
+                      <td><SeguradoraTag nome={nomeSeg(v)} /></td>
                       <td className="nexo-cell-muted">{v.anoFabricacao || v.ano ? `${v.anoFabricacao || "—"}/${v.ano || "—"}` : "—"}</td>
                       <td className="mono">{Number(v.valorMensal) > 0 ? formatBRL(v.valorMensal) : <SemValor />}</td>
                       <td className="nexo-cell-muted">{v.codigoFipe ? `${v.codigoFipe} · ${formatBRL(v.valorFipe)}` : "—"}</td>
@@ -3408,6 +3612,7 @@ function ClienteDetailView({ db, clienteId, onBack, onOpenModal, onDeleteVeiculo
                   {veiculosDoCliente.map((v) => (
                     <VeiculoLinha
                       key={v.id} v={v} plano
+                      seguradoraNome={(db.seguradoras.find((sg) => sg.id === v.seguradoraId) || {}).nome || ""}
                       onEditar={() => onOpenModal("veiculo", v)}
                       onExcluir={() => onDeleteVeiculo(v.id)}
                       onNovoBoleto={() => onOpenModal("boleto", null, clienteId, v.id)}
@@ -5225,7 +5430,7 @@ function situacaoFinanceira(cliente, boletos) {
   return { chave: "sem", rotulo: "Sem boletos", tom: "info" };
 }
 
-function VeiculoLinha({ v, onEditar, onExcluir, onNovoBoleto, plano }) {
+function VeiculoLinha({ v, onEditar, onExcluir, onNovoBoleto, plano, seguradoraNome }) {
   const temMensal = Number(v.valorMensal) > 0;
   const anos = v.anoFabricacao && v.ano ? `${v.anoFabricacao}/${v.ano}` : (v.ano || v.anoFabricacao || "");
   return (
@@ -5234,6 +5439,7 @@ function VeiculoLinha({ v, onEditar, onExcluir, onNovoBoleto, plano }) {
       <div className="nexo-vrow-main">
         <div className="nexo-vrow-nome">{v.marca} {v.modelo}</div>
         <div className="nexo-cliente-sub">{[anos, v.cor].filter(Boolean).join(" · ") || "—"}</div>
+        {seguradoraNome !== undefined && <div style={{ marginTop: 3 }}><SeguradoraTag nome={seguradoraNome} /></div>}
       </div>
       <div className="nexo-vrow-val">{temMensal ? <strong className="mono">{formatBRL(v.valorMensal)}</strong> : <SemValor />}</div>
       <div className="nexo-vrow-fipe nexo-cell-muted">{v.codigoFipe ? `Fipe ${formatBRL(v.valorFipe)}` : ""}</div>
@@ -8115,8 +8321,11 @@ const rowToVeiculo = (r) => ({
   dataCadastro: r.data_cadastro || "", status: r.status || "Ativo",
   codigoFipe: r.codigo_fipe || "", valorFipe: r.valor_fipe ?? "",
   fipeCombustivel: r.fipe_combustivel || "", fipeMesReferencia: r.fipe_mes_referencia || "", fipeUltimaConsulta: r.fipe_ultima_consulta || "",
+  seguradoraId: r.seguradora_id || "", _tinhaSeguradora: !!r.seguradora_id,
 });
 const veiculoToRow = (v) => ({
+  // seguradora só vai para o banco quando informada (ou para limpar uma que existia): o resto funciona mesmo antes da migração
+  ...(v.seguradoraId || v._tinhaSeguradora ? { seguradora_id: v.seguradoraId || null } : {}),
   cliente_id: v.clienteId, tipo_veiculo: v.tipoVeiculo || null, marca: v.marca, modelo: v.modelo, ano: v.ano || null, ano_fabricacao: v.anoFabricacao || null,
   placa: v.placa, renavam: v.renavam || null, chassi: v.chassi || null, cor: v.cor || null,
   cambio: v.cambio || null, combustivel: v.combustivel || null,
@@ -8404,6 +8613,22 @@ function AppInterno() {
     } catch (e) {
       notify("A importação parou no meio por um erro (o que já foi gravado continua salvo; pode importar o mesmo arquivo de novo que não duplica): " + e.message);
       carregarTudo();
+    }
+  };
+
+  const aplicarSeguradoraLote = async (seguradoraId, ids) => {
+    try {
+      for (let i = 0; i < ids.length; i += 200) {
+        const lote = ids.slice(i, i + 200);
+        const { error } = await supabase.from("veiculos").update({ seguradora_id: seguradoraId }).in("id", lote);
+        if (error) throw error;
+      }
+      const set = new Set(ids);
+      setDb((prev) => ({ ...prev, veiculos: prev.veiculos.map((v) => (set.has(v.id) ? { ...v, seguradoraId, _tinhaSeguradora: true } : v)) }));
+      closeModal();
+      showToast(`${ids.length} veículo(s) atualizado(s).`, "success");
+    } catch (e) {
+      notify("Não foi possível salvar a seguradora (rodou a migração no Supabase?): " + e.message);
     }
   };
 
@@ -9728,7 +9953,12 @@ function AppInterno() {
       )}
       {modal && modal.type === "veiculo" && (
         <Modal title={modal.data ? "Editar veículo" : "Novo veículo"} onClose={closeModal} wide>
-          <VeiculoForm initial={modal.data} clientes={db.clientes} defaultClienteId={modal.defaultClienteId} onSave={saveVeiculo} onCancel={closeModal} />
+          <VeiculoForm initial={modal.data} clientes={db.clientes} defaultClienteId={modal.defaultClienteId} onSave={saveVeiculo} onCancel={closeModal} seguradoras={db.seguradoras} />
+        </Modal>
+      )}
+      {modal && modal.type === "seguradoraLote" && (
+        <Modal title="Definir seguradora em lote" onClose={closeModal}>
+          <SeguradoraLoteModal db={db} onAplicar={aplicarSeguradoraLote} onCancel={closeModal} />
         </Modal>
       )}
       {modal && modal.type === "importarMensalidades" && (
