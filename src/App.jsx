@@ -773,6 +773,21 @@ function computeBoletoStatus(b) {
   return "Em aberto";
 }
 
+/* Versão do sistema — aparece no rodapé do menu para conferir se a atualização certa foi publicada */
+const APP_VERSAO = "2026.10.06-b";
+
+/* O Supabase devolve no máximo 1.000 linhas por consulta: busca em lotes até trazer a tabela inteira */
+async function selecionarTudo(montarConsulta) {
+  const todos = [];
+  for (let de = 0; de < 500000; de += 1000) {
+    const { data, error } = await montarConsulta().range(de, de + 999);
+    if (error) return { data: null, error };
+    todos.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return { data: todos, error: null };
+}
+
 /* --- Parcelas da mensalidade do cliente (geradas pelo cadastro do cliente) --- */
 // As parcelas viram boletos normais na tabela "boletos" (mesmo status, baixa manual e baixa
 // pelo relatório). O número "PARC 3/12" identifica que o boleto foi gerado pelo cadastro do cliente.
@@ -7387,7 +7402,7 @@ function ConfiguracoesView({ db, onSalvar }) {
     <div>
       <div className="nexo-section-head">
         <div className="nexo-section-title">Configurações<span className="nexo-section-count">cotação, mensagens e link do cliente</span></div>
-        {aba !== "link" && aba !== "sga" && (
+        {aba !== "link" && aba !== "sga" && aba !== "backup" && (
           <div className="nexo-topbar-actions">
             <button className="nexo-btn" disabled={JSON.stringify(f) === JSON.stringify(CONFIG_COTACAO_PADRAO)} onClick={() => { if (window.confirm("Voltar todos os campos para o padrão do sistema? (Só vale depois de salvar.)")) setF({ ...CONFIG_COTACAO_PADRAO }); }}>Restaurar padrão</button>
             <button className="nexo-btn nexo-btn-primary" disabled={!mudou || salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar configurações"}</button>
@@ -7395,7 +7410,7 @@ function ConfiguracoesView({ db, onSalvar }) {
         )}
       </div>
       <div className="nexo-tabs">
-        {[["modelo", "Modelo da cotação"], ["mensagens", "Mensagens de envio"], ["link", "Link do cliente"], ["sga", "Integração SGA"]].map(([k, rot]) => (
+        {[["modelo", "Modelo da cotação"], ["mensagens", "Mensagens de envio"], ["link", "Link do cliente"], ["sga", "Integração SGA"], ["backup", "Backup"]].map(([k, rot]) => (
           <div key={k} className={`nexo-tab ${aba === k ? "active" : ""}`} onClick={() => setAba(k)}>{rot}</div>
         ))}
       </div>
@@ -7465,27 +7480,102 @@ function ConfiguracoesView({ db, onSalvar }) {
       )}
 
       {aba === "link" && <DiagnosticoLink db={db} />}
-      {aba === "sga" && <><RelatorioBoletosSGA /><IntegracaoSGA /></>}
+      {aba === "sga" && <><RelatorioBoletosSGA db={db} /><IntegracaoSGA /></>}
+      {aba === "backup" && <BackupDados />}
     </div>
   );
 }
 
 /* Integração com o SGA (Hinova) — Etapa 1: teste de conexão, somente leitura */
+/* Backup: baixar uma cópia completa dos dados + situação do backup automático diário */
+const TABELAS_BACKUP = ["clientes", "veiculos", "boletos", "seguradoras", "planos", "cotacoes", "consultoras", "adesoes", "comissoes",
+  "comissoes_corretora", "funis", "fases", "negociacoes", "negociacao_atividades", "negociacao_eventos", "configuracoes", "links_uteis", "perfis", "fipe_historico"];
+function BackupDados() {
+  const [baixando, setBaixando] = useState(false);
+  const [progresso, setProgresso] = useState("");
+  const [auto, setAuto] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from("backups_diarios").select("dia, criado_em, tabela, qtd").order("criado_em", { ascending: false }).limit(200);
+      if (error) { setAuto({ erro: true }); return; }
+      const dias = new Map();
+      (data || []).forEach((r) => { const d = dias.get(r.dia) || { dia: r.dia, criado_em: r.criado_em, tabelas: 0, linhas: 0 }; d.tabelas++; d.linhas += r.qtd || 0; dias.set(r.dia, d); });
+      setAuto({ dias: Array.from(dias.values()) });
+    })();
+  }, []);
+  async function baixar() {
+    setBaixando(true);
+    try {
+      const copia = { sistema: "Nexo Gestão", versao: APP_VERSAO, gerado_em: new Date().toISOString(), tabelas: {} };
+      for (const t of TABELAS_BACKUP) {
+        setProgresso(`Copiando ${t}…`);
+        const { data, error } = await selecionarTudo(() => supabase.from(t).select("*"));
+        if (!error) copia.tabelas[t] = data;
+      }
+      const blob = new Blob([JSON.stringify(copia)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `backup-nexo-${todayISO()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      const resumo = Object.entries(copia.tabelas).map(([t, l]) => `${t}: ${l.length}`).join(" · ");
+      showToast("Backup baixado. Guarde o arquivo num lugar seguro (pendrive, Google Drive).", "success");
+      setProgresso(`Último backup baixado agora — ${resumo}`);
+    } catch (e) {
+      notify("Não foi possível gerar o backup: " + e.message);
+      setProgresso("");
+    } finally {
+      setBaixando(false);
+    }
+  }
+  return (
+    <>
+      <div className="nexo-card" style={{ marginBottom: 16 }}>
+        <div className="nexo-chart-title">Baixar backup agora</div>
+        <div className="nexo-chart-sub">Gera um arquivo com TODOS os dados do sistema (clientes, veículos, boletos, comissões, cotações…). Recomendado antes de cada atualização importante.</div>
+        <button className="nexo-btn nexo-btn-primary" disabled={baixando} onClick={baixar}><Download size={14} /> {baixando ? "Gerando backup…" : "Baixar backup completo"}</button>
+        {progresso && <div className="nexo-cell-muted" style={{ fontSize: 12, marginTop: 10 }}>{progresso}</div>}
+      </div>
+      <div className="nexo-card">
+        <div className="nexo-chart-title">Backup automático diário</div>
+        <div className="nexo-chart-sub">Todo dia, de madrugada, o próprio banco guarda uma cópia de todas as tabelas (mantém os últimos 14 dias).</div>
+        {!auto && <div className="nexo-cell-muted">Verificando…</div>}
+        {auto?.erro && <div style={{ color: "var(--warning)", fontSize: 13 }}>O backup automático ainda não foi ativado no Supabase (falta rodar o script de backup no SQL Editor).</div>}
+        {auto?.dias && auto.dias.length === 0 && <div style={{ color: "var(--warning)", fontSize: 13 }}>Ativado, mas ainda sem nenhuma cópia gerada.</div>}
+        {auto?.dias && auto.dias.length > 0 && (
+          <div className="nexo-table-scroll">
+            <table className="nexo-table">
+              <thead><tr><th>Dia</th><th>Feito em</th><th>Tabelas</th><th>Registros</th></tr></thead>
+              <tbody>{auto.dias.map((d) => (
+                <tr key={d.dia}><td>{formatDateBR(d.dia)}</td><td>{new Date(d.criado_em).toLocaleString("pt-BR")}</td><td>{d.tabelas}</td><td>{d.linhas.toLocaleString("pt-BR")}</td></tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 /* Relatório legível dos boletos do SGA (só leitura, nada é gravado no Nexo) */
-function RelatorioBoletosSGA() {
+function RelatorioBoletosSGA({ db }) {
   const mesAtual = mesRefDe(todayISO());
   const [mes, setMes] = useState(mesAtual);
+  const [por, setPor] = useState("vencimento");
+  const fonteAuto = (db?.seguradoras || []).find((x) => x.comissaoAutomatica && x.tipoComissao === "mensalidade");
+  const pctComissao = fonteAuto && Number(fonteAuto.percentualComissao) > 0 ? Number(fonteAuto.percentualComissao) : COMISSAO_CORRETORA_PERCENTUAL;
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState("validos");
-  const meses = Array.from({ length: 8 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m - 4 + i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  // 24 meses para trás e 4 para frente
+  const meses = Array.from({ length: 29 }, (_, i) => { const [a, m] = mesAtual.split("-").map(Number); const d = new Date(a, m + 3 - i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
   async function buscar() {
     setCarregando(true); setErro(""); setDados(null);
     try {
       const { data } = await supabase.auth.getSession();
-      const resp = await fetch(`/api/sga?acao=relatorio&mes=${mes}`, { headers: { Authorization: `Bearer ${data?.session?.access_token || ""}` } });
+      const resp = await fetch(`/api/sga?acao=relatorio&mes=${mes}&por=${por}`, { headers: { Authorization: `Bearer ${data?.session?.access_token || ""}` } });
       const json = await resp.json();
       if (!json.ok) throw new Error(json.mensagem || "O SGA não respondeu.");
       setDados(json);
@@ -7512,9 +7602,13 @@ function RelatorioBoletosSGA() {
       <div className="nexo-section-head" style={{ marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
         <div>
           <div className="nexo-chart-title">Relatório de boletos do SGA</div>
-          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Boletos da sua base pelo mês de vencimento, direto do SGA (só leitura).</div>
+          <div className="nexo-chart-sub" style={{ marginBottom: 0 }}>Boletos da sua base direto do SGA (só leitura). "Por pagamento" mostra o que foi pago no mês — base da comissão.</div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="nexo-seg" style={{ marginLeft: 0 }}>
+            <button className={por === "vencimento" ? "on" : ""} onClick={() => { setPor("vencimento"); setDados(null); }}>Por vencimento</button>
+            <button className={por === "pagamento" ? "on" : ""} onClick={() => { setPor("pagamento"); setDados(null); }}>Por pagamento</button>
+          </div>
           <select className="nexo-select" style={{ width: "auto" }} value={mes} onChange={(e) => setMes(e.target.value)}>
             {meses.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
           </select>
@@ -7528,7 +7622,11 @@ function RelatorioBoletosSGA() {
             <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Boletos válidos</div><div className="nexo-mini-kpi-value">{base.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(base.map((b) => b.valor)))}</div></div>
             <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Pagos (baixados)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--success)" }}>{pagos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(pagos.map((b) => b.valor)))}</div></div>
             <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Em aberto</div><div className="nexo-mini-kpi-value" style={{ color: "var(--info)" }}>{abertos.length - vencidos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(abertos.filter((b) => !vencidos.includes(b)).map((b) => b.valor)))}</div></div>
-            <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Vencidos (inadimplentes)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--danger)" }}>{vencidos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(vencidos.map((b) => b.valor)))}</div></div>
+            {dados.por === "pagamento" ? (
+              <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Comissão da corretora ({pctComissao}%)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--violet)" }}>{formatBRL(sum(pagos.map((b) => b.valor_pago || b.valor)) * pctComissao / 100)}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>sobre {formatBRL(sum(pagos.map((b) => b.valor_pago || b.valor)))} pagos em {rotuloMes(mes)}</div></div>
+            ) : (
+              <div className="nexo-mini-kpi"><div className="nexo-mini-kpi-label">Vencidos (inadimplentes)</div><div className="nexo-mini-kpi-value" style={{ color: "var(--danger)" }}>{vencidos.length}</div><div className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(vencidos.map((b) => b.valor)))}</div></div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <input className="nexo-input" style={{ maxWidth: 280 }} placeholder="Buscar cliente, placa ou Nosso Número" value={busca} onChange={(e) => setBusca(e.target.value)} />
@@ -7540,11 +7638,12 @@ function RelatorioBoletosSGA() {
               <option value="EXCLUIDO">Excluídos</option>
               <option value="todos">Todos</option>
             </select>
-            <button className="nexo-btn" onClick={() => exportarCSV(`boletos-sga-${mes}.csv`, [
+            <button className="nexo-btn" onClick={() => exportarCSV(`boletos-sga-${por}-${mes}.csv`, [
               { titulo: "Cliente", valor: (b) => b.cliente }, { titulo: "CPF/CNPJ", valor: (b) => b.cpf },
               { titulo: "Placas", valor: (b) => b.placas.join(" | ") }, { titulo: "Nosso Número", valor: (b) => b.nosso_numero },
               { titulo: "Vencimento", valor: (b) => formatDateBR(b.vencimento) }, { titulo: "Valor", valor: (b) => String(b.valor).replace(".", ",") },
               { titulo: "Situação", valor: (b) => b.situacao }, { titulo: "Pagamento", valor: (b) => (b.pagamento ? formatDateBR(b.pagamento) : "") },
+              { titulo: "Valor pago", valor: (b) => String(b.valor_pago || "").replace(".", ",") },
               { titulo: "Mês referente", valor: (b) => b.mes_referente }, { titulo: "Parcela", valor: (b) => b.parcela },
             ], lista)}><Download size={14} /> Exportar CSV</button>
             <span className="nexo-cell-muted" style={{ alignSelf: "center" }}>{lista.length} boleto(s) na lista</span>
@@ -8076,21 +8175,21 @@ function AppInterno() {
     setLoadError("");
     try {
       const [clientesRes, veiculosRes, boletosRes, seguradorasRes, planosRes, cotacoesRes, consultorasRes, adesoesRes, comissoesRes, usuariosRes, comissoesCorretoraRes, funisRes, fasesRes, negociacoesRes, atividadesRes, eventosRes, configRes] = await Promise.all([
-        supabase.from("clientes").select("*").order("nome"),
-        supabase.from("veiculos").select("*"),
-        supabase.from("boletos").select("*"),
+        selecionarTudo(() => supabase.from("clientes").select("*").order("nome").order("id")),
+        selecionarTudo(() => supabase.from("veiculos").select("*").order("id")),
+        selecionarTudo(() => supabase.from("boletos").select("*").order("id")),
         supabase.from("seguradoras").select("*").order("nome"),
         supabase.from("planos").select("*"),
-        supabase.from("cotacoes").select("*"),
+        selecionarTudo(() => supabase.from("cotacoes").select("*").order("id")),
         supabase.from("consultoras").select("*").order("nome"),
-        supabase.from("adesoes").select("*"),
-        supabase.from("comissoes").select("*"),
+        selecionarTudo(() => supabase.from("adesoes").select("*").order("id")),
+        selecionarTudo(() => supabase.from("comissoes").select("*").order("id")),
         supabase.from("perfis").select("*").order("nome"),
         supabase.from("comissoes_corretora").select("*"),
         supabase.from("funis").select("*").order("ordem"),
         supabase.from("fases").select("*").order("ordem"),
-        supabase.from("negociacoes").select("*"),
-        supabase.from("negociacao_atividades").select("*"),
+        selecionarTudo(() => supabase.from("negociacoes").select("*").order("id")),
+        selecionarTudo(() => supabase.from("negociacao_atividades").select("*").order("id")),
         supabase.from("negociacao_eventos").select("*").order("created_at", { ascending: false }).limit(3000),
         supabase.from("configuracoes").select("*"),
       ]);
@@ -9507,7 +9606,7 @@ function AppInterno() {
               <div className="nexo-user-avatar">{iniciaisUsuario}</div>
               <div className="nexo-user-meta">
                 <div className="nexo-user-name" title={sessao?.user?.email}>{perfil?.nome || sessao?.user?.email}</div>
-                <div className="nexo-user-role">{ehAdmin ? "Administrador" : "Operador"}</div>
+                <div className="nexo-user-role" title={`Versão do sistema: ${APP_VERSAO}`}>{ehAdmin ? "Administrador" : "Operador"} · v{APP_VERSAO}</div>
               </div>
               <button className="nexo-icon-btn" title="Sair" onClick={() => supabase.auth.signOut()}><LogOut size={15} /></button>
             </div>
