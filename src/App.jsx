@@ -11,7 +11,7 @@ import {
   Menu, ArrowLeft, Clock, FileText, Wallet, TrendingUp, ChevronRight, ChevronLeft,
   CreditCard, MessageCircle, ListFilter, RotateCcw, Eye, Upload, Shield, FileDown, Printer,
   Bell, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen, Info,
-  Link2, Copy, Camera, Inbox, Paperclip, Send, StickyNote, MoreVertical, ChevronDown, Settings, Check, List, ClipboardList, Download
+  Link2, Copy, Camera, Inbox, Paperclip, Send, StickyNote, MoreVertical, ChevronDown, Settings, Check, List, ClipboardList, Download, PartyPopper
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -2578,6 +2578,7 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
           <button type="button" className="nexo-btn nexo-btn-sm" title="Próximo mês" onClick={() => setMesComissao(deslocarMesDash(mesEfetivo, 1))}><ChevronRight size={14} /></button>
         </div>
       </div>
+      <CardAniversariantes clientes={db.clientes} onOpenDetail={onOpenDetail} />
       <div className="nexo-dash-bloco" style={{ marginTop: 0 }}>Carteira</div>
 
       <div className="nexo-kpi-grid">
@@ -6163,6 +6164,70 @@ function descreverAlteracoes(antes, depois, campos) {
 
 /* ---------- links de envio ---------- */
 const urlPublicaCotacao = (codigo, modo) => `${window.location.origin}/?cotacao=${codigo}${modo ? `&modo=${modo}` : ""}`;
+/** Aniversariantes: hoje e os próximos `dias` dias (pelo dia/mês do campo "nascimento"). */
+function aniversariosProximos(clientes, dias = 7) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const lista = [];
+  (clientes || []).forEach((c) => {
+    if (!c.nascimento || c.status === "Inativo") return;
+    const [ano, mes, dia] = c.nascimento.split("-").map(Number);
+    if (!mes || !dia) return;
+    let prox = new Date(hoje.getFullYear(), mes - 1, dia);
+    if (prox < hoje) prox = new Date(hoje.getFullYear() + 1, mes - 1, dia);
+    const faltam = Math.round((prox - hoje) / 86400000);
+    if (faltam <= dias) lista.push({ cliente: c, faltam, data: prox, idade: ano > 1900 ? prox.getFullYear() - ano : null });
+  });
+  return lista.sort((x, y) => x.faltam - y.faltam || x.cliente.nome.localeCompare(y.cliente.nome, "pt-BR"));
+}
+
+function CardAniversariantes({ clientes, onOpenDetail }) {
+  const lista = useMemo(() => aniversariosProximos(clientes, 7), [clientes]);
+  const hoje = lista.filter((x) => x.faltam === 0);
+  const proximos = lista.filter((x) => x.faltam > 0).slice(0, 6);
+  const msg = (c) => `Parabéns, ${c.nome.split(" ")[0]}! 🎉🎂 A equipe da Corretora Seu Seguro deseja a você um feliz aniversário e muitas felicidades!`;
+  return (
+    <div className="nexo-card" style={{ marginBottom: 20, borderColor: hoje.length ? "var(--warning)" : undefined, background: hoje.length ? "linear-gradient(135deg, rgba(219,155,61,0.10), var(--surface))" : undefined }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <PartyPopper size={20} color="var(--warning)" />
+        <div style={{ fontWeight: 700, fontSize: 15 }}>
+          {hoje.length === 0 ? "Nenhum aniversariante hoje" : hoje.length === 1 ? "Aniversariante de hoje 🎉" : `Aniversariantes de hoje 🎉 (${hoje.length})`}
+        </div>
+      </div>
+      {hoje.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {hoje.map(({ cliente: c, idade }) => {
+            const contato = c.whatsapp || c.telefone;
+            return (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ cursor: onOpenDetail ? "pointer" : undefined }} onClick={() => onOpenDetail && onOpenDetail(c.id)}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.nome}</div>
+                  <div className="nexo-cell-muted" style={{ fontSize: 12 }}>{idade ? `Fazendo ${idade} anos hoje` : "Aniversário hoje"}</div>
+                </div>
+                {contato ? (
+                  <a className="nexo-btn nexo-btn-sm" style={{ background: "var(--success)", borderColor: "var(--success)", color: "#fff" }}
+                    href={linkWhatsApp(contato, msg(c))} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle size={13} /> Mandar parabéns
+                  </a>
+                ) : (
+                  <span className="nexo-cell-muted" style={{ fontSize: 12 }}>Sem WhatsApp/telefone cadastrado</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {proximos.length > 0 && (
+        <div className="nexo-cell-muted" style={{ fontSize: 12, marginTop: hoje.length ? 12 : 0 }}>
+          Próximos: {proximos.map(({ cliente: c, data }) => `${c.nome.split(" ")[0]} (${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")})`).join(" · ")}
+        </div>
+      )}
+      {lista.length === 0 && (
+        <div className="nexo-cell-muted" style={{ fontSize: 12 }}>Ninguém faz aniversário nos próximos 7 dias. Os aniversários aparecem aqui pela data de nascimento do cadastro do cliente.</div>
+      )}
+    </div>
+  );
+}
+
 function linkWhatsApp(celular, texto) {
   const d = String(celular || "").replace(/\D/g, "");
   const numero = d.length >= 12 && d.startsWith("55") ? d : d.length >= 10 ? "55" + d : "";
