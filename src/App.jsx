@@ -2475,11 +2475,6 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
   const clientesAtivos = db.clientes.filter((c) => c.status === "Ativo").length;
   const veiculosAtivos = db.veiculos.filter((v) => v.status === "Ativo").length;
   const veiculosInativos = db.veiculos.filter((v) => v.status === "Inativo").length;
-  const emAberto = boletosComStatus.filter((b) => b.status !== "Pago");
-  const aVencer = boletosComStatus.filter((b) => b.status === "A vencer");
-  const valorEmAberto = sum(emAberto.map((b) => b.valor));
-  const valorAReceber = sum(boletosComStatus.filter((b) => b.status === "A vencer" || b.status === "Em aberto").map((b) => b.valor));
-  const valorRecebido = sum(boletosComStatus.filter((b) => b.status === "Pago").map((b) => b.valor));
 
   // Comissão recorrente da corretora: 10% sobre os boletos BAIXADOS (pagos) no mês escolhido.
   // Por padrão mostra o mês atual; se ele ainda não tem pagamentos (ex.: você importa o relatório de
@@ -2497,6 +2492,18 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
     ...Array.from({ length: 30 }, (_, i) => deslocarMesDash(chaveMesAtual, 6 - i))])).sort().reverse();
   const boletosPagosDoMes = boletosComStatus.filter((b) => b.status === "Pago" && mesRefDe(b.dataPagamento) === mesEfetivo);
   const valorBaseComissao = sum(boletosPagosDoMes.map((b) => b.valor));
+  // Cards do topo seguem o mês escolhido no seletor (antes somavam todos os meses, inclusive as
+  // parcelas futuras geradas no cadastro, e não batiam com o relatório mensal do SGA).
+  // - Em aberto / a vencer / a receber: boletos com VENCIMENTO no mês e ainda não pagos.
+  // - Recebido: boletos com PAGAMENTO no mês (mesma regra do relatório de baixados do SGA).
+  const boletosVencDoMes = boletosComStatus.filter((b) => b.dataVencimento && mesRefDe(b.dataVencimento) === mesEfetivo);
+  const emAberto = boletosVencDoMes.filter((b) => b.status !== "Pago");
+  const aVencer = emAberto.filter((b) => b.status === "A vencer" || b.status === "Em aberto");
+  const vencidosDoMes = emAberto.filter((b) => b.status === "Vencido");
+  const valorEmAberto = sum(emAberto.map((b) => b.valor));
+  const valorAReceber = sum(aVencer.map((b) => b.valor));
+  const valorRecebido = valorBaseComissao;
+  const vencidosTotal = boletosComStatus.filter((b) => b.status === "Vencido");
   // comparação com o mês anterior ao mês escolhido
   const mesAnteriorChave = (() => {
     const [ano, mes] = mesEfetivo.split("-").map(Number);
@@ -2563,7 +2570,7 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
         <div>
           <div className="nexo-section-title">Visão geral</div>
         </div>
-        <div className="nexo-mes-ref" title="Mês de referência: vale para a comissão, os boletos do mês e a carteira por seguradora">
+        <div className="nexo-mes-ref" title="Mês de referência: vale para os cards de boletos e valores, a comissão, os boletos do mês e a carteira por seguradora">
           <button type="button" className="nexo-btn nexo-btn-sm" title="Mês anterior" onClick={() => setMesComissao(deslocarMesDash(mesEfetivo, -1))}><ChevronLeft size={14} /></button>
           <select className="nexo-select" value={mesEfetivo} onChange={(e) => setMesComissao(e.target.value)}>
             {opcoesMesDash.map((m) => <option key={m} value={m}>{rotuloMes(m)}</option>)}
@@ -2577,11 +2584,16 @@ function Dashboard({ db, onOpenModal, tema, onOpenDetail, onIr }) {
         <Kpi icon={Users} label="Clientes ativos" value={clientesAtivos} tone="accent" />
         <Kpi icon={Car} label="Veículos ativos" value={veiculosAtivos} tone="success" />
         <Kpi icon={Car} label="Veículos inativos" value={veiculosInativos} tone="danger" />
-        <Kpi icon={FileText} label="Boletos em aberto" value={emAberto.length} tone="info" />
-        <Kpi icon={Clock} label="Boletos a vencer" value={aVencer.length} tone="warning" />
-        <Kpi icon={Wallet} label="Valor em aberto" value={formatBRL(valorEmAberto)} tone="info" />
-        <Kpi icon={TrendingUp} label="Valor a receber" value={formatBRL(valorAReceber)} tone="warning" />
-        <Kpi icon={Receipt} label="Valor recebido" value={formatBRL(valorRecebido)} tone="success" />
+        <Kpi icon={FileText} label={`Boletos em aberto · ${rotuloMes(mesEfetivo)}`} value={emAberto.length} tone="info"
+          extra={<span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{vencidosDoMes.length} vencido(s) · {aVencer.length} a vencer</span>} />
+        <Kpi icon={Clock} label="Vencidos (todos os meses)" value={vencidosTotal.length} tone={vencidosTotal.length ? "danger" : "warning"}
+          extra={<span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{formatBRL(sum(vencidosTotal.map((b) => b.valor)))} sem baixa</span>} />
+        <Kpi icon={Wallet} label={`Valor em aberto · ${rotuloMes(mesEfetivo)}`} value={formatBRL(valorEmAberto)} tone="info"
+          extra={<span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>vencidos + a vencer do mês</span>} />
+        <Kpi icon={TrendingUp} label={`Valor a receber · ${rotuloMes(mesEfetivo)}`} value={formatBRL(valorAReceber)} tone="warning"
+          extra={<span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>ainda dentro do prazo</span>} />
+        <Kpi icon={Receipt} label={`Valor recebido · ${rotuloMes(mesEfetivo)}`} value={formatBRL(valorRecebido)} tone="success"
+          extra={<span className="nexo-cell-muted" style={{ fontSize: 11.5 }}>{boletosPagosDoMes.length} boleto(s) pago(s) no mês</span>} />
         <Kpi icon={CreditCard} label={`Comissão da corretora (${pctComissao}% de ${rotuloMes(mesEfetivo)})`} value={formatBRL(comissaoCorretora)} tone="accent" wide
           extra={variacaoMes !== null && (
             <span className={`nexo-trend ${variacaoMes >= 0 ? "up" : "down"}`}>
